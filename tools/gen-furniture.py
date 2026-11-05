@@ -99,10 +99,18 @@ class Box:
         return f'<ellipse cx="{x:.1f}" cy="{y:.1f}" rx="{rx}" ry="{ry}" {extra}/>'
 
     def shadow(self):
+        # 阴影必须落在「底面菱形中心」（= ay），等距视角里那一点才是脚踩的地面。
+        # 之前放在底面最低点（前角）再往下 2px，等于把影子画进了地底，
+        # 家具看起来就浮在影子上面——"飘"就是这么来的。
+        # 半径要比底面菱形大一圈：等大或更小的话会被柜体完全盖住，
+        # 柜子就"没有影子的贴纸"，反而更像浮着。
         cx = self.cx
-        y = self.ty + self.half * 2 + self.H + 2
-        rx = self.W * 0.42
-        return f'<ellipse cx="{cx}" cy="{y}" rx="{rx:.1f}" ry="{rx * 0.34:.1f}" fill="rgba(58,40,22,.22)"/>'
+        y = self.ay + 3
+        rx = self.W * 0.64
+        # 竖向半径也要略大于底面菱形半高（W/4），否则上下露不出来，
+        # 只剩左右两条月牙，看起来像"柜子贴着两块暗斑"
+        ry = max(self.half * 1.05, rx * 0.42)
+        return f'<ellipse cx="{cx}" cy="{y}" rx="{rx:.1f}" ry="{ry:.1f}" fill="rgba(58,40,22,.19)"/>'
 
     def body(self, top, right, left):
         return (
@@ -445,22 +453,25 @@ def painting():
 def tv():
     b = Box(128, 22, top_y=48)
     wood = '#a98a5f'
+    cx, ty, h = b.cx, b.ty, b.half
+    sw, sh = 62, 34
     parts = [b.shadow()]
+    # 屏幕先画、底边扎进柜面里：后画的柜子顶面会盖住屏幕底部，
+    # 看起来就是"插在柜子上"，而不是悬浮在柜顶之上
+    sy = ty + 20
+    parts.append(f'<polygon points="{cx-sw/2},{sy} {cx+sw/2},{sy} {cx+sw/2},{sy-sh} {cx-sw/2},{sy-sh}" '
+                 f'fill="#3a3f45" stroke="rgba(25,28,32,.75)" stroke-width="1.4"/>')
+    parts.append(f'<rect x="{cx-sw/2+3}" y="{sy-sh+3}" width="{sw-6}" height="{sh-6}" fill="#6f93ad"/>')
+    parts.append(f'<rect x="{cx-sw/2+3}" y="{sy-sh+3}" width="{sw-6}" height="8" fill="rgba(200,225,240,.4)"/>')
+    parts.append(f'<rect x="{cx-9}" y="{sy-6}" width="18" height="6" fill="#2f3439"/>')
+    # 柜体
     parts.append(f'<polygon points="{b.left_face()}" fill="{mul(wood,0.72)}" stroke="{EDGE}" stroke-width="1"/>')
     parts.append(f'<polygon points="{b.right_face()}" fill="{mul(wood,0.9)}" stroke="{EDGE}" stroke-width="1"/>')
     parts.append(f'<polygon points="{b.top_pts()}" fill="{mul(wood,1.02)}" stroke="{EDGE}" stroke-width="1"/>')
-    # 柜门缝 + 把手
+    # 柜门缝
     parts.append(f'<polygon points="{b.r_quad(0.04,0.96,5,7)}" fill="{mul(wood,0.55)}"/>')
-    # 屏幕：柜面上竖一块（等距侧板）
-    cx, ty, h = b.cx, b.ty, b.half
-    sw, sh = 62, 34
-    # 屏幕背板
-    parts.append(f'<polygon points="{cx-sw/2},{ty-h*0.2} {cx+sw/2},{ty-h*0.2} {cx+sw/2},{ty-h*0.2-sh} {cx-sw/2},{ty-h*0.2-sh}" '
-                 f'fill="#3a3f45" stroke="rgba(25,28,32,.7)" stroke-width="1.4"/>')
-    parts.append(f'<rect x="{cx-sw/2+3}" y="{ty-h*0.2-sh+3}" width="{sw-6}" height="{sh-6}" fill="#6f93ad"/>')
-    parts.append(f'<rect x="{cx-sw/2+3}" y="{ty-h*0.2-sh+3}" width="{sw-6}" height="8" fill="rgba(200,225,240,.45)"/>')
-    # 底座
-    parts.append(f'<rect x="{cx-8}" y="{ty-h*0.2}" width="16" height="5" fill="#2f3439"/>')
+    p2 = b.top_pts().split()
+    parts.append(f'<polyline points="{p2[3]} {p2[0]} {p2[1]}" fill="none" stroke="rgba(255,246,224,.5)" stroke-width="1.4"/>')
     return svg(''.join(parts), b.W, b.total_h), b
 
 
