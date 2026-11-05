@@ -4,6 +4,11 @@
     "hash": "f32f8e5825ce",
     "updatedAt": "2026-11-05T14:48:31.850Z"
   },
+  "business/business.json": {
+    "version": 1,
+    "hash": "4a4f2674d33d",
+    "updatedAt": "2026-11-05T20:26:26.836Z"
+  },
   "careers/jobs.json": {
     "version": 4,
     "hash": "a76ea261f47b",

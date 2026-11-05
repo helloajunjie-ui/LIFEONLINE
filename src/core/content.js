@@ -133,6 +133,9 @@ function buildIndex(packs, meta){
   // 彩票：号码规则与奖级表（概率现算，不写死）
   const lottery = packs['lottery/lottery.json'] || null;
 
+  // 功能点承包：付一个月承包金，期内每天结算净收益
+  const business = packs['business/business.json'] || { shops: [], termDays: 30, maxOwned: 3 };
+
   // 车款：4S 店卖的车（不在家具目录里，车不是家具）
   let cars = [], carParking = null;
   for (const [id, pack] of Object.entries(packs)){
@@ -165,7 +168,8 @@ function buildIndex(packs, meta){
     residence,
     cars,
     carParking,
-    lottery
+    lottery,
+    business
   };
 }
 
@@ -316,3 +320,5 @@ export function cozyOf(id){ const it = content.catalogById[id]; return it ? it.c
 export function economy(){ return content.rules.economy || {}; }
 /** 缴费通知模板（账单周期、金额算法字段、逾期规则） */
 export function bills(){ return content.rules.bills || {}; }
+/** 功能点承包：可承包的店铺、承包金、日收益、承包周期 */
+export function business(){ return content.business || { shops: [], termDays: 30 }; }

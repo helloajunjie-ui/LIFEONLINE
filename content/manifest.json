@@ -5,6 +5,7 @@
   "note": "content/ 为唯一真相；server/content/content.json 是 bundle 产物，不要手改",
   "packs": [
     "achievements/achievements.json",
+    "business/business.json",
     "careers/jobs.json",
     "catalog/categories.json",
     "catalog/furniture.core.json",
@@ -33,6 +34,11 @@
       "version": 2,
       "hash": "f32f8e5825ce",
       "updatedAt": "2026-11-05T14:48:31.850Z"
+    },
+    "business/business.json": {
+      "version": 1,
+      "hash": "4a4f2674d33d",
+      "updatedAt": "2026-11-05T20:26:26.836Z"
     },
     "careers/jobs.json": {
       "version": 4,

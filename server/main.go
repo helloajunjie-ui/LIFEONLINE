@@ -262,6 +262,9 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/friends", a.withAuth(a.listFriends))
 	mux.HandleFunc("POST /api/v1/friends/{userId}", a.withAuth(a.addFriend))
 	mux.HandleFunc("DELETE /api/v1/friends/{userId}", a.withAuth(a.removeFriend))
+	mux.HandleFunc("GET /api/v1/business", a.listBusiness)
+	mux.HandleFunc("POST /api/v1/business/{shopId}/take", a.withAuth(a.takeBusiness))
+	mux.HandleFunc("POST /api/v1/business/{shopId}/release", a.withAuth(a.releaseBusiness))
 	return cors(mux)
 }
 
@@ -331,18 +334,29 @@ func (a *App) withAuth(h authedHandler) http.HandlerFunc {
 	}
 }
 
+// optionalUser：带 token 就认人，不带也放行。
+// 用途是公开列表里标出"哪几家是我的"——客户端不需要自己维护 userId。
+func (a *App) optionalUser(r *http.Request) string {
+	tok := bearer(r)
+	if tok == "" {
+		return ""
+	}
+	var uid string
+	_ = a.db.QueryRow(`SELECT id FROM users WHERE token_hash = ?`, hashToken(tok)).Scan(&uid)
+	return uid
+}
+
 /* ------------------------------ handlers ------------------------------ */
 
 func (a *App) health(w http.ResponseWriter, r *http.Request) {
 	ok(w, map[string]any{"ok": true, "time": now()})
 }
 
-// world：统一世界时钟。返回锚点（totalMinute + 服务器时间戳），客户端据此推算。
-// 懒推进：不跑后台 goroutine，每次请求按"现实时间差 × 倍率"把时钟推到当下。
-func (a *App) world(w http.ResponseWriter, r *http.Request) {
-	// rate 的单位是「游戏分钟 / 真实分钟」：
-	// 60 → 1 真实分钟 = 1 游戏小时 → 1 游戏天 = 24 分钟真实时间。
-	// 这是"每天只能上一次班 + 账单按天记"的能量来源，调它就是调游戏节奏。
+// worldClock 返回当前世界时钟（total 游戏分钟、rate）。
+// 懒推进：不跑后台 goroutine，每次调用按上次 tick_at 到现在的真实时间差 × rate 推到当下并存回。
+// rate 的单位是「游戏分钟 / 真实分钟」：60 → 1 真实分钟 = 1 游戏小时 → 1 游戏天 = 24 分钟真实时间。
+// 这是"每天只能上一次班 + 账单按天记 + 承包按天结算"的能量来源，调它就是调游戏节奏。
+func (a *App) worldClock() (float64, float64, error) {
 	rate := 60.0
 	if v := os.Getenv("WORLD_RATE"); v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil && f >= 0 {
@@ -358,8 +372,7 @@ func (a *App) world(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, sql.ErrNoRows):
 		total = 8 * 60 // 第 1 天 08:00 起步
 	case err != nil:
-		fail(w, http.StatusInternalServerError, err.Error())
-		return
+		return 0, rate, err
 	default:
 		base, _ := strconv.ParseFloat(val, 64)
 		elapsed := 0.0
@@ -376,11 +389,22 @@ func (a *App) world(w http.ResponseWriter, r *http.Request) {
 	if _, e := a.db.Exec(`INSERT INTO world_state(key, value, tick_at) VALUES('clock', ?, ?)
 		ON CONFLICT(key) DO UPDATE SET value=excluded.value, tick_at=excluded.tick_at`,
 		strconv.FormatFloat(total, 'f', 3, 64), stamp.Format(time.RFC3339Nano)); e != nil {
-		fail(w, http.StatusInternalServerError, e.Error())
+		return 0, rate, e
+	}
+	return total, rate, nil
+}
+
+// worldDay 把总分钟换算成游戏天数（第 1 天起）
+func worldDay(total float64) int { return int(total/1440) + 1 }
+
+// world：统一世界时钟。返回锚点（totalMinute + 服务器时间戳），客户端据此推算。
+func (a *App) world(w http.ResponseWriter, r *http.Request) {
+	total, rate, err := a.worldClock()
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	day := int(total/1440) + 1
+	day := worldDay(total)
 	minute := total - float64((day-1)*1440)
 	w.Header().Set("Cache-Control", "no-store")
 	ok(w, map[string]any{
@@ -388,8 +412,113 @@ func (a *App) world(w http.ResponseWriter, r *http.Request) {
 		"day":         day,
 		"minute":      minute,
 		"rate":        rate,
-		"syncedAt":    stamp.Format(time.RFC3339Nano),
+		"syncedAt":    time.Now().Format(time.RFC3339Nano),
 	})
+}
+
+/* ------------------------ 功能点承包（全局独占） ------------------------
+ * 一个店铺同时只能有一个承包人，所以状态必须放服务端。
+ * 到期不清行：end_day 过了就当空位，下一个承包人用 upsert 覆盖，省掉定时任务。
+ * 钱的校验在客户端（服务端只做"谁占着"的权威），因为数值体系都在内容层。 */
+
+func (a *App) listBusiness(w http.ResponseWriter, r *http.Request) {
+	total, _, err := a.worldClock()
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	day := worldDay(total)
+	rows, err := a.db.Query(`SELECT b.shop_id, b.user_id, COALESCE(u.nickname,''), b.start_day, b.end_day, b.fee
+		FROM businesses b LEFT JOIN users u ON u.id = b.user_id
+		WHERE b.end_day >= ? ORDER BY b.end_day`, day)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+	items := []map[string]any{}
+	me := a.optionalUser(r)
+	mine := []string{}
+	for rows.Next() {
+		var shopID, userID, nick string
+		var sd, ed, fee int
+		if err := rows.Scan(&shopID, &userID, &nick, &sd, &ed, &fee); err != nil {
+			continue
+		}
+		if me != "" && userID == me {
+			mine = append(mine, shopID)
+		}
+		items = append(items, map[string]any{
+			"shopId": shopID, "userId": userID, "nickname": nick,
+			"startDay": sd, "endDay": ed, "fee": fee, "daysLeft": ed - day,
+		})
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	ok(w, map[string]any{"day": day, "items": items, "mine": mine})
+}
+
+// takeBusiness：承包 / 续约。用一条 upsert 完成"检查 + 占用"，避免两次请求之间的竞态。
+func (a *App) takeBusiness(w http.ResponseWriter, r *http.Request, u ctxUser) {
+	shopID := r.PathValue("shopId")
+	if shopID == "" || len(shopID) > 64 {
+		fail(w, http.StatusBadRequest, "店铺 id 不合法")
+		return
+	}
+	var body struct {
+		TermDays int `json:"termDays"`
+		Fee      int `json:"fee"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<12)).Decode(&body); err != nil {
+		fail(w, http.StatusBadRequest, "请求体解析失败")
+		return
+	}
+	if body.TermDays < 1 || body.TermDays > 365 {
+		fail(w, http.StatusBadRequest, "承包周期不合法")
+		return
+	}
+	if body.Fee < 0 {
+		fail(w, http.StatusBadRequest, "承包金不合法")
+		return
+	}
+	total, _, err := a.worldClock()
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	day := worldDay(total)
+	// WHERE 条件就是并发锁：只有「本来就是我」或「已过期」才允许覆盖
+	res, err := a.db.Exec(`INSERT INTO businesses(shop_id, user_id, start_day, end_day, fee, updated_at)
+		VALUES(?,?,?,?,?,?)
+		ON CONFLICT(shop_id) DO UPDATE SET
+			user_id=excluded.user_id, start_day=excluded.start_day,
+			end_day=excluded.end_day, fee=excluded.fee, updated_at=excluded.updated_at
+		WHERE businesses.user_id = ? OR businesses.end_day < ?`,
+		shopID, u.ID, day, day+body.TermDays, body.Fee, now(), u.ID, day)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		fail(w, http.StatusConflict, "这家店已经被别人承包了")
+		return
+	}
+	ok(w, map[string]any{"ok": true, "day": day, "endDay": day + body.TermDays})
+}
+
+func (a *App) releaseBusiness(w http.ResponseWriter, r *http.Request, u ctxUser) {
+	shopID := r.PathValue("shopId")
+	if shopID == "" {
+		fail(w, http.StatusBadRequest, "缺少店铺 id")
+		return
+	}
+	res, err := a.db.Exec(`DELETE FROM businesses WHERE shop_id = ? AND user_id = ?`, shopID, u.ID)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	n, _ := res.RowsAffected()
+	ok(w, map[string]any{"ok": true, "released": n})
 }
 
 // meta：把"服务端认哪个版本"告诉客户端，客户端据此决定是否提示刷新

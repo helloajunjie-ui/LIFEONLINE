@@ -209,21 +209,21 @@
   }
   #inventory.open{transform:translateX(0);}
   /* 社区面板（排行榜 + 串门） */
-  #social, #work, #ach, #building, #carshop, #clinic, #lottery, #counter, #mailbox{
+  #social, #work, #ach, #building, #carshop, #clinic, #lottery, #counter, #mailbox, #biz{
     position:absolute; top:0; right:0; bottom:0; z-index:22;
     width:min(340px, 90vw); background:var(--panel); color:var(--ink);
     box-shadow:-8px 0 30px rgba(0,0,0,.25);
     display:flex; flex-direction:column; transform:translateX(105%);
     transition:transform .25s ease; border-left:1px solid rgba(122,82,48,.2);
   }
-  #social.open, #work.open, #ach.open, #building.open, #carshop.open, #clinic.open, #lottery.open, #counter.open, #mailbox.open{transform:translateX(0);}
-  #social .shead, #work .shead, #ach .shead, #building .shead, #carshop .shead, #clinic .shead, #lottery .shead, #counter .shead, #mailbox .shead{
+  #social.open, #work.open, #ach.open, #building.open, #carshop.open, #clinic.open, #lottery.open, #counter.open, #mailbox.open, #biz.open{transform:translateX(0);}
+  #social .shead, #work .shead, #ach .shead, #building .shead, #carshop .shead, #clinic .shead, #lottery .shead, #counter .shead, #mailbox .shead, #biz .shead{
     display:flex; align-items:center; gap:10px; padding:14px 16px;
     border-bottom:1px solid rgba(122,82,48,.18); flex-wrap:wrap;
   }
-  #social .shead .st, #work .shead .st, #ach .shead .st, #building .shead .st, #carshop .shead .st, #clinic .shead .st, #lottery .shead .st, #counter .shead .st, #mailbox .shead .st{font-size:16px; font-weight:800; color:var(--accent2); margin-right:auto;}
-  #social .list, #work .list, #ach .list, #building .list, #carshop .list, #clinic .list, #lottery .list, #counter .list, #mailbox .list{flex:1; overflow-y:auto; padding:10px 16px 20px;}
-  #social .sgroup, #work .sgroup, #ach .sgroup, #building .sgroup, #carshop .sgroup, #clinic .sgroup, #lottery .sgroup, #counter .sgroup, #mailbox .sgroup{font-size:11px; font-weight:800; letter-spacing:.04em; color:#9a8a6a; margin:10px 0 6px;}
+  #social .shead .st, #work .shead .st, #ach .shead .st, #building .shead .st, #carshop .shead .st, #clinic .shead .st, #lottery .shead .st, #counter .shead .st, #mailbox .shead .st, #biz .shead .st{font-size:16px; font-weight:800; color:var(--accent2); margin-right:auto;}
+  #social .list, #work .list, #ach .list, #building .list, #carshop .list, #clinic .list, #lottery .list, #counter .list, #mailbox .list, #biz .list{flex:1; overflow-y:auto; padding:10px 16px 20px;}
+  #social .sgroup, #work .sgroup, #ach .sgroup, #building .sgroup, #carshop .sgroup, #clinic .sgroup, #lottery .sgroup, #counter .sgroup, #mailbox .sgroup, #biz .sgroup{font-size:11px; font-weight:800; letter-spacing:.04em; color:#9a8a6a; margin:10px 0 6px;}
   #social .rank, #work .rank, #ach .rank{width:20px; text-align:center; font-weight:800; color:#a08a5e; font-size:12px; flex:none;}
   #social .item .price, #work .item .price, #ach .item .price{font-size:12px;}
   /* 社区：好友操作按钮与标签 */
@@ -259,7 +259,32 @@
   #lottery .lrow .lp{flex:none; color:#9a5f1e; font-weight:700;}
 
   /* ---- 柜台（饭馆 / 超市）：菜单行 + 一句说明 ---- */
-  #counter, #mailbox{width:min(380px, 92vw);}
+  #counter, #mailbox, #biz{width:min(400px, 94vw);}
+  /* ---- 生意：承包卡片 ---- */
+  #biz .shop{border:1px solid rgba(122,82,48,.18); border-radius:12px; padding:10px 12px; margin-bottom:8px; background:#fff;}
+  #biz .shop.mine{border-color:rgba(110,150,90,.5); background:#f7fbf2;}
+  #biz .shop.expired{border-color:rgba(200,85,61,.4); background:#fff9f7;}
+  #biz .shop.taken{border-color:rgba(122,82,48,.28); background:#f7f4ee;}
+  #biz .bstate.taken{color:#8a6a3a;}
+  #biz .sh{display:flex; align-items:center; gap:8px;}
+  #biz .sn{font-weight:800; font-size:13.5px; color:var(--accent2);}
+  #biz .btag{font-size:10px; font-weight:800; border-radius:999px; padding:1px 6px; background:rgba(214,160,80,.2); color:#8a6a3a;}
+  #biz .bstate{margin-left:auto; font-size:11px; font-weight:800; color:#8a6a3a;}
+  #biz .bstate.mine{color:#4a6a32;}
+  #biz .bstate.expired{color:#a8392a;}
+  #biz .sd{font-size:11px; color:#9a8a6a; margin-top:3px; line-height:1.65;}
+  #biz .num{display:flex; gap:12px; margin-top:6px; font-size:11.5px; color:#6a5a44; font-variant-numeric:tabular-nums;}
+  #biz .num b{color:var(--accent);}
+  #biz .num i{font-style:normal; color:#4a6a32; font-weight:700;}
+  #biz .bf2{display:flex; gap:6px; margin-top:8px;}
+  #biz .bf2 button{
+    border:none; border-radius:8px; padding:6px 11px; font-size:12px; font-weight:700;
+    background:var(--accent); color:#fff; cursor:pointer; font-family:inherit;
+  }
+  #biz .bf2 button.ghost{background:rgba(122,82,48,.13); color:var(--ink);}
+  #biz .bf2 button:disabled{background:#d9cdb8; color:#fff; cursor:not-allowed;}
+  #biz .barwrap{height:4px; border-radius:99px; background:rgba(122,82,48,.12); margin-top:7px; overflow:hidden;}
+  #biz .barwrap i{display:block; height:100%; background:#6f9a6a; border-radius:99px;}
   #counter .cnote{font-size:11px; color:#9a8a6a; line-height:1.7; padding:2px 2px 10px;}
   #counter .ctag{
     display:inline-block; margin-left:6px; font-size:10px; font-weight:800;
@@ -586,6 +611,7 @@
     <button class="chip" id="jobChip" style="display:none" title="走到便利店/医院/学校等地点可以上班">上班</button>
     <button class="chip" id="workBtn">工作 +¥</button>
     <button class="chip" id="shopBtn">商店</button>
+    <button class="chip" id="bizBtn" title="承包店铺：付一个月承包金，期内每天有净收益">生意</button>
     <button class="chip" id="invBtn" title="已买未摆的家具（可以摆出来，也可以半价卖出）">仓库</button>
     <button class="chip" id="charBtn">人物</button>
     <button class="chip" id="socialBtn">社区</button>
@@ -734,6 +760,16 @@
     <div class=list id=carshopList></div>
   </aside>
 
+  <!-- 生意：功能点承包（付一个月承包金，期内每天结算收益） -->
+  <aside id=biz role=dialog aria-label=生意>
+    <div class=shead>
+      <span class=st id=bizTitle>生意 · 承包</span>
+      <span class=sbal id=bizBal>—</span>
+      <button class=closeX id=bizClose aria-label=关闭>×</button>
+    </div>
+    <div class=list id=bizList></div>
+  </aside>
+
   <!-- 柜台：饭馆点菜 / 超市拿货，商品全部来自 rules/economy.json -->
   <aside id=counter role=dialog aria-label=柜台>
     <div class=shead>
@@ -754,7 +790,6 @@
     <div class=list id=mailboxList></div>
   </aside>
 
-  <!-- 人物面板 -->
   <!-- 人物面板 -->
   <div id="charBackdrop">
     <div id="charPanel" role="dialog" aria-label="人物档案" aria-modal="true">
@@ -4886,6 +4921,7 @@ function updateSim(dt){
   if (DAY !== _billTickDay){
     _billTickDay = DAY;
     if (typeof tickBills === 'function') tickBills();
+    if (typeof settleBusiness === 'function') settleBusiness();
   }
 }
 let _billTickDay = 0;
@@ -5927,6 +5963,7 @@ const envChip = document.getElementById('envChip');
 const cozyChip = document.getElementById('cozyChip');
 const pantryChip = document.getElementById('pantryChip');
 const billChip = document.getElementById('billChip');
+const bizBtn = document.getElementById('bizBtn');
 let cozyTierSeen = null;      // 上次看到的装修度星级（用于升级提示）
 const speedBtn = document.getElementById('speedBtn');
 const workBtn = document.getElementById('workBtn');
@@ -6042,6 +6079,15 @@ function updateHUD(){
   cozyChip.textContent = '装修度 ' + cz + (tier.stars ? ' ' + '★'.repeat(tier.stars) : '');
   cozyChip.title = '装修度 ' + cz + '（' + tier.name + '）：睡一觉情绪 +' + Math.max(1, cozyBonus()) +
                    '，清晨额外 +' + Math.max(0, Math.round(cozyBonus()*0.6)) + '。摆装饰品可提升。';
+  /* 生意徽章：每天净入直接写脸上，玩家一眼能算"今天赚多少" */
+  if (bizBtn){
+    const inc = (typeof bizDailyNet === 'function') ? bizDailyNet() : 0;
+    const label = inc > 0 ? ('生意 +' + inc + '/天') : '生意';
+    if (bizBtn.textContent !== label) bizBtn.textContent = label;
+    bizBtn.title = inc > 0
+      ? ('承包中：每天净入 ¥' + inc + '，点开看明细或续约')
+      : '承包店铺：付一个月承包金，期内每天有净收益';
+  }
   /* 食材与待缴账单：这两件事每天都该看得见，别等玩家开面板才发现冰箱空了 / 欠费了 */
   if (pantryChip){
     const tot = foodTotal();
@@ -6773,6 +6819,10 @@ if (billChip) billChip.addEventListener('click', () => {
   if (scene !== 'street') switchScene('street');
   walkTo(MAILBOX_CELL.gx, MAILBOX_CELL.gy + 1);
   toggleMailbox(true);
+});
+
+if (bizBtn) bizBtn.addEventListener('click', ()=>{
+  if (bizOpen) toggleBiz(false); else toggleBiz(true);
 });
 
 shopBtn.addEventListener('click', ()=>{
@@ -7628,6 +7678,7 @@ function collectSave(){
     lottery: { bought: LOTTERY_STATS.bought, won: LOTTERY_STATS.won },
     pantry: PANTRY,
     bag: BAG,
+    biz: { list: BIZ_LIST, lastDay: BIZ_LAST_DAY },
     world: { total: worldNow(), rate: WORLD.rate },
     bills: {
       list: BILLS,
@@ -7699,6 +7750,10 @@ function migrateSave(d){
       if (d.career && typeof d.career === 'object' && !d.career.lastShift){
         d.career.lastShift = { day: 0, jobId: '' };
       }
+    }
+    if (schema === 11){
+      // v12：功能点承包。老玩家从"没有任何店"开始——升级不该白送一份资产
+      d.biz = (d.biz && typeof d.biz === 'object') ? d.biz : { list: [], lastDay: 0 };
     }
     schema++;
   }
@@ -7774,6 +7829,23 @@ function applySave(d){
   PANTRY = Math.max(0, Math.min(pantryMaxSafe(), Math.floor(Number(d.pantry) || 0)));
   BAG = Math.max(0, Math.min(Math.max(1, Number(FOOD_DEF && FOOD_DEF.bagCap) || 20),
     Math.floor(Number(d.bag) || 0)));
+  // 承包：只认内容里存在的店铺；到期日必须大于开始日，脏存档不能白送收益
+  {
+    const bd = (d.biz && typeof d.biz === 'object') ? d.biz : {};
+    const raw = Array.isArray(bd.list) ? bd.list : [];
+    const seen = {};
+    BIZ_LIST = [];
+    for (const b of raw){
+      if (!b || !b.shopId || seen[b.shopId]) continue;
+      if (typeof bizShop === 'function' && !bizShop(b.shopId)) continue;
+      const st = Math.max(0, Math.floor(Number(b.start) || 0));
+      const en = Math.max(0, Math.floor(Number(b.end) || 0));
+      if (en <= st) continue;
+      seen[b.shopId] = 1;
+      BIZ_LIST.push({ shopId: String(b.shopId), start: st, end: en, fee: Math.max(0, Math.floor(Number(b.fee) || 0)) });
+    }
+    BIZ_LAST_DAY = Math.max(0, Math.floor(Number(bd.lastDay) || 0));
+  }
   // 账单：只认结构合法的条目，游标按模板 id 白名单收
   {
     const bd = (d.bills && typeof d.bills === 'object') ? d.bills : {};
@@ -9397,6 +9469,314 @@ function drawMailbox(){
     ctx.fillText(n > 9 ? '9+' : String(n), cx + bw / 2 - 1, by - 2.5);
   }
   ctx.restore();
+}
+
+/* ---------- 生意：功能点承包（全局独占） ----------
+ * 付一个月的承包金，承包期内每天自动结算净收益，到期自动失效、需要重新续约。
+ *
+ * 两条关键设计：
+ * 1) **独占**：一个门牌同一时间只能有一个承包人。这条只能由服务端保证
+ *    （见 businesses 表），客户端各存一份的结果就是两个人各以为自己才是老板。
+ * 2) **按月**：买断会让「攒够钱 → 永久躺赚」一次用光；按月承包每 30 天都要重新做一次
+ *    "续不续"的决定，钱才转得起来。
+ *
+ * 数据全在 content/business/business.json，客户端只算账、不管经营细节。 */
+const BIZ_DEF = (HomeCore.content.business && HomeCore.content.business()) || {};
+const BIZ_SHOPS = BIZ_DEF.shops || [];
+const BIZ_TERM = Math.max(1, Math.round(Number(BIZ_DEF.termDays) || 30));
+const BIZ_MAX = Math.max(1, Math.min(6, Math.round(Number(BIZ_DEF.maxOwned) || 3)));
+const BIZ_REFUND = Math.max(0, Math.min(1, Number(BIZ_DEF.refundRatio) || 0.5));
+const BIZ_CATCHUP = Math.max(1, Math.round(Number(BIZ_DEF.catchUpDays) || 30));
+
+let BIZ_LIST = [];        // 我的承包 [{shopId, start, end, fee}]，start/end 是游戏日
+let BIZ_LAST_DAY = 0;     // 上次结算日（离线回来按天数补）
+let bizOpen = false;
+/* 服务端视图：{ok, day, items:[{shopId,userId,nickname,daysLeft}], mine:[shopId]} */
+let BIZ_REMOTE = { ok: false, day: 0, items: [], mine: [] };
+let BIZ_LOADING = false;
+
+const bizEl = document.getElementById('biz');
+const bizListEl = document.getElementById('bizList');
+const bizBalEl = document.getElementById('bizBal');
+const bizTitleEl = document.getElementById('bizTitle');
+
+function bizShop(id){ return BIZ_SHOPS.find(s => s.id === id) || null; }
+function bizShopByZone(zoneId){ return BIZ_SHOPS.find(s => s.zone === zoneId) || null; }
+function bizEntry(shopId){ return BIZ_LIST.find(b => b.shopId === shopId) || null; }
+function bizRunning(b){ return !!b && DAY <= b.end; }
+function bizDaysLeft(b){ return Math.max(0, b.end - DAY); }
+function bizActiveList(){ return BIZ_LIST.filter(bizRunning); }
+function bizDailyNet(){ return bizActiveList().reduce((s, b) => s + (Number((bizShop(b.shopId) || {}).daily) || 0), 0); }
+function bizFeeOf(shop){ return Math.max(0, Math.round(Number(shop.fee) || 0)); }
+function bizDailyOf(shop){ return Math.max(0, Math.round(Number(shop.daily) || 0)); }
+function bizMonthNet(shop){ return bizDailyOf(shop) * BIZ_TERM - bizFeeOf(shop); }
+/** 门牌号：编号是实体的身份，不是品类的（2737 号彩票站和 2738 号彩票站是两家店） */
+function bizCodeOf(shop){ return String((shop && shop.code) || '').trim(); }
+function bizNameOf(shop){ return bizCodeOf(shop) ? (bizCodeOf(shop) + ' 号 · ' + shop.name) : shop.name; }
+/** 这家被别人占着吗（服务端说不是我的，且还在期内） */
+function bizOccupiedBy(shopId){
+  if (!BIZ_REMOTE.ok) return null;
+  const it = BIZ_REMOTE.items.find(x => x.shopId === shopId);
+  if (!it) return null;
+  if ((BIZ_REMOTE.mine || []).indexOf(shopId) >= 0) return null;
+  if ((it.daysLeft | 0) < 0) return null;
+  return it;
+}
+
+/** 向服务端问一次"现在谁占着哪家"。拿到后本地承包列表以服务端为准重建。 */
+async function loadBizRemote(){
+  if (BIZ_LOADING) return BIZ_REMOTE;
+  BIZ_LOADING = true;
+  try {
+    const h = {};
+    if (SAVE.token) h['Authorization'] = 'Bearer ' + SAVE.token;
+    const r = await fetch(SAVE_API + '/api/v1/business', { headers: h, cache: 'no-store' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    const j = await r.json();
+    BIZ_REMOTE = {
+      ok: true,
+      day: Number(j.day) || DAY,
+      items: Array.isArray(j.items) ? j.items : [],
+      mine: Array.isArray(j.mine) ? j.mine : []
+    };
+    // 服务端才是权威：本地列表按它的 mine 重建（自己的那几家保留 start/end）
+    const rebuilt = [];
+    for (const id of BIZ_REMOTE.mine){
+      const it = BIZ_REMOTE.items.find(x => x.shopId === id);
+      if (it) rebuilt.push({ shopId: id, start: it.startDay | 0, end: it.endDay | 0, fee: it.fee | 0 });
+    }
+    BIZ_LIST = rebuilt;
+    if (BIZ_LAST_DAY <= 0) BIZ_LAST_DAY = DAY;
+    saveGame();
+  } catch (e){
+    BIZ_REMOTE = { ok: false, day: 0, items: [], mine: [] };
+  } finally {
+    BIZ_LOADING = false;
+    if (bizOpen) renderBiz();
+  }
+  return BIZ_REMOTE;
+}
+
+async function bizPost(path){
+  if (!SAVE.token) throw new Error('no-token');
+  const r = await fetch(SAVE_API + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SAVE.token },
+    body: JSON.stringify({ termDays: BIZ_TERM })
+  });
+  return r;
+}
+
+/** 承包 / 续约：先本地预检，再让服务端裁决，最后才扣钱 */
+async function takeBusiness(shopId){
+  const s = bizShop(shopId);
+  if (!s) return false;
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  const exist = bizEntry(shopId);
+  if (exist && bizRunning(exist)){
+    showFloat('「' + bizNameOf(s) + '」还在承包期内，剩 ' + bizDaysLeft(exist) + ' 天', px, py);
+    SND.err(); return false;
+  }
+  if (!exist && bizActiveList().length >= BIZ_MAX){
+    showFloat('最多同时承包 ' + BIZ_MAX + ' 处，先把到期的腾出来', px, py);
+    SND.err(); return false;
+  }
+  const fee = bizFeeOf(s);
+  if (MONEY < fee){
+    showFloat('承包金还差 ¥' + (fee - MONEY), px, py);
+    SND.err(); return false;
+  }
+  if (!BIZ_REMOTE.ok){
+    showFloat('承包要连上服务端（一家店只能有一个人承包，得由服务器裁决）', px, py);
+    SND.err(); return false;
+  }
+  let res;
+  try {
+    res = await bizPost('/api/v1/business/' + encodeURIComponent(shopId) + '/take');
+  } catch (e){
+    showFloat('连不上服务端，承包没成', px, py);
+    SND.err(); return false;
+  }
+  if (res.status === 409){
+    showFloat('慢了一步，这家已经被别人承包了', px, py);
+    SND.err(); await loadBizRemote(); return false;
+  }
+  if (!res.ok){
+    showFloat('承包失败（' + res.status + '）', px, py);
+    SND.err(); return false;
+  }
+  let endDay = DAY + BIZ_TERM;
+  try { const j = await res.json(); if (j && j.endDay) endDay = j.endDay | 0; } catch(e){}
+  MONEY -= fee;
+  if (exist){ exist.start = DAY; exist.end = endDay; exist.fee = fee; }
+  else BIZ_LIST.push({ shopId: shopId, start: DAY, end: endDay, fee: fee });
+  if (BIZ_LAST_DAY <= 0) BIZ_LAST_DAY = DAY;
+  SND.coin();
+  showFloat('承包「' + bizNameOf(s) + '」· ¥' + fee + ' / ' + BIZ_TERM + ' 天，日入 ¥' + bizDailyOf(s), px, py);
+  updateHUD(); saveGame(); renderBiz();
+  return true;
+}
+
+/** 退包：期内退 50%，过期的不退（钱已经赚完了） */
+async function releaseBusiness(shopId){
+  const b = bizEntry(shopId);
+  if (!b) return false;
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  const s = bizShop(shopId) || { name: '店铺' };
+  if (BIZ_REMOTE.ok){
+    try {
+      const res = await bizPost('/api/v1/business/' + encodeURIComponent(shopId) + '/release');
+      if (!res.ok && res.status !== 404){
+        showFloat('退包失败（' + res.status + '）', px, py);
+        SND.err(); return false;
+      }
+    } catch (e){
+      showFloat('连不上服务端，退包没成', px, py);
+      SND.err(); return false;
+    }
+  }
+  const refund = bizRunning(b) ? Math.round((Number(b.fee) || 0) * BIZ_REFUND) : 0;
+  MONEY += refund;
+  BIZ_LIST = BIZ_LIST.filter(x => x !== b);
+  SND.coin();
+  showFloat(refund ? ('退出「' + bizNameOf(s) + '」· 退回 ¥' + refund) : ('「' + bizNameOf(s) + '」承包已到期，直接撤下'), px, py);
+  updateHUD(); saveGame(); renderBiz();
+  return true;
+}
+
+/** 跨天结算：按 (上次结算日, 今天] 的天数补发，单次最多 catchUpDays 天 */
+function settleBusiness(){
+  if (!BIZ_LIST.length){ BIZ_LAST_DAY = DAY; return 0; }
+  if (BIZ_LAST_DAY <= 0){ BIZ_LAST_DAY = DAY; return 0; }
+  const to = DAY;
+  if (to <= BIZ_LAST_DAY) return 0;
+  const from = Math.max(BIZ_LAST_DAY, to - BIZ_CATCHUP);
+  let total = 0;
+  for (const b of BIZ_LIST){
+    const s = Math.max(from, b.start);
+    const e = Math.min(to, b.end);
+    const days = e - s;
+    if (days > 0) total += days * bizDailyOf(bizShop(b.shopId) || {});
+  }
+  BIZ_LAST_DAY = to;
+  BIZ_LIST = BIZ_LIST.filter(b => DAY <= b.end);   // 清掉彻底过期的，存档别无限长
+  if (total > 0){
+    MONEY += total;
+    showFloat('经营收入 +¥' + total, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    SND.coin();
+    updateHUD(); saveGame();
+  }
+  return total;
+}
+
+function toggleBiz(force){
+  const next = (force === undefined) ? !bizOpen : !!force;
+  bizOpen = next;
+  if (!bizEl) return;
+  bizEl.classList.toggle('open', next);
+  if (next){
+    if (shopOpen) toggleShop(false);
+    if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
+    if (workOpen) toggleWork(false);
+    if (typeof socialOpen !== 'undefined' && socialOpen) toggleSocial(false);
+    if (achOpen) toggleAch(false);
+    if (typeof buildingOpen !== 'undefined' && buildingOpen) toggleBuilding(false);
+    if (typeof carshopOpen !== 'undefined' && carshopOpen) toggleCarShop(false);
+    if (typeof clinicOpen !== 'undefined' && clinicOpen) toggleClinic(false);
+    if (typeof lotteryOpen !== 'undefined' && lotteryOpen) toggleLottery(false);
+    if (typeof counterOpen !== 'undefined' && counterOpen) toggleCounter(false);
+    if (typeof mailboxOpen !== 'undefined' && mailboxOpen) toggleMailbox(false);
+    renderBiz();
+    loadBizRemote();          // 拉一次全局占用，谁是老板一目了然
+  }
+}
+
+function bizCard(s){
+  const b = bizEntry(s.id);
+  const running = bizRunning(b);
+  const expired = !!b && !running;
+  const other = bizOccupiedBy(s.id);
+  const fee = bizFeeOf(s), daily = bizDailyOf(s), net = bizMonthNet(s);
+  const cls = running ? ' shop mine' : (other ? ' shop taken' : (expired ? ' shop expired' : ' shop'));
+
+  let state, btns;
+  if (running){
+    state = '<span class="bstate mine">我在经营 · 剩 ' + bizDaysLeft(b) + ' 天</span>';
+    btns = '<button class="ghost" data-release="' + s.id + '">退包 ¥' + Math.round(fee * BIZ_REFUND) + '</button>';
+  } else if (other){
+    state = '<span class="bstate taken">' + (other.nickname || '邻居') + ' 经营中 · 剩 ' + other.daysLeft + ' 天</span>';
+    btns = '<button disabled>已被承包</button>';
+  } else if (!BIZ_REMOTE.ok){
+    state = '<span class="bstate">未承包</span>';
+    btns = '<button disabled title="需要连接服务端">离线不可承包</button>';
+  } else {
+    state = expired ? '<span class="bstate expired">已到期</span>' : '<span class="bstate">可承包</span>';
+    const can = MONEY >= fee;
+    btns = '<button data-take="' + s.id + '"' + (can ? '' : ' disabled') + '>' +
+      (can ? ((expired ? '续约 ¥' : '承包 ¥') + fee) : '差 ¥' + (fee - MONEY)) + '</button>';
+  }
+
+  const prog = running
+    ? Math.max(0, Math.min(100, Math.round((DAY - b.start) / Math.max(1, BIZ_TERM) * 100)))
+    : 0;
+  const bar = running ? '<div class="barwrap"><i style="width:' + prog + '%"></i></div>' : '';
+
+  return '<div class="' + cls + '">' +
+    '<div class="sh"><span class="sn">' + bizNameOf(s) + '</span>' +
+      (s.tag ? '<span class="btag">' + s.tag + '</span>' : '') + state + '</div>' +
+    '<div class="sd">' + (s.desc || '') + '</div>' +
+    '<div class="num"><span>日收 <b>¥' + daily + '</b></span>' +
+      '<span>' + BIZ_TERM + ' 天共 <b>¥' + (daily * BIZ_TERM) + '</b></span>' +
+      '<span>净赚 <i>¥' + net + '</i></span></div>' + bar +
+    '<div class="bf2">' + btns + '</div></div>';
+}
+
+function renderBiz(){
+  if (!bizListEl) return;
+  const active = bizActiveList();
+  const income = bizDailyNet();
+  if (bizTitleEl) bizTitleEl.textContent = '生意 · 承包';
+  if (bizBalEl) bizBalEl.textContent = '¥' + MONEY;
+
+  const out = [];
+  out.push('<div class="cnote" style="font-size:11px;color:#9a8a6a;line-height:1.7;padding:2px 2px 8px">' +
+    '付一个月承包金，承包期内每天自动结算净收益，到期需要重新续约。' +
+    '一家店同一时间只能有一个老板，最多同时承包 ' + BIZ_MAX + ' 处。' +
+    (BIZ_REMOTE.ok ? '' : '<br><b style="color:#a8392a">当前没连上服务端，承包与退包暂不可用</b>') +
+    '</div>');
+
+  if (active.length){
+    out.push('<div class="sgroup">我的生意 · ' + active.length + '/' + BIZ_MAX +
+      ' · 每天净入 ¥' + income + '</div>');
+    for (const b of active){
+      const s = bizShop(b.shopId);
+      if (s) out.push(bizCard(s));
+    }
+  }
+  out.push('<div class="sgroup">' + (active.length ? '小区里其他门面' : '小区里可以承包的门面') + '</div>');
+  for (const s of BIZ_SHOPS){
+    if (bizRunning(bizEntry(s.id))) continue;
+    out.push(bizCard(s));
+  }
+  bizListEl.innerHTML = out.join('');
+}
+
+if (bizEl){
+  const x = bizEl.querySelector('.closeX');
+  if (x) x.addEventListener('click', () => toggleBiz(false));
+  bizListEl.addEventListener('click', (ev) => {
+    const take = ev.target.closest('[data-take]');
+    if (take && !take.disabled){ takeBusiness(take.getAttribute('data-take')); return; }
+    const rel = ev.target.closest('[data-release]');
+    if (rel){ releaseBusiness(rel.getAttribute('data-release')); return; }
+  });
+  /* 点面板以外任何地方都收起（HUD 按钮除外：否则点开就被这一下关掉） */
+  document.addEventListener('pointerdown', (e) => {
+    if (!bizOpen) return;
+    if (bizEl.contains(e.target)) return;
+    if (e.target.id === 'bizBtn' || (e.target.closest && e.target.closest('#bizBtn'))) return;
+    toggleBiz(false);
+  }, true);
 }
 
 function enterPeer(room){

@@ -2196,6 +2196,80 @@
 
       DAY = bk.day;
     }
+
+    /* ---------- Z 组：功能点承包（本地账目部分；独占由服务端 66 项自测覆盖） ---------- */
+    {
+      const bk = { day: DAY, money: MONEY, list: BIZ_LIST, last: BIZ_LAST_DAY, remote: BIZ_REMOTE };
+
+      P('Z1 business config loaded',
+        BIZ_SHOPS.length === 10 && BIZ_TERM === 30 && BIZ_MAX === 3,
+        'shops=' + BIZ_SHOPS.length + ' term=' + BIZ_TERM + ' max=' + BIZ_MAX);
+
+      const codes = BIZ_SHOPS.map(s => String(s.code || ''));
+      const uniq = new Set(codes).size === codes.length;
+      const allNum = codes.every(c => /^[0-9]{3,6}$/.test(c));
+      P('Z2 every shop has a unique doorplate number', uniq && allNum, codes.join(','));
+
+      const bad = BIZ_SHOPS.filter(s => (s.daily * BIZ_TERM - s.fee) <= 0).map(s => s.name);
+      P('Z3 every shop earns a profit per term', bad.length === 0, bad.join(',') || 'ok');
+
+      P('Z4 doorplate shows in the display name',
+        bizNameOf(BIZ_SHOPS.find(s => s.id === 'biz.lottery')) === '2737 号 · 彩票站',
+        bizNameOf(BIZ_SHOPS.find(s => s.id === 'biz.lottery')));
+
+      // Z5 结算：两天 65/天
+      DAY = 50; MONEY = 1000; BIZ_LAST_DAY = 48;
+      BIZ_LIST = [{ shopId: 'biz.store', start: 40, end: 70, fee: 1500 }];
+      const got = settleBusiness();
+      P('Z5 settle pays daily rate', got === 130 && MONEY === 1130,
+        JSON.stringify({ got: got, money: MONEY }));
+
+      // Z6 离线补结算有上限（最多 catchUpDays 天）
+      DAY = 200; MONEY = 0; BIZ_LAST_DAY = 1;
+      BIZ_LIST = [{ shopId: 'biz.store', start: 1, end: 400, fee: 1500 }];
+      const capped = settleBusiness();
+      P('Z6 catch-up is capped at catchUpDays',
+        capped === 65 * BIZ_CATCHUP, JSON.stringify({ capped: capped, cap: BIZ_CATCHUP, rate: 65 }));
+
+      // Z7 过期记录在结算时被清掉
+      DAY = 60; BIZ_LAST_DAY = 59; MONEY = 0;
+      BIZ_LIST = [{ shopId: 'biz.cafe', start: 10, end: 40, fee: 2000 }];
+      settleBusiness();
+      P('Z7 expired contracts are dropped', BIZ_LIST.length === 0, 'len=' + BIZ_LIST.length);
+
+      // Z8 离线（没连服务端）不允许承包：独占必须由服务端裁决
+      BIZ_REMOTE = { ok: false, day: 0, items: [], mine: [] };
+      BIZ_LIST = []; MONEY = 99999; DAY = 60;
+      (async () => {
+        const r = await takeBusiness('biz.store');
+        P('Z8 offline cannot take a shop', r === false && MONEY === 99999,
+          JSON.stringify({ r: r, money: MONEY }));
+      })();
+
+      // Z9 别人占着时按钮应显示为"已被承包"
+      BIZ_REMOTE = { ok: true, day: 60, items: [{ shopId: 'biz.cafe', userId: 'u999', nickname: '阿芳', daysLeft: 12 }], mine: [] };
+      const occ = bizOccupiedBy('biz.cafe');
+      P('Z9 other player blocks the shop', !!occ && occ.nickname === '阿芳' && occ.daysLeft === 12,
+        JSON.stringify(occ));
+
+      const htmlCard = bizCard(BIZ_SHOPS.find(s => s.id === 'biz.cafe'));
+      P('Z9b card shows the occupant', htmlCard.indexOf('阿芳') >= 0 && htmlCard.indexOf('已被承包') >= 0);
+
+      // Z10 自己的店不算被占
+      BIZ_REMOTE = { ok: true, day: 60, items: [{ shopId: 'biz.cafe', userId: 'me', nickname: '我', daysLeft: 12 }], mine: ['biz.cafe'] };
+      P('Z10 own shop is not treated as occupied', bizOccupiedBy('biz.cafe') === null);
+
+      // Z11 存档里带 biz
+      BIZ_LIST = [{ shopId: 'biz.store', start: 60, end: 90, fee: 1500 }];
+      BIZ_LAST_DAY = 60;
+      const saved = collectSave();
+      P('Z11 save carries business contracts',
+        saved.biz && saved.biz.list.length === 1 && saved.biz.lastDay === 60 && saved.biz.list[0].end === 90,
+        JSON.stringify(saved.biz));
+
+      DAY = bk.day; MONEY = bk.money; BIZ_LIST = bk.list; BIZ_LAST_DAY = bk.last; BIZ_REMOTE = bk.remote;
+    }
+
     flush();
   } catch (e){
     out.push('FATAL | ' + (e && e.message) + ' | ' + (e && e.stack ? e.stack.split('\n')[1] : ''));

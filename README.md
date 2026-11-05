@@ -3,7 +3,7 @@
 一款单文件的等距视角生活模拟小游戏：**经营自己的小屋，在小区里上班、买菜、交房租、串门装修**。
 客户端是一个可以双击打开的 HTML，服务端是可选的 Go + SQLite 存档服务。
 
-> 当前版本 **1.24.0** · 存档结构 **schema 11** · 门禁：客户端回归 229 项 / 服务端自测 57 项 / 内容校验 23 包全绿
+> 当前版本 **1.25.0** · 存档结构 **schema 12** · 门禁：客户端回归 240 项 / 服务端自测 66 项 / 内容校验 24 包全绿
 
 ## 直接玩
 
@@ -23,7 +23,7 @@ cd server && ./home-server.exe        # 127.0.0.1:8787，数据库 server/data/h
 ```
 2.5D小屋.html            客户端源码（开发时改这个，引用 ./dist/core.bundle.js）
 src/                     引擎模块：content 加载器、寻路、规则、时钟、联网
-content/                 内容层（唯一真相）：23 个 JSON 包
+content/                 内容层（唯一真相）：24 个 JSON 包
   catalog/                家具目录（19 件）
   house/                  房型、地板墙面风格、住址与房态
   maps/                   家 / 街区地图（分区、围栏、信箱、传送门）
@@ -31,6 +31,7 @@ content/                 内容层（唯一真相）：23 个 JSON 包
   characters/             玩家外观、邻居 NPC
   rules/                  生存规则、经济规则、账单模板
   lottery/ vehicles/      双色球、车款
+  business/               可承包的门面（门牌号、承包金、日收益）
   achievements/ ui/       生活目标、文案
 assets/                   SVG 素材（家具）
 tools/                    内容校验与打包、构建、无头回归、性能基准
@@ -52,7 +53,7 @@ node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 **跑回归**：
 
 ```bash
-node tools/test.mjs               # dist 与 src 各跑一遍，用无头 Edge
+node tools/test.mjs               # dist 与 src 各跑一遍（240 项），用无头 Edge
 node tools/test.mjs dist          # 只跑构建产物
 cd server && ./home-server.exe -selftest   # 服务端接口自测（进程内 httptest）
 ```
@@ -76,6 +77,7 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off go build -o home-server.exe .
 | **服务端不当真** | `data_json` 原样保留（新字段不丢），但 `cozy_score` 由服务端按内容重算，越界数值夹紧并标记 |
 | **统一世界时钟** | 全服共用一个游戏日（默认 1 天 = 24 分钟真实时间），账单周期与「每天只能上一次班」都挂在它上面 |
 | **经济闭环** | 上班（日薪 100–180）→ 吃饭/房租/水电/看病/买车/买房 → 卖车 60%、卖房 70%、卖家具 50% 回收 |
+| **钱生钱** | 10 个门面可按月承包（¥1,200–26,000/月），期内每天结算净收益；**全局独占**由服务端 `businesses` 表保证，一个门牌只能有一个老板 |
 
 ## 文档
 

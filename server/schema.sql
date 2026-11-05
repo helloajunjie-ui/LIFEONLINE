@@ -94,3 +94,16 @@ CREATE TABLE IF NOT EXISTS world_state (
   value   TEXT NOT NULL,
   tick_at TEXT NOT NULL
 );
+
+-- 功能点承包：一个店铺同时只能有一个承包人（主键就是 shop_id）。
+-- 为什么必须放服务端：这是稀缺资源，客户端各存一份就会出现两个人同时"承包"同一家店。
+-- 到期不清行：end_day 过了就视为空位，下一个承包人用 upsert 覆盖，省掉定时任务。
+CREATE TABLE IF NOT EXISTS businesses (
+  shop_id    TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  start_day  INTEGER NOT NULL,
+  end_day    INTEGER NOT NULL,
+  fee        INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_biz_user ON businesses(user_id);

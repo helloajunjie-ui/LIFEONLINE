@@ -42,6 +42,7 @@ func runSelfTest(h http.Handler) int {
 	s.casePackEndpoint()
 	s.caseCheatMoneyClamped()
 	s.caseFriends()
+	s.caseBusiness()
 
 	fmt.Printf("\n自测结果：PASS %d / FAIL %d\n", s.pass, s.failed)
 	if s.failed > 0 {
@@ -534,4 +535,105 @@ func (s *selftest) caseEstates() {
 		}
 	}
 	s.check("卖房后目录剩 2 套", after, 2)
+}
+
+/* ---------------------- 功能点承包：全局独占 ---------------------- */
+
+type guestAcc struct {
+	UserID string `json:"userId"`
+	Token  string `json:"token"`
+}
+
+func (s *selftest) newGuest(nick string) guestAcc {
+	rec := s.do("POST", "/api/v1/auth/guest", `{"nickname":"`+nick+`"}`, nil)
+	var g guestAcc
+	_ = json.Unmarshal(rec.Body.Bytes(), &g)
+	return g
+}
+
+// caseBusiness：同一家店同时只能有一个承包人。
+// 这条规则只能由服务端保证——客户端各存一份的话，两个人会各以为自己是老板。
+func (s *selftest) caseBusiness() {
+	auth := map[string]string{"Authorization": "Bearer " + s.token}
+	body := `{"termDays":30,"fee":1500}`
+
+	rec := s.do("GET", "/api/v1/business", "", nil)
+	s.check("承包列表 200", rec.Code, http.StatusOK)
+
+	rec = s.do("POST", "/api/v1/business/biz.store/take", body, auth)
+	s.check("承包店铺 200", rec.Code, http.StatusOK)
+
+	rec = s.do("POST", "/api/v1/business/biz.store/take", body, auth)
+	s.check("自己续约 200", rec.Code, http.StatusOK)
+
+	b := s.newGuest("承包乙")
+	if b.Token == "" {
+		s.failed++
+		fmt.Println("FAIL | 承包用例：第二个账号建号失败")
+		return
+	}
+	bAuth := map[string]string{"Authorization": "Bearer " + b.Token}
+
+	rec = s.do("POST", "/api/v1/business/biz.store/take", body, bAuth)
+	s.check("他人承包同一家 409", rec.Code, http.StatusConflict)
+
+	var list struct {
+		Day   int `json:"day"`
+		Items []struct {
+			ShopID   string `json:"shopId"`
+			UserID   string `json:"userId"`
+			Nickname string `json:"nickname"`
+			DaysLeft int    `json:"daysLeft"`
+		} `json:"items"`
+	}
+	rec = s.do("GET", "/api/v1/business", "", nil)
+	_ = json.Unmarshal(rec.Body.Bytes(), &list)
+	mine := false
+	for _, it := range list.Items {
+		if it.ShopID == "biz.store" && it.UserID == s.userID && it.DaysLeft > 0 {
+			mine = true
+		}
+	}
+	if mine {
+		s.pass++
+		fmt.Printf("PASS | 列表里能看到我的承包 day=%d 共 %d 家\n", list.Day, len(list.Items))
+	} else {
+		s.failed++
+		fmt.Printf("FAIL | 列表里没有我的承包 items=%d\n", len(list.Items))
+	}
+
+	// 别人退不掉我的店
+	rec = s.do("POST", "/api/v1/business/biz.store/release", "", bAuth)
+	var rel struct {
+		Released int `json:"released"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &rel)
+	if rec.Code == http.StatusOK && rel.Released == 0 {
+		s.pass++
+		fmt.Println("PASS | 他人无法释放我的承包")
+	} else {
+		s.failed++
+		fmt.Printf("FAIL | 他人释放了我的承包 released=%d code=%d\n", rel.Released, rec.Code)
+	}
+
+	// 我自己退，之后别人就能接
+	rec = s.do("POST", "/api/v1/business/biz.store/release", "", auth)
+	_ = json.Unmarshal(rec.Body.Bytes(), &rel)
+	if rec.Code == http.StatusOK && rel.Released == 1 {
+		s.pass++
+		fmt.Println("PASS | 本人释放成功")
+	} else {
+		s.failed++
+		fmt.Printf("FAIL | 本人释放异常 released=%d code=%d\n", rel.Released, rec.Code)
+	}
+
+	rec = s.do("POST", "/api/v1/business/biz.store/take", body, bAuth)
+	s.check("释放后他人可承包 200", rec.Code, http.StatusOK)
+
+	// 收尾：清掉，别影响别的用例
+	s.do("POST", "/api/v1/business/biz.store/release", "", bAuth)
+
+	// 参数校验
+	rec = s.do("POST", "/api/v1/business/biz.store/take", `{"termDays":0,"fee":1500}`, auth)
+	s.check("承包周期非法 400", rec.Code, http.StatusBadRequest)
 }

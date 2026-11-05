@@ -40,7 +40,7 @@ cd E:/QHTML/server && ./home-server.exe
 > `WORLD_RATE` 就是整个游戏的时间快慢：账单周期和「每天只能上一次班」都挂在游戏日上。
 > 调到 120 是「1 天 = 12 分钟」，调到 180 是「1 天 = 8 分钟」，不用改任何代码。
 
-## 3. 接口（16 条）
+## 3. 接口（19 条）
 
 带 🔒 的需要 `Authorization: Bearer <token>`。
 
@@ -62,8 +62,11 @@ cd E:/QHTML/server && ./home-server.exe
 | GET 🔒 | `/api/v1/friends` | 好友列表（带对方房间布局） |
 | POST 🔒 | `/api/v1/friends/{userId}` | 加好友（单向关注，幂等） |
 | DELETE 🔒 | `/api/v1/friends/{userId}` | 删好友 |
+| GET | `/api/v1/business` | 功能点承包状态：`{day, items:[{shopId,userId,nickname,daysLeft}], mine:[shopId]}`。带 token 时多返回 `mine`，客户端不用自己存 userId |
+| POST 🔒 | `/api/v1/business/{shopId}/take` | 承包 / 续约。一个门牌同时只能有一个承包人，被别人占着返回 **409** |
+| POST 🔒 | `/api/v1/business/{shopId}/release` | 退包（只能退自己的） |
 
-## 4. 数据表（8 张）
+## 4. 数据表（9 张）
 
 | 表 | 用途 |
 |---|---|
@@ -75,6 +78,7 @@ cd E:/QHTML/server && ./home-server.exe
 | `visit_log` | 串门记录 |
 | `friendships` | 单向好友关系 |
 | `world_state` | 世界时钟锚点：`key='clock'` → `value`(totalMinute) + `tick_at` |
+| `businesses` | 功能点承包：`shop_id` 是主键（**天然保证一个门牌只有一个老板**）、`user_id`、`start_day`/`end_day`、`fee`。到期不清行，下一个承包人 upsert 覆盖 |
 
 ## 5. 存档写入的并发控制
 
@@ -123,4 +127,5 @@ minute = total - (day-1) × 1440
 |---|---|---|
 | `curl` 连 `127.0.0.1:8787` 超时 | 环境里有 `http_proxy=127.0.0.1:xxxxx`，把本地请求也代理走了 | 用 `--noproxy '*'`，或 `unset http_proxy https_proxy`；只在这台机器上要处理 |
 | `建表失败: no such column: res_building` | 老库缺 `res_*` 列，而 `schema.sql` 里的 `CREATE INDEX` 比 `migrate()` 的 `ALTER TABLE` 先执行 | 已把该索引挪进 `migrate()` 里建；老库启动时自动补列，无需手动干预 |
+| 两人同时承包同一家店，第二个 409 | 正常行为 | `takeBusiness` 用一条带 WHERE 的 upsert 做「检查 + 占用」，不存在两次请求之间的空窗 |
 | `go: downloading go1.26.0` 卡住 | `go.mod` 要求 1.26，本机 `D:/Go/go` 是 1.22.5 | 用上面第 1 节的 toolchain 路径；或让 Go 自动下载（首次会慢） |

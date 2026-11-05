@@ -942,6 +942,50 @@ function validate(){
     }
   }
 
+  /* V4.14 功能点承包：门牌、承包金、日收益、周期。
+   * 这几处错了会静默变成"承包了但不赚钱"，玩家只会觉得系统坏了。 */
+  {
+    const zoneIds = new Set(((packs['maps/street.map.json'] || {}).zones || []).map(z => z.id));
+    for (const [rel, pack] of Object.entries(packs)){
+      if (pack.schema !== 'business/1') continue;
+      const term = Number(pack.termDays);
+      if (!(term >= 1 && term <= 365)) problems.push('[承包] ' + rel + ' termDays 应在 1..365');
+      const maxOwn = Number(pack.maxOwned);
+      if (!(maxOwn >= 1 && maxOwn <= 6)) problems.push('[承包] ' + rel + ' maxOwned 应在 1..6');
+      const rr = Number(pack.refundRatio);
+      if (!(rr >= 0 && rr <= 1)) problems.push('[承包] ' + rel + ' refundRatio 应在 0..1');
+      const ids = new Set(), codes = new Set(), zones = new Set();
+      if (!Array.isArray(pack.shops) || !pack.shops.length) problems.push('[承包] ' + rel + ' 没有可承包的店铺');
+      for (const s of (pack.shops || [])){
+        const who = '承包 ' + (s.name || s.id || '?');
+        if (!s.id || !s.name) problems.push('[承包] 有店铺缺 id/name');
+        if (ids.has(s.id)) problems.push('[承包] 店铺 id 重复: ' + s.id);
+        ids.add(s.id);
+        // 门牌号是实体的身份：同类两家店必须有两个不同的号
+        const code = String(s.code || '').trim();
+        if (!/^[0-9]{3,6}$/.test(code)) problems.push('[承包] ' + who + ' 的 code 应是 3-6 位数字，实为: ' + code);
+        if (codes.has(code)) problems.push('[承包] 门牌号重复: ' + code + '（同类多家必须各自编号）');
+        codes.add(code);
+        // 一个 zone 只能挂一家，否则"点这家店"没法确定承包的是谁
+        if (zones.has(s.zone)) problems.push('[承包] 同一个 zone 挂了多家店: ' + s.zone);
+        zones.add(s.zone);
+        if (!zoneIds.has(s.zone)) problems.push('[承包] ' + who + ' 的 zone 在地图上不存在: ' + s.zone);
+        const fee = Number(s.fee), daily = Number(s.daily);
+        if (!(fee > 0)) problems.push('[承包] ' + who + ' 承包金应 > 0');
+        if (!(daily > 0)) problems.push('[承包] ' + who + ' 日收益应 > 0');
+        if (fee > 0 && daily > 0){
+          const net = daily * term - fee;
+          if (net <= 0) problems.push('[承包] ' + who + ' 一个周期净利为负（日收 ' + daily + ' × ' + term + ' ≤ 承包金 ' + fee + '）');
+          else {
+            const rate = net / fee;
+            if (rate < 0.05 || rate > 0.6)
+              problems.push('[承包] ' + who + ' 月回报率 ' + (rate * 100).toFixed(0) + '% 不在 5%-60% 之间（太低没人包，太高破坏经济）');
+          }
+        }
+      }
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){
