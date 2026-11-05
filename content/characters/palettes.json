@@ -1,0 +1,106 @@
+{
+  "schema": "characters/1",
+  "slots": {
+    "skin": {
+      "label": "肤色",
+      "values": [
+        "#f3c9a0",
+        "#f0b98e",
+        "#e8a878",
+        "#d18a5f",
+        "#b96f43",
+        "#8d4f2b"
+      ]
+    },
+    "hair": {
+      "label": "发色",
+      "values": [
+        "#2b2b2b",
+        "#5a3a24",
+        "#8a5a2b",
+        "#c79a3a",
+        "#d95f5f",
+        "#7a7a7a",
+        "#e0d8c8"
+      ]
+    },
+    "top": {
+      "label": "上衣",
+      "values": [
+        "#4f8ac9",
+        "#c94f6b",
+        "#5fae62",
+        "#c8964a",
+        "#8a6fc9",
+        "#e0b84f",
+        "#f2ede2",
+        "#2b4a6b"
+      ]
+    },
+    "bottom": {
+      "label": "下装",
+      "values": [
+        "#5d5a78",
+        "#4a6b52",
+        "#8a4a4a",
+        "#3a3a4a",
+        "#6b5a3a",
+        "#2b2b2b"
+      ]
+    },
+    "shoes": {
+      "label": "鞋子",
+      "values": [
+        "#8a5a2b",
+        "#2b2b2b",
+        "#f2ede2",
+        "#c0392b",
+        "#4a6b8a"
+      ]
+    },
+    "face": {
+      "label": "五官",
+      "values": [
+        "#3b3226",
+        "#2b2b2b",
+        "#5a3a24"
+      ]
+    }
+  },
+  "hairStyles": [
+    {
+      "index": 0,
+      "name": "短发"
+    },
+    {
+      "index": 1,
+      "name": "中发"
+    },
+    {
+      "index": 2,
+      "name": "长发"
+    },
+    {
+      "index": 3,
+      "name": "卷发"
+    }
+  ],
+  "faceStyles": [
+    {
+      "index": 0,
+      "name": "微笑"
+    },
+    {
+      "index": 1,
+      "name": "开心"
+    },
+    {
+      "index": 2,
+      "name": "平静"
+    },
+    {
+      "index": 3,
+      "name": "惊讶"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "verbs/1",
+  "id": "verbs.default",
+  "note": "交互动词注册表：家具通过 interaction.verb 引用这里的条目，引擎不再写死任何 action。新增普通交互（只改数值）= 只加一条，代码零改动；带特殊流程的交互用 hook，hook 名需在引擎 VERB_HOOKS 里注册。",
+
+  "verbs": {
+    "sleep": {
+      "label": "睡觉",
+      "durationSec": 2,
+      "sfx": "sleep",
+      "hook": "sleepToMorning",
+      "desc": "夜间入睡会直接到次日 7:00，并按装修度给情绪加成"
+    },
+    "rest":   { "label": "休息", "durationSec": 2, "sfx": "ok" },
+    "eat":    { "label": "吃饭", "durationSec": 2, "sfx": "ok" },
+    "snack":  { "label": "取食", "durationSec": 2, "sfx": "ok" },
+    "cook":   { "label": "做饭", "durationSec": 2, "sfx": "ok" },
+    "drink":  { "label": "喝水", "durationSec": 2, "sfx": "ok" },
+    "watch":  { "label": "看电视", "durationSec": 2, "sfx": "ok" },
+    "music":  { "label": "听音乐", "durationSec": 2, "sfx": "ok" },
+    "read":   { "label": "看书", "durationSec": 2, "sfx": "ok" },
+    "water":  { "label": "浇水", "durationSec": 2, "sfx": "ok" },
+    "wc":     { "label": "上厕所", "durationSec": 2, "sfx": "ok" },
+    "bath":   { "label": "泡澡", "durationSec": 2, "sfx": "ok" },
+    "net":    { "label": "上网", "durationSec": 2, "sfx": "ok" }
+  },
+
+  "reserved": {
+    "note": "以下为预留动词，引擎侧尚未有 hook；新增物品时可直接引用，不需要改引擎（普通数值型交互）。带 hook 的需先在 VERB_HOOKS 注册。",
+    "plant": { "label": "种植", "durationSec": 3, "sfx": "place", "needsItems": "seed" },
+    "harvest": { "label": "收获", "durationSec": 2, "sfx": "pickup" },
+    "feed":  { "label": "投喂", "durationSec": 2, "sfx": "ok", "needsItems": "petfood" },
+    "pet":   { "label": "撸一撸", "durationSec": 2, "sfx": "ok" },
+    "play":  { "label": "玩一局", "durationSec": 3, "sfx": "ok" },
+    "shower": { "label": "淋浴", "durationSec": 3, "sfx": "ok" },
+    "laundry": { "label": "洗衣服", "durationSec": 3, "sfx": "ok" },
+    "brew":  { "label": "冲咖啡", "durationSec": 3, "sfx": "ok", "needsItems": "coffee_bean" },
+    "craft": { "label": "制作", "durationSec": 3, "sfx": "build" }
+  }
+}

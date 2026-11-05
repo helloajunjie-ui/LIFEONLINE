@@ -1,0 +1,1122 @@
+#!/usr/bin/env node
+/**
+ * 内容层工具链（单一数据源 → 校验 → 打包）
+ *
+ *   node tools/content.mjs extract    从 2.5D小屋.html 抽取内容 → content/ 与 assets/
+ *   node tools/content.mjs validate   校验内容包（引用完整性、数值范围、地图可达性）
+ *   node tools/content.mjs bundle     打包成服务端用的 server/content/content.json
+ *   node tools/content.mjs all        extract + validate + bundle
+ *
+ * 设计原则：
+ *   1. content/ 是唯一真相；server/content/content.json 只是构建产物
+ *   2. 实体 id 一经发布**永不改名**（存档里存的是 id，改名等于删档）
+ *   3. 跨包引用必须能被校验器静态检查出来，不允许"运行时才炸"
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import crypto from 'node:crypto';
+
+const ROOT = 'E:/QHTML';
+const GAME = path.join(ROOT, '2.5D小屋.html');
+const CONTENT = path.join(ROOT, 'content');
+const ASSETS = path.join(ROOT, 'assets');
+/** 引擎 VERB_HOOKS 里已注册的特殊行为。新增 hook 时必须同时改引擎与这里（否则校验器报错） */
+const HOOK_WHITELIST = ['sleepToMorning', 'npcTalk'];
+
+const BUNDLE = path.join(ROOT, 'server', 'content', 'content.json');
+const VERSIONS = path.join(CONTENT, 'versions.json');
+
+/* ------------------------- 模块版本台账 -------------------------
+ * 每个内容包有独立的 {version, hash, updatedAt}：
+ *   hash 由内容自动计算（去掉了 generatedAt 这类易变字段）
+ *   version 在 hash 变化时自动 +1 —— 不需要人手动记，也不会漏
+ * 这样"哪一块变了"是可核查的，客户端也只更新变化的那一块。 */
+function stableStringify(v){
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+  const keys = Object.keys(v).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+}
+function packHash(pack){
+  const clone = JSON.parse(JSON.stringify(pack));
+  delete clone.generatedAt;
+  return crypto.createHash('sha256').update(stableStringify(clone)).digest('hex').slice(0, 12);
+}
+function loadVersions(){
+  try { return JSON.parse(fs.readFileSync(VERSIONS, 'utf8')); } catch(e){ return {}; }
+}
+/** 比对哈希，给每个包算出（可能递增的）版本号并落盘 */
+function bumpVersions(packMap){
+  const prev = loadVersions();
+  const next = {};
+  let bumpCount = 0;
+  for (const [id, pack] of Object.entries(packMap)){
+    const hash = packHash(pack);
+    const old = prev[id];
+    if (!old){
+      next[id] = { version: 1, hash, updatedAt: new Date().toISOString() };
+      bumpCount++;
+      continue;
+    }
+    if (old.hash === hash){
+      next[id] = { version: old.version, hash, updatedAt: old.updatedAt };
+    } else {
+      next[id] = { version: old.version + 1, hash, updatedAt: new Date().toISOString() };
+      bumpCount++;
+      console.log(`  ↑ ${id}  ${old.version} → ${old.version + 1}`);
+    }
+  }
+  fs.writeFileSync(VERSIONS, JSON.stringify(next, null, 2) + '\n', 'utf8');
+  return { versions: next, bumpCount };
+}
+
+const src = readOrDie(GAME);
+const problems = [];
+
+/* ============================== 解析工具 ============================== */
+
+function readOrDie(p){
+  if (!fs.existsSync(p)) { console.error('找不到文件: ' + p); process.exit(2); }
+  return fs.readFileSync(p, 'utf8');
+}
+
+/** 取 `const NAME = <literal>;` 的字面量并求值（支持对象/数组/嵌套） */
+function grabValue(name){
+  const re = new RegExp('const\\s+' + name + '\\s*=\\s*');
+  const m = re.exec(src);
+  if (!m) throw new Error('未找到常量 ' + name);
+  let i = m.index + m[0].length;
+  const start = i;
+  let depth = 0, inStr = null;
+  for (; i < src.length; i++){
+    const ch = src[i];
+    if (inStr){
+      if (ch === '\\'){ i++; continue; }
+      if (ch === inStr) inStr = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`'){ inStr = ch; continue; }
+    if (ch === '[' || ch === '{' || ch === '(') depth++;
+    else if (ch === ']' || ch === '}' || ch === ')') depth--;
+    else if (ch === ';' && depth === 0) break;
+  }
+  const literal = src.slice(start, i);
+  return vm.runInNewContext('(' + literal + ')', Object.create(null), { timeout: 3000 });
+}
+
+function grabNumber(re, label){
+  const m = re.exec(src);
+  if (!m) throw new Error('未找到 ' + label);
+  return Number(m[1]);
+}
+
+const CATEGORY = { '家具': 'furniture', '电器': 'appliance', '装饰': 'decor' };
+
+/* ============================== extract ============================== */
+
+function extract(){
+  // 数据已经搬到 content/（引擎改为读内容层），此时再从 HTML 抽取是反向操作。
+  // 直接拒绝，避免把 content/ 里手工维护的内容覆盖掉。
+  if (!/const FURNITURE_CATALOG = \[/.test(src)){
+    console.error('extract 已停用：FURNITURE_CATALOG 现在来自 content/catalog/*.json，不再是 HTML 里的字面量。');
+    console.error('  日常改内容：直接编辑 content/*.json，然后运行 node tools/content.mjs bundle');
+    console.error('  只有从旧版单文件重建内容时才需要 extract（需先把字面量放回 HTML）。');
+    process.exit(3);
+  }
+  fs.mkdirSync(CONTENT, { recursive: true });
+  fs.mkdirSync(path.join(ASSETS, 'furniture'), { recursive: true });
+
+  const originMatch = /const HOUSE_X = (\d+),\s*HOUSE_Y = (\d+)/.exec(src);
+  if (!originMatch) throw new Error('未找到 HOUSE_X / HOUSE_Y');
+  const HOUSE_X = Number(originMatch[1]);
+  const YARD = Number(originMatch[2]);
+
+  /* ---- 1. 家具目录 ---- */
+  const catalog = grabValue('FURNITURE_CATALOG');
+  const svgDefs = grabSvgDefs();
+
+  const toItem = (d, i) => {
+    const asset = svgDefs[d.id];
+    return {
+      id: d.id,
+      name: d.name,
+      category: CATEGORY[d.cat] || 'misc',
+      tags: deriveTags(d),
+      price: d.price,
+      footprint: { w: d.w, h: d.h },
+      cozy: d.cozy || 0,
+      placement: {
+        indoor: true,
+        walkable: !!d.walk,
+        wallMounted: false,
+        blocksPath: !d.walk,
+        unique: false
+      },
+      interaction: d.action ? {
+        verb: d.action,
+        durationSec: 2,
+        effects: d.fx || {},
+        special: d.action === 'sleep' ? 'sleepToMorning' : null
+      } : null,
+      asset: asset ? {
+        kind: 'svg',
+        ref: 'assets/furniture/' + d.id + '.svg',
+        size: { w: asset.w, h: asset.h },
+        anchor: { ax: asset.ax, ay: asset.ay }
+      } : null,
+      ui: { icon: d.id, desc: d.desc, order: i * 10 }
+    };
+  };
+
+  const items = catalog.map(toItem);
+  const core = items.filter(it => ['bed','sofa','dining','fridge','stove','sink','tv','stereo','bookshelf','plant','wardrobe','lamp','toilet','bathtub','pc'].includes(it.id));
+  const decor = items.filter(it => !core.includes(it));
+
+  writePack('catalog/furniture.core.json', {
+    schema: 'catalog/1',
+    note: '核心家具：有交互数值效果的一批',
+    items: core
+  });
+  writePack('catalog/items.decor.json', {
+    schema: 'catalog/1',
+    note: '纯装修装饰：只贡献装修度，或提供可走/可贴墙等放置特性',
+    items: decor
+  });
+
+  /* ---- 2. SVG 素材落盘 ---- */
+  let svgCount = 0;
+  for (const [id, def] of Object.entries(svgDefs)){
+    fs.writeFileSync(path.join(ASSETS, 'furniture', id + '.svg'), def.svg.trim() + '\n', 'utf8');
+    svgCount++;
+  }
+
+  /* ---- 3. 房型 / 风格 ---- */
+  const levels = grabValue('HOUSE_LEVELS').map((lv, i) => ({
+    id: 'house.lv' + i,
+    level: i,
+    name: lv.name,
+    price: lv.price,
+    footprint: { w: lv.w, h: lv.h },
+    // 隔墙坐标相对房子左上角外墙（HOUSE_X/HOUSE_Y 由引擎给出）
+    walls: lv.walls.map(w => ({ x: w[0], y: w[1] })),
+    zones: deriveZones(lv),
+    door: { edge: 'bottom', offset: 'center' }
+  }));
+
+  writePack('house/levels.json', {
+    schema: 'house/1',
+    note: '房型等级：升级只扩大室内区块，左上角固定不动；walls 为室内隔断（留门洞）',
+    origin: { x: HOUSE_X, y: YARD },
+    yardMargin: 3,
+    levels
+  });
+
+  const floors = grabValue('FLOOR_STYLES');
+  const walls = grabValue('WALL_STYLES');
+  writePack('house/styles.json', {
+    schema: 'styles/1',
+    floors: floors.map((f, i) => ({ id: 'floor.' + i, index: i, name: f.name, price: f.price, palette: { a: f.a, b: f.b, line: f.line, grout: f.grout }, pattern: f.pattern })),
+    walls: walls.map((w, i) => ({ id: 'wall.' + i, index: i, name: w.name, price: w.price, palette: { top: w.top, right: w.right, left: w.left, trim: w.trim, border: w.border } }))
+  });
+
+  /* ---- 4. 地图 ---- */
+  const yardDecor = grabValue('YARD_DECOR');
+  writePack('maps/home.map.json', {
+    schema: 'map/1',
+    id: 'map.home',
+    renderer: 'interior',
+    note: '家 = 房子 + 院子；网格尺寸由房型推导（室内 w/h + 两侧各 3 格院子）',
+    base: { houseOrigin: { x: HOUSE_X, y: YARD }, yardMargin: 3 },
+    yardDecor: yardDecor.map(d => ({ kind: d.kind, at: [d.gx, d.gy] })),
+    portals: [
+      { id: 'home.toStreet', role: 'exit', at: { x: 1, y: 'bottom-1' }, target: 'map.street' },
+      { id: 'home.door', role: 'innerDoor', at: { edge: 'bottom', offset: 'center' }, target: null }
+    ],
+    spawn: { rule: 'houseCenter', fallback: 'nearestFree' }
+  });
+
+  const STREET_W = grabNumber(/const STREET_W = (\d+), STREET_H = (\d+)/, 'STREET_W');
+  const STREET_H = grabNumber(/const STREET_W = \d+, STREET_H = (\d+)/, 'STREET_H');
+  const houses = grabValue('STREET_HOUSES');
+  const trees = grabValue('STREET_TREES');
+  const neighbors = grabValue('NEIGHBORS');
+  writePack('maps/street.map.json', {
+    schema: 'map/1',
+    id: 'map.street',
+    renderer: 'neighborhood',
+    grid: { w: STREET_W, h: STREET_H },
+    houses: houses.map((h, i) => ({
+      id: 'house.' + h.name,
+      label: h.name,
+      rect: { x: h.x, y: h.y, w: h.w, h: h.h },
+      palette: { body: h.color },
+      door: { edge: 'bottom', offset: 'center' },
+      owner: neighbors[i] ? 'npc.' + neighbors[i].id : null
+    })),
+    trees: trees.map(t => ({ kind: 'tree', at: [t[0], t[1]] })),
+    portals: [
+      { id: 'street.toHome', role: 'enter', at: { x: 1, y: 'bottom-2' }, target: 'map.home' }
+    ],
+    spawn: { x: 1, y: STREET_H - 2 }
+  });
+
+  /* ---- 5. 角色 ---- */
+  writePack('characters/palettes.json', {
+    schema: 'characters/1',
+    slots: {
+      skin:   { label: '肤色', values: grabValue('SKIN_TONES') },
+      hair:   { label: '发色', values: grabValue('HAIR_COLORS') },
+      top:    { label: '上衣', values: grabValue('TOP_COLORS') },
+      bottom: { label: '下装', values: grabValue('BOTTOM_COLORS') },
+      shoes:  { label: '鞋子', values: grabValue('SHOE_COLORS') },
+      face:   { label: '五官', values: ['#3b3226', '#2b2b2b', '#5a3a24'] }
+    },
+    hairStyles: grabValue('HAIR_STYLES').map((n, i) => ({ index: i, name: n })),
+    faceStyles: grabValue('FACE_STYLES').map((n, i) => ({ index: i, name: n }))
+  });
+
+  writePack('characters/player.default.json', {
+    schema: 'characters/1',
+    id: 'player.default',
+    person: { name: '我的屋主', gender: '女', role: '自由职业', marital: '单身', address: '幸福小区 · 1栋 101' },
+    appearance: grabValue('APPEARANCE')
+  });
+
+  writePack('characters/npcs.neighbors.json', {
+    schema: 'characters/1',
+    note: '小区 NPC：spawn 为街景初始格；home 指向 street.map 里的房屋 id',
+    npcs: neighbors.map((n, i) => ({
+      id: 'npc.' + n.id,
+      name: n.name,
+      appearance: n.appearance,
+      spawn: { x: n.fx, y: n.fy },
+      home: 'house.' + (houses[i] ? houses[i].name : ''),
+      behavior: { kind: 'wander', radius: { x: 4, y: 3 }, waitSec: [1.5, 4] },
+      dialogues: {
+        street: ['今天天气不错呀。', '小区最近挺安静的。'],
+        visit: ['来啦？坐坐。', '家里有点乱，别介意。']
+      }
+    }))
+  });
+
+  /* ---- 6. 规则 ---- */
+  const decay = grabValue('DECAY');
+  const statsDef = grabValue('STATS');
+  const workCost = grabValue('WORK_COST');
+  writePack('rules/survival.json', {
+    schema: 'rules/1',
+    id: 'rules.survival.default',
+    stats: {
+      hunger:  { label: '饥饿', max: 100, initial: statsDef.hunger,  decayPerGameMinute: decay.hunger,  criticalBelow: 35 },
+      thirst:  { label: '口渴', max: 100, initial: statsDef.thirst,  decayPerGameMinute: decay.thirst,  criticalBelow: 35 },
+      emotion: { label: '情绪', max: 100, initial: statsDef.emotion, decayPerGameMinute: grabValue('EMOTION_DECAY'), criticalBelow: 30 }
+    },
+    clock: {
+      startMinute: 8 * 60,
+      minutesPerRealSecond: { '0': 0, '1': 1, '2': 2 },
+      dayRolloverMinute: 24 * 60
+    },
+    work: {
+      durationSec: grabValue('WORK_TIME'),
+      pay: grabValue('WORK_PAY'),
+      cost: { hunger: workCost.hunger, thirst: workCost.thirst }
+    },
+    sleep: {
+      fromHour: 21, toHour: 5, wakeMinute: 7 * 60,
+      cost: { hunger: 12, thirst: 12 }
+    }
+  });
+
+  writePack('rules/economy.json', {
+    schema: 'rules/1',
+    id: 'rules.economy.default',
+    currency: 'CNY',
+    startMoney: 500,
+    cozy: {
+      // 只允许白名单函数：min/max/round/floor/ceil/sqrt
+      bonusExpr: 'min(20, round(sqrt(cozy) * 1.5))',
+      morningScale: 0.6,
+      tiers: [
+        { min: 0,  name: '毛坯房',   stars: 0 },
+        { min: 18, name: '有点样子', stars: 1 },
+        { min: 35, name: '温馨小屋', stars: 2 },
+        { min: 55, name: '精致小窝', stars: 3 },
+        { min: 80, name: '梦想之家', stars: 4 }
+      ]
+    },
+    social: { streetChatEmotion: 10, visitChatEmotion: 12, chatCooldownSec: 1.5 }
+  });
+
+  writePack('ui/strings.zh-CN.json', {
+    schema: 'ui/1',
+    locale: 'zh-CN',
+    note: '界面文案种子；后续把 HTML 里的硬编码文案逐步搬进来，支持多语言',
+    strings: {
+      'app.title': '我的 2.5D 小屋',
+      'hud.work': '工作 +¥',
+      'hud.shop': '商店',
+      'hud.char': '人物',
+      'hud.edit': '整理',
+      'hud.decor': '装修',
+      'hud.expand': '房型',
+      'hud.scene.street': '小区',
+      'hud.scene.home': '回家',
+      'hud.home': '回原位',
+      'panel.shop': '家具商店',
+      'panel.inventory': '我的仓库',
+      'panel.decor': '房间装修',
+      'panel.upgrade': '房型扩建',
+      'stat.hunger': '饥饿',
+      'stat.thirst': '口渴',
+      'stat.emotion': '情绪',
+      'stat.money': '金钱',
+      'stat.cozy': '装修度'
+    }
+  });
+
+  /* ---- 7. manifest ---- */
+  const packs = listPacks();
+  // 给每个包算独立版本（hash 变了就 +1），结果写进 manifest.modules
+  const packMap = {};
+  for (const rel of packs) packMap[rel] = JSON.parse(fs.readFileSync(path.join(CONTENT, rel), 'utf8'));
+  const { versions, bumpCount } = bumpVersions(packMap);
+  writePack('manifest.json', {
+    schema: 'manifest/1',
+    contentVersion: 1,
+    generatedAt: new Date().toISOString(),
+    note: 'content/ 为唯一真相；modules 是每个内容包的独立版本（hash 变化时 version 自动 +1）',
+    modules: versions,
+    packs
+  });
+  console.log('模块版本：' + Object.keys(versions).length + ' 个，本次变更 ' + bumpCount + ' 个');
+
+  console.log(`extract 完成：catalog ${items.length} 件（core ${core.length} / decor ${decor.length}），SVG ${svgCount} 个，房型 ${levels.length}，地图 2，NPC ${neighbors.length}`);
+}
+
+function grabSvgDefs(){
+  const re = /\n {2}([a-z_][a-z0-9_]*): \{w:\s*(\d+),\s*h:\s*(\d+),\s*ax:\s*(\d+),\s*ay:\s*(\d+),\s*svg:\s*\r?\n`([\s\S]*?)`\}/g;
+  const out = {};
+  let m;
+  while ((m = re.exec(src))){
+    out[m[1]] = { w: +m[2], h: +m[3], ax: +m[4], ay: +m[5], svg: m[6] };
+  }
+  if (!Object.keys(out).length) throw new Error('未解析到任何 SVG 素材');
+  return out;
+}
+
+function deriveTags(d){
+  const t = [];
+  if (['sleep','rest','watch','music','read','bath','net','wc'].includes(d.action)) t.push('comfort');
+  if (['eat','cook','snack'].includes(d.action)) t.push('food');
+  if (d.action === 'drink' || d.action === 'snack') t.push('water');
+  if (d.cat === '电器') t.push('electric');
+  if (d.cat === '装饰') t.push('decor');
+  if (d.walk) t.push('walkable');
+  return t;
+}
+
+/** 依据隔墙把室内切成区域（仅用于文档/校验，引擎可后续消费） */
+function deriveZones(lv){
+  if (!lv.walls.length) return [{ name: 'main', rect: { x: 0, y: 0, w: lv.w, h: lv.h } }];
+  const zones = [];
+  const xs = [...new Set(lv.walls.map(w => w[0]))].sort((a, b) => a - b);
+  const ys = [...new Set(lv.walls.map(w => w[1]))].sort((a, b) => a - b);
+  for (let i = 0; i < xs.length; i++){
+    zones.push({ name: 'zone.w' + i, rect: { x: i === 0 ? 0 : xs[i], y: 0, w: lv.w, h: lv.h } });
+  }
+  if (!zones.length && ys.length) zones.push({ name: 'zone.main', rect: { x: 0, y: 0, w: lv.w, h: lv.h } });
+  return zones;
+}
+
+function writePack(rel, data){
+  const p = path.join(CONTENT, rel);
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n', 'utf8');
+}
+
+function listPacks(){
+  const out = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })){
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (e.name.endsWith('.json') && e.name !== 'manifest.json' && e.name !== 'versions.json'){
+        out.push(path.relative(CONTENT, full).split(path.sep).join('/'));
+      }
+    }
+  };
+  walk(CONTENT);
+  return out.sort();
+}
+
+/* ============================== validate ============================== */
+
+function loadPacks(){
+  const manifest = JSON.parse(fs.readFileSync(path.join(CONTENT, 'manifest.json'), 'utf8'));
+  /* 以磁盘实际文件为准：新增内容包不应该要求先手工改 manifest
+   * （历史上就因为 loadPacks 只读 manifest.packs，导致新加的包被静默忽略） */
+  const onDisk = listPacks();
+  const packs = {};
+  for (const rel of onDisk){
+    const p = path.join(CONTENT, rel);
+    if (!fs.existsSync(p)){ problems.push(`[缺失] 包不存在: ${rel}`); continue; }
+    packs[rel] = JSON.parse(fs.readFileSync(p, 'utf8'));
+  }
+  for (const rel of (manifest.packs || [])){
+    if (!onDisk.includes(rel)) problems.push(`[清单] manifest 引用了磁盘上已不存在的包: ${rel}`);
+  }
+  manifest.packs = onDisk;
+  return { manifest, packs };
+}
+
+function validate(){
+  const { manifest, packs } = loadPacks();
+  const all = Object.values(packs);
+
+  /* V1 包级必需字段 */
+  const REQUIRED = {
+    'catalog/1': ['items'],
+    'house/1': ['levels'],
+    'map/1': ['id', 'renderer'],
+    'careers/1': ['jobs'],
+    'achievements/1': ['groups', 'achievements'],
+    'residence/1': ['buildings'],
+    'characters/1': [],
+    'rules/1': [],
+    'styles/1': ['floors', 'walls'],
+    'environment/1': [],
+    'ui/1': ['strings']
+  };
+  for (const [rel, pack] of Object.entries(packs)){
+    for (const f of (REQUIRED[pack.schema] || [])){
+      if (pack[f] === undefined) problems.push(`[字段] ${rel} 缺少必需字段 ${f}`);
+    }
+  }
+
+  /* V2 家具实体：必需字段 / id 唯一 / 数值范围 / 素材存在 */
+  const ENTITY_FIELDS = ['id', 'name', 'category', 'price', 'footprint', 'cozy', 'placement', 'asset'];
+  const items = all.flatMap(p => p.items || []);
+  const seen = new Set();
+  for (const it of items){
+    for (const f of ENTITY_FIELDS){
+      if (it[f] === undefined) problems.push(`[字段] 家具 ${it.id || '(无 id)'} 缺少 ${f}`);
+    }
+    if (seen.has(it.id)) problems.push(`[重复] 家具 id 重复: ${it.id}`);
+    seen.add(it.id);
+    if (!/^[a-z][a-z0-9_]*$/.test(it.id)) problems.push(`[命名] 家具 id 建议小写下划线: ${it.id}`);
+    if (typeof it.price !== 'number' || it.price < 0) problems.push(`[数值] ${it.id} price 非法: ${it.price}`);
+    const fp = it.footprint || {};
+    if (!(fp.w >= 1 && fp.w <= 4 && fp.h >= 1 && fp.h <= 4)) problems.push(`[数值] ${it.id} 占地越界: ${fp.w}x${fp.h}`);
+    if (!(it.cozy >= 0 && it.cozy <= 10)) problems.push(`[数值] ${it.id} cozy 越界: ${it.cozy}`);
+    if (it.asset && it.asset.ref){
+      const ap = path.join(ROOT, it.asset.ref);
+      if (!fs.existsSync(ap)) problems.push(`[资源] ${it.id} 素材不存在: ${it.asset.ref}`);
+      else if (!/<svg[\s>]/.test(fs.readFileSync(ap, 'utf8'))) problems.push(`[资源] ${it.id} 素材不是合法 SVG`);
+    } else {
+      problems.push(`[资源] ${it.id} 缺少 asset.ref`);
+    }
+    if (it.interaction){
+      if (!it.interaction.verb) problems.push(`[规则] ${it.id} interaction 缺少 verb`);
+      for (const [k, v] of Object.entries(it.interaction.effects || {})){
+        if (!['hunger','thirst','emotion'].includes(k)) problems.push(`[规则] ${it.id} 未知效果键: ${k}`);
+        if (typeof v !== 'number') problems.push(`[规则] ${it.id} 效果 ${k} 非数字`);
+      }
+    }
+  }
+
+  /* V3 房型：隔墙必须在室内范围内、且不能压门 */
+  const house = packs['house/levels.json'];
+  if (house){
+    const origin = house.origin || { x: 3, y: 3 };
+    for (const lv of house.levels){
+      const innerW = lv.footprint.w, innerH = lv.footprint.h;
+      const minX = origin.x + 1, maxX = origin.x + innerW;
+      const minY = origin.y + 1, maxY = origin.y + innerH;
+      const inX = (x) => x >= minX && x <= maxX;
+      const inY = (y) => y >= minY && y <= maxY;
+      for (const w of lv.walls){
+        if (!inX(w.x) || !inY(w.y)){
+          problems.push(`[房型] ${lv.name} 隔墙越界 (${w.x},${w.y})，室内范围 x[${minX},${maxX}] y[${minY},${maxY}]`);
+        }
+      }
+      // 门：下墙中央
+      const doorX = origin.x + Math.floor(innerW / 2) + 1;
+      const doorY = origin.y + innerH + 1;
+      if (lv.walls.some(w => w.x === doorX && w.y === doorY)) problems.push(`[房型] ${lv.name} 隔墙压住了房门 (${doorX},${doorY})`);
+    }
+  }
+
+  /* V4.5 交互系统完整性 —— 这是"加物品/加交互"最容易出错的地方：
+   *   · 物品引用了没注册的 verb      → 玩家点了没反应
+   *   · effects 里写了没声明的资源    → 数值静默丢失
+   *   · category 不在分类表里         → 商店分组/图标兜底失效
+   *   · consumes/produces 指向不存在的物品 → 扣不掉/发不出  */
+  const statIds = new Set(Object.keys((packs['rules/survival.json'] || {}).stats || {}));
+  const verbPack = packs['interaction/verbs.json'];
+  const knownVerbs = new Set();
+  if (verbPack){
+    for (const k of Object.keys(verbPack.verbs || {})) knownVerbs.add(k);
+    for (const k of Object.keys(verbPack.reserved || {})){
+      if (k !== 'note') knownVerbs.add(k);
+    }
+    for (const [k, v] of Object.entries(verbPack.verbs || {})){
+      if (!v.label) problems.push(`[交互] verb ${k} 缺少 label`);
+      if (v.durationSec !== undefined && !(v.durationSec > 0)) problems.push(`[交互] verb ${k} 的 durationSec 必须 > 0`);
+      if (v.hook && !HOOK_WHITELIST.includes(v.hook)) {
+        problems.push(`[交互] verb ${k} 的 hook "${v.hook}" 未在引擎 VERB_HOOKS 注册（可用：${HOOK_WHITELIST.join('/')}）`);
+      }
+      for (const sk of Object.keys(v.effects || {})){
+        if (!statIds.has(sk)) problems.push(`[交互] verb ${k} 的效果引用了未声明的资源 ${sk}`);
+      }
+    }
+  } else {
+    problems.push('[交互] 缺少 interaction/verbs.json');
+  }
+
+  const catPack = packs['catalog/categories.json'];
+  const catIds = new Set();
+  if (catPack){
+    const seenOrder = [];
+    for (const c of catPack.categories || []){
+      if (!c.id) { problems.push('[分类] 条目缺少 id'); continue; }
+      if (catIds.has(c.id)) problems.push(`[分类] id 重复: ${c.id}`);
+      catIds.add(c.id);
+      if (c.order !== undefined) seenOrder.push(c.order);
+    }
+  } else {
+    problems.push('[分类] 缺少 catalog/categories.json');
+  }
+
+  const itemIds = new Set(items.map(i => i.id));
+  for (const it of items){
+    if (catIds.size && !catIds.has(it.category)){
+      problems.push(`[分类] 物品 ${it.id} 的 category "${it.category}" 不在分类表里`);
+    }
+    const acts = Array.isArray(it.interactions) ? it.interactions : (it.interaction ? [it.interaction] : []);
+    if (Array.isArray(it.interactions) && it.interaction){
+      problems.push(`[交互] 物品 ${it.id} 同时写了 interaction 和 interactions，请只留一个`);
+    }
+    for (const a of acts){
+      if (!a.verb){ problems.push(`[交互] 物品 ${it.id} 有动作缺少 verb`); continue; }
+      if (knownVerbs.size && !knownVerbs.has(a.verb)){
+        problems.push(`[交互] 物品 ${it.id} 引用了未注册的 verb "${a.verb}"`);
+      }
+      if (a.durationSec !== undefined && !(a.durationSec > 0)){
+        problems.push(`[交互] 物品 ${it.id}/${a.verb} 的 durationSec 必须 > 0`);
+      }
+      if (a.hook && !HOOK_WHITELIST.includes(a.hook)){
+        problems.push(`[交互] 物品 ${it.id}/${a.verb} 的 hook "${a.hook}" 未在引擎注册`);
+      }
+      for (const sk of Object.keys(a.effects || {})){
+        if (!statIds.has(sk)) problems.push(`[交互] 物品 ${it.id}/${a.verb} 的效果引用了未声明的资源 ${sk}`);
+      }
+      for (const src of ['consumes', 'produces', 'requirements']){
+        const ref = src === 'requirements' ? (a.requirements && a.requirements.items) : a[src];
+        for (const id of Object.keys(ref || {})){
+          if (!itemIds.has(id)){
+            problems.push(`[交互] 物品 ${it.id}/${a.verb} 的 ${src} 引用了不存在的物品 ${id}`);
+          }
+        }
+      }
+      for (const sk of Object.keys((a.requirements && a.requirements.statMin) || {})){
+        if (!statIds.has(sk)) problems.push(`[交互] 物品 ${it.id}/${a.verb} 的 requirements 引用了未声明的资源 ${sk}`);
+      }
+      if (a.requirements && a.requirements.timeRange){
+        const tr = a.requirements.timeRange;
+        if (!Array.isArray(tr) || tr.length !== 2 || tr.some(h => !(h >= 0 && h <= 24))){
+          problems.push(`[交互] 物品 ${it.id}/${a.verb} 的 timeRange 必须是 [起,止] 且 0–24`);
+        }
+      }
+    }
+  }
+
+  /* V4.6 职业完整性 —— 岗位绑定的分区必须存在，班次/单价/门槛不能写错：
+   *   · zone 写错 → 玩家走到那儿永远打不了卡（且没有任何报错）
+   *   · 班次 start>=end → 一辈子不进班次
+   *   · effects 里写了没声明的资源 → 数值静默丢失  */
+  const careerPack = packs['careers/jobs.json'];
+  if (careerPack){
+    const streetPack = packs['maps/street.map.json'];
+    const zoneIds = new Set((streetPack?.zones || []).map(z => z.id));
+    const statIds = new Set(Object.keys(packs['rules/survival.json']?.stats || {}));
+    const jobIds = new Set();
+    for (const j of careerPack.jobs || []){
+      if (!j.id) { problems.push('[职业] 有岗位缺少 id'); continue; }
+      if (jobIds.has(j.id)) problems.push('[职业] 岗位 id 重复: ' + j.id);
+      jobIds.add(j.id);
+      if (!j.name) problems.push('[职业] ' + j.id + ' 缺少 name');
+      if (!zoneIds.has(j.zone)) problems.push('[职业] ' + j.id + ' 绑定的分区不存在: ' + j.zone);
+      if (!(j.tasks >= 1 && j.tasks <= 24)) problems.push('[职业] ' + j.id + ' tasks 应在 1..24');
+      if (!(j.taskSeconds >= 0.5 && j.taskSeconds <= 30)) problems.push('[职业] ' + j.id + ' taskSeconds 应在 0.5..30');
+      if (!(j.payPerTask > 0)) problems.push('[职业] ' + j.id + ' payPerTask 必须为正');
+      const sh = j.shift || {};
+      if (!(sh.startHour >= 0 && sh.startHour < 24 && sh.endHour > sh.startHour && sh.endHour <= 24)){
+        problems.push('[职业] ' + j.id + ' 班次非法: ' + sh.startHour + '–' + sh.endHour);
+      }
+      for (const field of ['costPerTask', 'finish', 'earlyLeave', 'require']){
+        for (const k of Object.keys(j[field] || {})){
+          if (!statIds.has(k)) problems.push('[职业] ' + j.id + ' 的 ' + field + ' 引用了未声明的资源 ' + k);
+        }
+      }
+    }
+  }
+
+  /* V4.7 成就完整性 —— 目标/奖励写错不会报错，只会"永远达不成"或"发了不存在的物品"：
+   *   · kind 拼错 → 进度恒为 0
+   *   · jobShifts 引用了不存在的岗位 → 只有那个岗位的成就永远不亮
+   *   · reward.items 引用了不存在的家具 → 达成后静默少发东西  */
+  const achPack = Object.entries(packs).find(([rel]) => rel.startsWith('achievements/'))?.[1];
+  const careersPack = packs['careers/jobs.json'];
+  if (achPack){
+    const KINDS = ['day', 'money', 'cozy', 'houseLevel', 'placed', 'shifts', 'jobShifts', 'careerLevel', 'visits'];
+    const groupIds = new Set((achPack.groups || []).map(g => g.id));
+    const jobIdSet = new Set((careersPack?.jobs || []).map(j => j.id));
+    const itemIds = new Set(items.map(i => i.id));
+    const statIds = new Set(Object.keys(packs['rules/survival.json']?.stats || {}));
+    const achIds = new Set();
+    for (const a of achPack.achievements || []){
+      if (!a.id) { problems.push('[成就] 有成就缺少 id'); continue; }
+      if (achIds.has(a.id)) problems.push('[成就] id 重复: ' + a.id);
+      achIds.add(a.id);
+      if (!a.name) problems.push('[成就] ' + a.id + ' 缺少 name');
+      if (groupIds.size && !groupIds.has(a.group)) problems.push('[成就] ' + a.id + ' 的分组不存在: ' + a.group);
+      const g = a.goal || {};
+      if (!KINDS.includes(g.kind)) problems.push('[成就] ' + a.id + ' 未知目标类型: ' + g.kind);
+      if (!(g.value >= 1)) problems.push('[成就] ' + a.id + ' 目标值必须 ≥ 1');
+      if (g.kind === 'jobShifts' && !jobIdSet.has(g.job)) problems.push('[成就] ' + a.id + ' 引用了不存在的岗位: ' + g.job);
+      const rw = a.reward || {};
+      if (rw.money != null && !(rw.money >= 0)) problems.push('[成就] ' + a.id + ' 奖金非法');
+      for (const k of Object.keys(rw.effects || {})){
+        if (!statIds.has(k)) problems.push('[成就] ' + a.id + ' 的 reward.effects 引用了未声明的资源 ' + k);
+      }
+      for (const k of Object.keys(rw.items || {})){
+        if (!itemIds.has(k)) problems.push('[成就] ' + a.id + ' 的 reward.items 引用了不存在的物品 ' + k);
+      }
+    }
+  }
+
+  /* V4.8 住址完整性：楼栋必须真的在地图上；公寓要给楼层与每层房数，否则分不出 1803 这种房号 */
+  const resPack = packs['house/residence.json'];
+  if (resPack){
+    const mapHouseIds = new Set(((packs['maps/street.map.json'] || {}).houses || []).map(h => h.id));
+    const KINDS = ['apartment', 'villa'];
+    const ids = new Set();
+    for (const b of resPack.buildings || []){
+      if (!b.id) { problems.push('[住址] 有楼栋缺少 id'); continue; }
+      if (ids.has(b.id)) problems.push('[住址] 楼栋重复: ' + b.id);
+      ids.add(b.id);
+      if (!mapHouseIds.has(b.id)) problems.push('[住址] 楼栋在地图上不存在: ' + b.id);
+      if (!KINDS.includes(b.kind)) problems.push('[住址] ' + b.id + ' 未知楼栋类型: ' + b.kind);
+      if (b.kind === 'apartment'){
+        if (!(b.floors >= 1 && b.floors <= 60)) problems.push('[住址] ' + b.id + ' floors 应在 1..60');
+        if (!(b.unitsPerFloor >= 1 && b.unitsPerFloor <= 20)) problems.push('[住址] ' + b.id + ' unitsPerFloor 应在 1..20');
+      }
+      if (!b.label) problems.push('[住址] ' + b.id + ' 缺少 label');
+    }
+    const dk = resPack.assign && resPack.assign.defaultKind;
+    if (dk && !KINDS.includes(dk)) problems.push('[住址] assign.defaultKind 非法: ' + dk);
+
+    /* 房态：待售/待租的比例与价格。写错不会崩，但会让"售"或"租"彻底不出现
+     * （比例加起来 0），或者出现负价/0 价（搬进去免费），所以必须拦。 */
+    const u = resPack.units || {};
+    for (const k of ['sale', 'rent', 'vacant']){
+      const st = (u.states || {})[k];
+      if (!st || !st.label) problems.push('[房态] units.states.' + k + ' 缺少 label');
+    }
+    const sp = Number(u.salePercent), rp = Number(u.rentPercent);
+    if (!(sp >= 0 && sp <= 100)) problems.push('[房态] units.salePercent 应在 0..100');
+    if (!(rp >= 0 && rp <= 100)) problems.push('[房态] units.rentPercent 应在 0..100');
+    if (sp + rp > 100) problems.push('[房态] salePercent + rentPercent 超过 100');
+    if (sp + rp <= 0) problems.push('[房态] salePercent + rentPercent 为 0，空房永远不会挂牌');
+    const sale = u.sale || {}, rent = u.rent || {};
+    if (!(sale.base >= 0) || !(sale.perFloor >= 0)) problems.push('[房态] units.sale.base / perFloor 应为非负数');
+    if (!(rent.base >= 0) || !(rent.perFloor >= 0)) problems.push('[房态] units.rent.base / perFloor 应为非负数');
+    if (sale.base + sale.perFloor <= 0) problems.push('[房态] 售价恒为 0，等于白送');
+    if (rent.base + rent.perFloor <= 0) problems.push('[房态] 租金恒为 0，等于白住');
+    if (!(rent.depositMonths >= 1 && rent.depositMonths <= 12)) problems.push('[房态] units.rent.depositMonths 应在 1..12');
+    for (const k of ['sale', 'rent']){
+      const step = (u[k] || {}).roundTo;
+      if (step !== undefined && !(step >= 1)) problems.push('[房态] units.' + k + '.roundTo 应 >= 1');
+    }
+    /* 房产上限：写 0 或负数会让任何人都买不了房；写太大等于没上限（世界容量会失控） */
+    if (!(u.maxPerUser >= 1 && u.maxPerUser <= 6)) problems.push('[房态] units.maxPerUser 应在 1..6');
+    if (!(u.resaleRatio >= 0 && u.resaleRatio <= 1)) problems.push('[房态] units.resaleRatio 应在 0..1');
+  }
+
+  /* V4.9 围栏：围栏矩形要在地图内，大门必须落在外圈那一格上——
+   * 写歪一格，门洞就开在别处（玩家会撞在看不见的栏杆上，或者从墙上走进院子） */
+  for (const [rel, m] of Object.entries(packs)){
+    if (!rel.startsWith('maps/') || !m || !m.fences) continue;
+    const grid = m.grid || {};
+    for (const a of (m.fences.areas || [])){
+      const r = a.rect || {};
+      if (!(r.w > 0 && r.h > 0)) problems.push('[围栏] ' + rel + ' 的 ' + (a.id || '?') + ' 缺少 rect');
+      if (r.x < 1 || r.y < 1 || r.x + r.w > (grid.w || 0) - 1 || r.y + r.h > (grid.h || 0) - 1)
+        problems.push('[围栏] ' + rel + ' 的 ' + (a.id || '?') + ' 超出地图范围');
+      for (const g of (a.gates || [])){
+        if (!(g.x > 0 && g.y > 0)) { problems.push('[围栏] ' + (a.id || '?') + ' 大门坐标非法'); continue; }
+        const onRing = g.x === r.x - 1 || g.x === r.x + r.w || g.y === r.y - 1 || g.y === r.y + r.h;
+        if (!onRing) problems.push('[围栏] ' + (a.id || '?') + ' 的大门 (' + g.x + ',' + g.y + ') 不在围栏上');
+      }
+      for (const zid of (a.gateAt || [])){
+        if (!(m.zones || []).some(z => z.id === zid)) problems.push('[围栏] ' + (a.id || '?') + ' gateAt 引用了不存在的分区: ' + zid);
+      }
+    }
+  }
+
+  /* V4.10 车款：4S 店卖的车。价格写负/速度写 0 会让"买得起但开不动"或"倒贴钱" */
+  for (const [rel, pack] of Object.entries(packs)){
+    if (!rel.startsWith('vehicles/')) continue;
+    const ids = new Set();
+    if (!Array.isArray(pack.models) || !pack.models.length) problems.push('[车款] ' + rel + ' 没有 models');
+    for (const m of (pack.models || [])){
+      if (!m.id || !m.name) problems.push('[车款] ' + rel + ' 有车款缺 id/name');
+      if (ids.has(m.id)) problems.push('[车款] 车款重复: ' + m.id);
+      ids.add(m.id);
+      if (!(m.price >= 0)) problems.push('[车款] ' + m.id + ' 价格应 >= 0');
+      if (!(m.speed >= 1)) problems.push('[车款] ' + m.id + ' 车速倍率应 >= 1');
+    }
+    const pz = pack.parking && pack.parking.zone;
+    if (pz){
+      const street = packs['maps/street.map.json'] || {};
+      const zone = (street.zones || []).find(z => z.id === pz);
+      if (!zone) problems.push('[车款] parking.zone 在地图上不存在: ' + pz);
+      else if (zone.kind !== 'parking') problems.push('[车款] parking.zone 不是停车区: ' + pz);
+    }
+  }
+
+  /* V4.11 经济数值：房租周期/回收比例/医院服务。这些数字错得很安静——
+   * effects 键写成 emtion 不会报错，只会让玩家"花了钱没效果" */
+  const econ = packs['rules/economy.json'];
+  if (econ){
+    const statIds = Object.keys((packs['rules/survival.json'] || {}).stats || {});
+    const rc = econ.rent && econ.rent.cycleDays;
+    if (rc !== undefined && !(rc >= 1 && rc <= 30)) problems.push('[经济] rent.cycleDays 应在 1..30');
+    const rr = econ.car && econ.car.resaleRatio;
+    if (rr !== undefined && !(rr >= 0 && rr <= 1)) problems.push('[经济] car.resaleRatio 应在 0..1');
+    const svcs = (econ.clinic && econ.clinic.services) || [];
+    const sids = new Set();
+    for (const s of svcs){
+      if (!s.id || !s.name) problems.push('[经济] 医院服务缺少 id/name');
+      if (sids.has(s.id)) problems.push('[经济] 医院服务重复: ' + s.id);
+      sids.add(s.id);
+      if (!(s.price >= 0)) problems.push('[经济] ' + s.id + ' 价格应 >= 0');
+      if (s.cooldownMinutes !== undefined && !(s.cooldownMinutes >= 0)) problems.push('[经济] ' + s.id + ' 冷却应 >= 0');
+      for (const k of Object.keys(s.effects || {})){
+        if (statIds.length && !statIds.includes(k)) problems.push('[经济] ' + s.id + ' 的效果引用了未声明的资源: ' + k);
+      }
+    }
+  }
+
+  /* V4.12 彩票：票价、号码范围、奖级 patterns。奖级写错不会报错，
+   * 只会让某一档永远中不了（玩家看不出来，只觉得"这彩票有问题"） */
+  for (const [rel, pack] of Object.entries(packs)){
+    if (!rel.startsWith('lottery/')) continue;
+    const R = pack.red || {}, B = pack.blue || {};
+    if (!(pack.price >= 0.5)) problems.push('[彩票] ' + rel + ' 票价应 >= 0.5');
+    if (!(R.pick >= 1 && R.max > R.pick)) problems.push('[彩票] 红球 pick/max 不合法');
+    if (!(B.pick >= 1 && B.max >= B.pick)) problems.push('[彩票] 蓝球 pick/max 不合法');
+    const seen = new Set();
+    for (const t of (pack.tiers || [])){
+      if (!t.id || !t.name) problems.push('[彩票] 奖级缺少 id/name');
+      if (seen.has(t.id)) problems.push('[彩票] 奖级重复: ' + t.id);
+      seen.add(t.id);
+      if (!(t.prize >= 0)) problems.push('[彩票] ' + t.id + ' 奖金应 >= 0');
+      if (!Array.isArray(t.patterns) || !t.patterns.length) problems.push('[彩票] ' + t.id + ' 没有 patterns');
+      for (const p of (t.patterns || [])){
+        if (!(p.red >= 0 && p.red <= R.pick)) problems.push('[彩票] ' + t.id + ' 红球命中数越界: ' + p.red);
+        if (!(p.blue === 0 || p.blue === 1)) problems.push('[彩票] ' + t.id + ' 蓝球的 blue 只能是 0/1');
+      }
+    }
+  }
+
+  /* V4.13 生活开支：食材 / 菜单 / 货架 / 账单 / 不动产增值
+   * 这几处错得最安静——菜单把 hunger 拼成 hunnger，玩家花了钱什么也没发生，
+   * 只会觉得"这游戏坏了"；账单 amount 里写个引擎不认识的键，金额会恒为 0，
+   * 水电费从第一张起就白送。全部前置拦下来。 */
+  {
+    const statIds = new Set(Object.keys((packs['rules/survival.json'] || {}).stats || {}));
+    const zoneIds = new Set(((packs['maps/street.map.json'] || {}).zones || []).map(z => z.id));
+    const metaKeys = new Set(['uses', 'label', 'desc', 'note', 'id', 'name', 'price']);
+    const checkFx = (who, obj) => {
+      if (!statIds.size) return;
+      for (const k of Object.keys(obj || {})){
+        if (metaKeys.has(k)) continue;
+        if (!statIds.has(k)) problems.push('[开支] ' + who + ' 引用了未声明的资源: ' + k);
+      }
+    };
+    const fxOnly = (o) => {
+      const out = {};
+      for (const k in (o || {})) if (!metaKeys.has(k)) out[k] = o[k];
+      return out;
+    };
+
+    if (econ){
+      const food = econ.food;
+      if (food){
+        if (!(food.max >= 1 && food.max <= 200)) problems.push('[开支] food.max 应在 1..200');
+        for (const key of ['cook', 'meal', 'snack']){
+          const f = food[key];
+          if (!f) continue;
+          if (!(f.uses >= 0)) problems.push('[开支] food.' + key + '.uses 应 >= 0');
+          checkFx('food.' + key, fxOnly(f));
+        }
+        if (!food.cook && !food.meal) problems.push('[开支] food 既没有 cook 也没有 meal，做饭这条线会断');
+      }
+
+      for (const g of (econ.groceries || [])){
+        const who = '食材售卖 ' + (g.name || g.zone || '?');
+        if (!g.zone) problems.push('[开支] ' + who + ' 缺少 zone');
+        else if (!zoneIds.has(g.zone)) problems.push('[开支] ' + who + ' 的分区在地图上不存在: ' + g.zone);
+        if (!(g.pack >= 1)) problems.push('[开支] ' + who + ' pack 应 >= 1');
+        if (!(g.price >= 0)) problems.push('[开支] ' + who + ' price 应 >= 0');
+      }
+
+      const rest = econ.restaurant;
+      if (rest){
+        if (rest.zone && !zoneIds.has(rest.zone)) problems.push('[开支] 饭馆分区不存在: ' + rest.zone);
+        const sids = new Set();
+        if (!Array.isArray(rest.menu) || !rest.menu.length) problems.push('[开支] 饭馆没有菜单');
+        for (const d of (rest.menu || [])){
+          if (!d.id || !d.name) problems.push('[开支] 菜品缺 id/name');
+          if (sids.has(d.id)) problems.push('[开支] 菜品重复: ' + d.id);
+          sids.add(d.id);
+          if (!(d.price >= 0)) problems.push('[开支] ' + d.id + ' 价格应 >= 0');
+          checkFx(d.id, fxOnly(d));
+        }
+      }
+
+      const mart = econ.mart;
+      if (mart){
+        if (mart.zone && !zoneIds.has(mart.zone)) problems.push('[开支] 超市分区不存在: ' + mart.zone);
+        const gids = new Set();
+        for (const g of (mart.goods || [])){
+          if (!g.id || !g.name) problems.push('[开支] 货架商品缺 id/name');
+          if (gids.has(g.id)) problems.push('[开支] 货架商品重复: ' + g.id);
+          gids.add(g.id);
+          if (!(g.price >= 0)) problems.push('[开支] ' + g.id + ' 价格应 >= 0');
+          checkFx(g.id, fxOnly(g));
+        }
+        if (!Array.isArray(mart.goods) || !mart.goods.length) problems.push('[开支] 超市货架是空的');
+      }
+    }
+
+    for (const [rel, pack] of Object.entries(packs)){
+      if (pack.id !== 'rules.bills.default') continue;
+      const ALLOWED = new Set(['source', 'flat', 'base', 'perAppliance', 'perFloor', 'villaBase', 'period']);
+      const OK_WHEN = new Set(['rented', 'car', 'owned', 'always']);
+      const bids = new Set();
+      if (!Array.isArray(pack.bills) || !pack.bills.length) problems.push('[账单] ' + rel + ' 没有任何账单模板');
+      for (const b of (pack.bills || [])){
+        if (!b.id || !b.title) problems.push('[账单] 条目缺 id/title');
+        if (bids.has(b.id)) problems.push('[账单] 条目重复: ' + b.id);
+        bids.add(b.id);
+        const cyc = Number(b.cycleDays);
+        if (!(cyc >= 1 && cyc <= 365)) problems.push('[账单] ' + b.id + ' cycleDays 应在 1..365');
+        const a = b.amount || {};
+        for (const k of Object.keys(a)){
+          if (!ALLOWED.has(k)) problems.push('[账单] ' + b.id + ' amount 里有引擎不认识的键: ' + k + '（金额会被静默忽略）');
+        }
+        if (a.source !== undefined && a.source !== 'rent')
+          problems.push('[账单] ' + b.id + ' 不支持的 source: ' + a.source);
+        if (a.source === undefined && a.flat === undefined && a.base === undefined)
+          problems.push('[账单] ' + b.id + ' 既没有 source/flat 也没有 base，金额会恒为 0');
+        if (!OK_WHEN.has(b.onlyWhen || 'always'))
+          problems.push('[账单] ' + b.id + ' 未知的 onlyWhen: ' + b.onlyWhen);
+      }
+      const mb = pack.mailbox || {};
+      if (mb.graceDays !== undefined && !(mb.graceDays >= 0 && mb.graceDays <= 60))
+        problems.push('[账单] mailbox.graceDays 应在 0..60');
+      if (mb.lateEmotionPerDay !== undefined && !(mb.lateEmotionPerDay <= 0))
+        problems.push('[账单] mailbox.lateEmotionPerDay 应 <= 0（这是扣情绪，不是加）');
+      if (mb.keepPaid !== undefined && !(mb.keepPaid >= 0 && mb.keepPaid <= 50))
+        problems.push('[账单] mailbox.keepPaid 应在 0..50');
+    }
+
+    const resPack = packs['house/residence.json'];
+    const ap = resPack && resPack.units && resPack.units.appreciate;
+    if (ap){
+      if (!(ap.perYear >= 0 && ap.perYear <= 1)) problems.push('[住址] appreciate.perYear 应在 0..1');
+      if (!(ap.yearDays >= 1)) problems.push('[住址] appreciate.yearDays 应 >= 1');
+    }
+  }
+
+  /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
+  const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
+  for (const p of all.filter(p => p.renderer)){
+    for (const portal of p.portals || []){
+      if (portal.target && !mapIds.has(portal.target)){
+        problems.push(`[引用] ${p.id} 的门 ${portal.id} 指向不存在的地图 ${portal.target}`);
+      }
+    }
+    for (const h of p.houses || []){
+      if (h.owner && !/^npc\./.test(h.owner)) problems.push(`[引用] ${p.id}/${h.id} 的 owner 命名不规范: ${h.owner}`);
+    }
+  }
+  const npcPack = packs['characters/npcs.neighbors.json'];
+  if (npcPack){
+    const street = packs['maps/street.map.json'];
+    const houseIds = new Set((street?.houses || []).map(h => h.id));
+    for (const n of npcPack.npcs){
+      if (n.home && !houseIds.has(n.home)) problems.push(`[引用] NPC ${n.id} 的 home 不存在: ${n.home}`);
+      if (!n.appearance) problems.push(`[引用] NPC ${n.id} 缺少 appearance`);
+    }
+  }
+
+  /* V5 地图可达性：从门口出发能否走到每个室内格（历史 BUG：幻影墙把院子封死） */
+  if (house){
+    const origin = house.origin || { x: 3, y: 3 };
+    const margin = house.yardMargin ?? 3;
+    for (const lv of house.levels){
+      const gw = lv.footprint.w + margin * 2;
+      const gh = lv.footprint.h + margin * 2;
+      const blocked = (x, y) => {
+        if (x <= 0 || y <= 0 || x >= gw - 1 || y >= gh - 1) return true;      // 外圈围栏
+        const L = origin.x, R = origin.x + lv.footprint.w + 1;
+        const T = origin.y, B = origin.y + lv.footprint.h + 1;
+        const onHouseWall = (x >= L && x <= R && y >= T && y <= B) && (x === L || x === R || y === T || y === B);
+        const doorX = origin.x + Math.floor(lv.footprint.w / 2) + 1;
+        const doorY = origin.y + lv.footprint.h + 1;
+        if (x === doorX && y === doorY) return false;                          // 房门可通行
+        if (onHouseWall) return true;
+        return lv.walls.some(w => w.x === x && w.y === y);
+      };
+      const start = { x: origin.x + Math.floor(lv.footprint.w / 2) + 1, y: origin.y + lv.footprint.h }; // 门内一格
+      const seenCells = new Set([start.x + ',' + start.y]);
+      const queue = [start];
+      while (queue.length){
+        const { x, y } = queue.shift();
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx = x + dx, ny = y + dy;
+          const k = nx + ',' + ny;
+          if (seenCells.has(k)) continue;
+          if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+          if (blocked(nx, ny)) continue;
+          seenCells.add(k);
+          queue.push({ x: nx, y: ny });
+        }
+      }
+      const unreachable = [];
+      for (let y = origin.y + 1; y <= origin.y + lv.footprint.h; y++){
+        for (let x = origin.x + 1; x <= origin.x + lv.footprint.w; x++){
+          if (blocked(x, y)) continue;            // 隔墙格本身不算功能区域
+          if (!seenCells.has(x + ',' + y)) unreachable.push(`(${x},${y})`);
+        }
+      }
+      if (unreachable.length){
+        problems.push(`[可达性] ${lv.name} 有 ${unreachable.length} 个室内格走不到（门在 (${start.x},${origin.y + lv.footprint.h + 1})）：${unreachable.slice(0, 8).join(' ')}${unreachable.length > 8 ? ' …' : ''}`);
+      }
+    }
+  }
+
+  /* V6 规则包：表达式白名单 */
+  const climate = packs['environment/climate.json'];
+  if (climate){
+    const ws = climate.weathers || [];
+    if (!ws.length) problems.push('[环境] climate.weathers 为空');
+    if (!(climate.slotMinutes >= 30)) problems.push('[环境] slotMinutes 过小（<30）');
+    for (const w of ws){
+      if (!w.id) problems.push('[环境] 天气缺少 id');
+      if (!(w.weight > 0)) problems.push('[环境] 天气 ' + w.id + ' 权重非正');
+      if (!(w.light > 0 && w.light <= 1)) problems.push('[环境] 天气 ' + w.id + ' light 应在 (0,1]');
+    }
+  }
+  const ambient = packs['environment/ambient.json'];
+  if (ambient){
+    const st = (ambient.growth && ambient.growth.stages) || [];
+    let last = -1;
+    for (const stg of st){
+      const at = stg.afterMinutes || 0;
+      if (at <= last) problems.push('[环境] 生长阶段时间必须递增: ' + stg.id);
+      last = at;
+    }
+  }
+
+  const eco = packs['rules/economy.json'];
+  if (eco){
+    const expr = eco.cozy?.bonusExpr || '';
+    const allowed = /^(min|max|round|floor|ceil|sqrt|abs)$/;
+    const fns = [...expr.matchAll(/([a-zA-Z_]\w*)\s*\(/g)].map(m => m[1]);
+    for (const f of fns) if (!allowed.test(f)) problems.push(`[规则] economy.cozy.bonusExpr 使用了非白名单函数: ${f}`);
+  }
+  const surv = packs['rules/survival.json'];
+  if (surv){
+    for (const [k, s] of Object.entries(surv.stats || {})){
+      if (s.decayPerGameMinute < 0) problems.push(`[规则] stats.${k} 衰减为负`);
+      if (s.initial > s.max) problems.push(`[规则] stats.${k} 初始值超过上限`);
+    }
+  }
+
+  /* 输出 */
+  const itemCount = items.length;
+  console.log(`校验 ${manifest.packs.length} 个内容包 / ${itemCount} 件家具 / ${(house?.levels || []).length} 个房型`);
+  if (problems.length){
+    console.log(`\n发现 ${problems.length} 个问题：`);
+    for (const p of problems) console.log('  ✗ ' + p);
+    return false;
+  }
+  console.log('\n✓ 全部检查通过');
+  return true;
+}
+
+/* ============================== bundle ============================== */
+
+function bundle(){
+  const { manifest } = loadPacks();
+  // 以磁盘上的实际文件为准：这样新增的包（如 environment/*）无需先跑 extract
+  const packIds = listPacks();
+  const packs = {};
+  for (const rel of packIds) packs[rel] = JSON.parse(fs.readFileSync(path.join(CONTENT, rel), 'utf8'));
+  manifest.packs = packIds;
+  // bundle 时也刷新一遍版本台账：保证手改过 content/ 也能被识别
+  const { versions: curVersions } = bumpVersions(packs);
+  manifest.modules = curVersions;
+  fs.writeFileSync(path.join(CONTENT, 'manifest.json'), JSON.stringify(
+    Object.assign({}, manifest, { modules: curVersions }), null, 2) + '\n', 'utf8');
+  const items = Object.values(packs).flatMap(p => p.items || []);
+  const house = packs['house/levels.json'];
+  const styles = packs['house/styles.json'];
+
+  // 服务端只需要"能算 cozy、能校验"的最小字段集
+  const catalog = items.map(it => ({
+    id: it.id,
+    name: it.name,
+    cat: it.category,
+    price: it.price,
+    w: it.footprint.w,
+    h: it.footprint.h,
+    cozy: it.cozy,
+    walk: !!it.placement?.walkable,
+    action: it.interaction ? it.interaction.verb : null
+  }));
+
+  const out = {
+    version: manifest.contentVersion,
+    generatedAt: new Date().toISOString(),
+    note: '构建产物：由 tools/content.mjs bundle 生成，请勿手改',
+    modules: curVersions,
+    catalog,
+    houseLevels: (house?.levels || []).map(l => ({ name: l.name, w: l.footprint.w, h: l.footprint.h, price: l.price })),
+    floorStyles: (styles?.floors || []).map(f => ({ name: f.name, price: f.price })),
+    wallStyles: (styles?.walls || []).map(w => ({ name: w.name, price: w.price }))
+  };
+  fs.mkdirSync(path.dirname(BUNDLE), { recursive: true });
+  fs.writeFileSync(BUNDLE, JSON.stringify(out, null, 2), 'utf8');
+  console.log(`bundle 完成：${BUNDLE}（catalog ${catalog.length}）`);
+}
+
+/* ============================== CLI ============================== */
+
+const cmd = process.argv[2] || 'all';
+// all = 校验 + 打包（extract 只在需要从旧单文件补种时手动跑）
+if (cmd === 'extract') extract();
+if (cmd === 'validate' || cmd === 'all'){
+  const okAll = validate();
+  if (!okAll) process.exitCode = 1;
+}
+if ((cmd === 'bundle' || cmd === 'all') && process.exitCode !== 1) bundle();
+if (!['extract','validate','bundle','all'].includes(cmd)){
+  console.log('用法: node tools/content.mjs [extract|validate|bundle|all]');
+  process.exit(2);
+}

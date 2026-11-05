@@ -1,0 +1,28 @@
+# ---- 构建产物 ----
+node_modules/
+.tmp/
+*.log
+
+# ---- 本地运行数据（含玩家存档，绝不入库）----
+server/data/
+*.db
+*.db-shm
+*.db-wal
+
+# ---- 可执行文件：用 server/README.md 里的命令重新编译 ----
+server/home-server.exe
+server/home-server.exe~
+*.exe
+
+# ---- 工作草稿与截图（体积大、可重建）----
+.work/
+_shots/
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- 会话记忆（个人数据，不公开）----
+.workbuddy/

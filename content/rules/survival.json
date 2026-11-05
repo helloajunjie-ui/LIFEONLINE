@@ -1,0 +1,85 @@
+{
+  "schema": "rules/1",
+  "id": "rules.survival.default",
+  "stats": {
+    "hunger": {
+      "label": "饥饿",
+      "max": 100,
+      "initial": 100,
+      "decayPerGameMinute": 0.05,
+      "criticalBelow": 35,
+      "order": 1,
+      "color": "#d2691e",
+      "iconPath": "M4 13c1 2 3 3 6 3 2 0 3-1 3-2 0 4 3 6 7 6 1 0 2-1 2-2 0-6-4-11-9-11-3 0-6 2-9 6z"
+    },
+    "thirst": {
+      "label": "口渴",
+      "max": 100,
+      "initial": 100,
+      "decayPerGameMinute": 0.07,
+      "criticalBelow": 35,
+      "order": 2,
+      "color": "#4f8ac9",
+      "iconPath": "M12 3s6 7 6 12a6 6 0 1 1-12 0c0-5 6-12 6-12z"
+    },
+    "emotion": {
+      "label": "情绪",
+      "max": 100,
+      "initial": 70,
+      "decayPerGameMinute": 0.06,
+      "criticalBelow": 30,
+      "order": 3,
+      "color": "#e0b84f",
+      "iconPath": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"
+    }
+  },
+  "clock": {
+    "startMinute": 480,
+    "minutesPerRealSecond": {
+      "0": 0,
+      "1": 1,
+      "2": 2
+    },
+    "dayRolloverMinute": 1440,
+    "timeSource": "world",
+    "timeZoneOffsetHours": 8,
+    "simMinutesPerRealSecond": 1,
+    "timeSourceNote": "world=全服统一世界时钟（服务端 /api/v1/world 懒推进，客户端插值+每 30 秒校准）。所有人共用同一个游戏日，账单周期与「每天只能上一次班」都以它为准；暂停/倍速在 world 模式下无效。realtime=跟随北京时间（单人慢节奏），game=本地自走钟（可暂停/倍速/睡觉跳时）。",
+    "simNote": "simMinutesPerRealSecond 只用于生存数值衰减；world 模式下按 WORLD.rate/60 折算（rate 60 → 1 真实秒 = 1 游戏分钟）",
+    "worldRate": 60,
+    "worldRateNote": "世界时钟倍率：游戏分钟 / 真实分钟。60 → 1 真实分钟 = 1 游戏小时，1 天 = 24 分钟真实时间。这是「每天只能上一次班 + 账单按天记」的节奏来源，改它就是改整个游戏的快慢。服务端 WORLD_RATE 环境变量可覆盖；客户端在服务端倍率异常（< 30）时用这里的值兜底。"
+  },
+  "work": {
+    "durationSec": 5,
+    "pay": 60,
+    "cost": {
+      "hunger": 1.5,
+      "thirst": 2
+    }
+  },
+  "sleep": {
+    "fromHour": 21,
+    "toHour": 5,
+    "wakeMinute": 420,
+    "cost": {
+      "hunger": 12,
+      "thirst": 12
+    }
+  },
+  "reservedStatTemplate": {
+    "note": "加新资源照这个填即可，引擎（STATS 初始化 / applyFx / HUD 条）会自动生效，无需改代码",
+    "example": {
+      "stamina": {
+        "label": "体力",
+        "max": 100,
+        "initial": 100,
+        "decayPerGameMinute": 0.08,
+        "criticalBelow": 30,
+        "order": 4,
+        "color": "#7b9ec9",
+        "iconPath": "M13 2 3 14h7l-1 8 10-12h-7l1-8z",
+        "hudVisible": true
+      }
+    }
+  }
+}

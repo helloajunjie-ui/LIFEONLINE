@@ -1,0 +1,133 @@
+{
+  "schema": "achievements/1",
+  "id": "achievements.default",
+  "note": "生活目标（成就）：目标值由引擎按 kind 从当前状态推导，不单独存进度；只把已解锁的 id 记进存档。新增一条 = 加数据，代码零改动（kind 见 note）。kind: day=天数 money=存款 cozy=装修度 houseLevel=房型等级 placed=摆放件数 shifts=总班次 jobShifts=某岗位班次(需 job) careerLevel=最高熟练等级 visits=串门过的人家数",
+  "groups": [
+    { "id": "life", "name": "生活", "order": 0 },
+    { "id": "home", "name": "小家", "order": 1 },
+    { "id": "career", "name": "工作", "order": 2 },
+    { "id": "social", "name": "邻里", "order": 3 }
+  ],
+  "achievements": [
+    {
+      "id": "ach.savings_800",
+      "group": "life",
+      "name": "开始有积蓄",
+      "desc": "存款达到 ¥800",
+      "goal": { "kind": "money", "value": 800 },
+      "reward": { "effects": { "emotion": 4 } }
+    },
+    {
+      "id": "ach.first_night",
+      "group": "life",
+      "name": "住了一夜",
+      "desc": "在这个小区过完第一晚",
+      "goal": { "kind": "day", "value": 2 },
+      "reward": { "money": 40, "effects": { "emotion": 4 } }
+    },
+    {
+      "id": "ach.one_week",
+      "group": "life",
+      "name": "一周住户",
+      "desc": "住满七天，把这里当成家",
+      "goal": { "kind": "day", "value": 7 },
+      "reward": { "money": 120, "effects": { "emotion": 6 } }
+    },
+    {
+      "id": "ach.saver",
+      "group": "life",
+      "name": "小有积蓄",
+      "desc": "存款达到 ¥3000",
+      "goal": { "kind": "money", "value": 3000 },
+      "reward": { "effects": { "emotion": 10 } }
+    },
+    {
+      "id": "ach.ten_pieces",
+      "group": "home",
+      "name": "十件家当",
+      "desc": "屋里同时摆着十件家具",
+      "goal": { "kind": "placed", "value": 10 },
+      "reward": { "money": 150, "effects": { "emotion": 5 } }
+    },
+    {
+      "id": "ach.cozy_50",
+      "group": "home",
+      "name": "温馨小屋",
+      "desc": "装修度达到 50",
+      "goal": { "kind": "cozy", "value": 50 },
+      "reward": { "money": 120, "effects": { "emotion": 6 } }
+    },
+    {
+      "id": "ach.cozy_120",
+      "group": "home",
+      "name": "梦想之家",
+      "desc": "装修度达到 120",
+      "goal": { "kind": "cozy", "value": 120 },
+      "reward": { "money": 300, "effects": { "emotion": 10 } }
+    },
+    {
+      "id": "ach.expand_once",
+      "group": "home",
+      "name": "第一次扩建",
+      "desc": "把小屋升到更大的房型",
+      "goal": { "kind": "houseLevel", "value": 1 },
+      "reward": { "money": 200, "effects": { "emotion": 8 } }
+    },
+    {
+      "id": "ach.first_shift",
+      "group": "career",
+      "name": "打的第一份工",
+      "desc": "完整上完一个班次",
+      "goal": { "kind": "shifts", "value": 1 },
+      "reward": { "money": 60, "effects": { "emotion": 5 } }
+    },
+    {
+      "id": "ach.ten_shifts",
+      "group": "career",
+      "name": "老手",
+      "desc": "累计上完十个整班",
+      "goal": { "kind": "shifts", "value": 10 },
+      "reward": { "money": 300, "effects": { "emotion": 8 } }
+    },
+    {
+      "id": "ach.store_veteran",
+      "group": "career",
+      "name": "便利店熟手",
+      "desc": "在便利店上完十个整班",
+      "goal": { "kind": "jobShifts", "job": "job.store", "value": 10 },
+      "reward": { "money": 200, "effects": { "emotion": 6 } }
+    },
+    {
+      "id": "ach.teacher",
+      "group": "career",
+      "name": "站上讲台",
+      "desc": "在学校代课五个整班",
+      "goal": { "kind": "jobShifts", "job": "job.teacher", "value": 5 },
+      "reward": { "money": 200, "effects": { "emotion": 8 } }
+    },
+    {
+      "id": "ach.promoted",
+      "group": "career",
+      "name": "升了一级",
+      "desc": "任意岗位的熟练度达到 Lv.2",
+      "goal": { "kind": "careerLevel", "value": 2 },
+      "reward": { "money": 250, "effects": { "emotion": 10 } }
+    },
+    {
+      "id": "ach.first_visit",
+      "group": "social",
+      "name": "第一次串门",
+      "desc": "去一位邻居家里做客",
+      "goal": { "kind": "visits", "value": 1 },
+      "reward": { "money": 50, "effects": { "emotion": 6 } }
+    },
+    {
+      "id": "ach.five_homes",
+      "group": "social",
+      "name": "走遍小区",
+      "desc": "去过五位不同邻居的家",
+      "goal": { "kind": "visits", "value": 5 },
+      "reward": { "money": 150, "effects": { "emotion": 8 } }
+    }
+  ]
+}

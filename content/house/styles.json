@@ -1,0 +1,111 @@
+{
+  "schema": "styles/1",
+  "floors": [
+    {
+      "id": "floor.0",
+      "index": 0,
+      "name": "原木地板",
+      "price": 0,
+      "palette": {
+        "a": "#ecd9b0",
+        "b": "#e2cb98",
+        "line": "rgba(140,100,55,.16)",
+        "grout": "rgba(255,255,255,.22)"
+      },
+      "pattern": "plank"
+    },
+    {
+      "id": "floor.1",
+      "index": 1,
+      "name": "灰白瓷砖",
+      "price": 260,
+      "palette": {
+        "a": "#f3eee4",
+        "b": "#e1d9c9",
+        "line": "rgba(110,105,95,.22)",
+        "grout": "rgba(148,138,120,.32)"
+      },
+      "pattern": "tile"
+    },
+    {
+      "id": "floor.2",
+      "index": 2,
+      "name": "暖绒地毯",
+      "price": 520,
+      "palette": {
+        "a": "#e7c9b2",
+        "b": "#dfbda3",
+        "line": "rgba(150,100,70,.12)",
+        "grout": "rgba(255,240,225,.20)"
+      },
+      "pattern": "carpet"
+    },
+    {
+      "id": "floor.3",
+      "index": 3,
+      "name": "深色木纹",
+      "price": 760,
+      "palette": {
+        "a": "#c9a06c",
+        "b": "#bd9260",
+        "line": "rgba(88,58,28,.22)",
+        "grout": "rgba(255,235,200,.14)"
+      },
+      "pattern": "plank"
+    }
+  ],
+  "walls": [
+    {
+      "id": "wall.0",
+      "index": 0,
+      "name": "米白墙面",
+      "price": 0,
+      "palette": {
+        "top": "#e7d3ae",
+        "right": "#d3b98d",
+        "left": "#c7ab7f",
+        "trim": "#b1926a",
+        "border": "rgba(122,82,48,.25)"
+      }
+    },
+    {
+      "id": "wall.1",
+      "index": 1,
+      "name": "抹茶绿墙",
+      "price": 180,
+      "palette": {
+        "top": "#dfe5cc",
+        "right": "#c2cbac",
+        "left": "#b4bd9c",
+        "trim": "#8d9c74",
+        "border": "rgba(80,95,55,.28)"
+      }
+    },
+    {
+      "id": "wall.2",
+      "index": 2,
+      "name": "暮霭蓝墙",
+      "price": 180,
+      "palette": {
+        "top": "#cfdce7",
+        "right": "#b0c0cf",
+        "left": "#a1b3c3",
+        "trim": "#7f95a9",
+        "border": "rgba(55,80,105,.26)"
+      }
+    },
+    {
+      "id": "wall.3",
+      "index": 3,
+      "name": "蔷薇粉墙",
+      "price": 220,
+      "palette": {
+        "top": "#f1dcd8",
+        "right": "#e0bfbb",
+        "left": "#d4b1ad",
+        "trim": "#bd9894",
+        "border": "rgba(120,70,70,.24)"
+      }
+    }
+  ]
+}

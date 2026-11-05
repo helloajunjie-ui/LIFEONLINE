@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="70" viewBox="0 0 128 70">
+  <defs>
+    <linearGradient id="bR2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3ddd0"/></linearGradient>
+    <linearGradient id="bL2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c3b4"/><stop offset="1" stop-color="#b3ac9c"/></linearGradient>
+    <linearGradient id="bw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8d8ec"/><stop offset="1" stop-color="#7db8d4"/></linearGradient>
+  </defs>
+  <ellipse cx="64" cy="58" rx="56" ry="7" fill="rgba(60,40,20,.15)"/>
+  <polygon points="0,30 64,46 64,60 0,44" fill="url(#bL2)"/>
+  <polygon points="128,30 128,44 64,60 64,46" fill="url(#bR2)"/>
+  <polygon points="64,14 128,30 64,46 0,30" fill="#f4f0e7"/>
+  <polygon points="64,19 116,33 64,47 12,33" fill="#dfe4ea"/>
+  <polygon points="64,22 108,33 64,44 20,33" fill="url(#bw)"/>
+  <path d="M30,31 Q48,36 70,33" stroke="rgba(255,255,255,.6)" stroke-width="1.5" fill="none"/>
+  <rect x="119" y="16" width="4" height="11" rx="1.5" fill="#d4af37"/>
+  <path d="M121,18 Q129,20 125,27" stroke="#d4af37" stroke-width="3" fill="none"/>
+  <circle cx="115" cy="19" r="2" fill="#d4af37"/>
+  <circle cx="60" cy="27" r="2.5" fill="rgba(255,255,255,.85)"/>
+  <circle cx="72" cy="24" r="2" fill="rgba(255,255,255,.85)"/>
+  <circle cx="52" cy="31" r="1.5" fill="rgba(255,255,255,.85)"/>
+</svg>

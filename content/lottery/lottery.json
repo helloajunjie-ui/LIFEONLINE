@@ -1,0 +1,17 @@
+{
+  "schema": "lottery/1",
+  "name": "双色球",
+  "note": "2 元一注。号码与奖级按官方玩法：红球 6 个（1-33）+ 蓝球 1 个（1-16），奖级与固定奖金按下表。概率不写死，由组合数学现算（C(33,6)×16 = 17,721,088 种）。",
+  "price": 2,
+  "maxTicketsPerBuy": 10,
+  "red": { "pick": 6, "max": 33 },
+  "blue": { "pick": 1, "max": 16 },
+  "tiers": [
+    { "id": "t1", "name": "一等奖", "prize": 5000000, "patterns": [{ "red": 6, "blue": 1 }] },
+    { "id": "t2", "name": "二等奖", "prize": 150000,  "patterns": [{ "red": 6, "blue": 0 }] },
+    { "id": "t3", "name": "三等奖", "prize": 3000,    "patterns": [{ "red": 5, "blue": 1 }] },
+    { "id": "t4", "name": "四等奖", "prize": 200,     "patterns": [{ "red": 5, "blue": 0 }, { "red": 4, "blue": 1 }] },
+    { "id": "t5", "name": "五等奖", "prize": 10,      "patterns": [{ "red": 4, "blue": 0 }, { "red": 3, "blue": 1 }] },
+    { "id": "t6", "name": "六等奖", "prize": 5,       "patterns": [{ "red": 2, "blue": 1 }, { "red": 1, "blue": 1 }, { "red": 0, "blue": 1 }] }
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "schema": "rules/1",
+  "id": "rules.economy.default",
+  "currency": "CNY",
+  "startMoney": 500,
+  "cozy": {
+    "bonusExpr": "min(20, round(sqrt(cozy) * 1.5))",
+    "morningScale": 0.6,
+    "tiers": [
+      {
+        "min": 0,
+        "name": "毛坯房",
+        "stars": 0
+      },
+      {
+        "min": 18,
+        "name": "有点样子",
+        "stars": 1
+      },
+      {
+        "min": 35,
+        "name": "温馨小屋",
+        "stars": 2
+      },
+      {
+        "min": 55,
+        "name": "精致小窝",
+        "stars": 3
+      },
+      {
+        "min": 80,
+        "name": "梦想之家",
+        "stars": 4
+      }
+    ]
+  },
+  "social": {
+    "streetChatEmotion": 10,
+    "visitChatEmotion": 12,
+    "chatCooldownSec": 1.5
+  },
+  "sellRatio": 0.5,
+  "sellNote": "卖出比例：售价 = floor(原价 × sellRatio)。0.5 = 半价回收，避免买了再卖套利",
+  "rent": {
+    "cycleDays": 7,
+    "note": "租住的房每 7 天扣一次月租（月租 = units.rent.base + perFloor × 楼层）。钱不够就欠着，下个周期再试，不强制搬走。"
+  },
+  "car": {
+    "resaleRatio": 0.6,
+    "note": "卖回 4S 店按车价 60% 回收（车一落地就贬值，比家具狠一点）"
+  },
+  "food": {
+    "note": "食材制：菜市场/超市买，回家做饭消耗。uses=用掉几份，hunger/thirst 是吃完回的数值。买不到食材就下馆子，贵但不占手。 背包（bagCap）是随身容量，冰箱（max）是家里容量；两者都满就吃不下也买不进。",
+    "unit": "份",
+    "max": 40,
+    "cook": {
+      "uses": 1,
+      "hunger": 22,
+      "label": "做饭"
+    },
+    "meal": {
+      "uses": 2,
+      "hunger": 40,
+      "label": "吃饭"
+    },
+    "snack": {
+      "uses": 1,
+      "hunger": 18,
+      "thirst": 10,
+      "label": "取食"
+    },
+    "emptyHint": "冰箱空了，去菜市场或超市买点食材",
+    "bagCap": 20,
+    "bagNote": "随身背包只装食材，上限 bagCap 份。买菜先进背包，回家自动放进冰箱；家具电器属于装修类，买了直接进仓库、不占背包，大件本来也不该背着走。"
+  },
+  "groceries": [
+    {
+      "zone": "shop3",
+      "name": "菜市场",
+      "pack": 10,
+      "price": 26,
+      "desc": "散装当季菜，单价最低"
+    },
+    {
+      "zone": "shop1",
+      "name": "便利店",
+      "pack": 3,
+      "price": 15,
+      "desc": "小包装应急，单价偏高"
+    },
+    {
+      "zone": "shop_super",
+      "name": "超市",
+      "pack": 6,
+      "price": 24,
+      "desc": "标准装，明码标价"
+    }
+  ],
+  "restaurant": {
+    "zone": "shop_restaurant",
+    "name": "老张饭馆",
+    "note": "下馆子不消耗食材，贵在人工和房租。吃完直接回数值，不用回家。",
+    "menu": [
+      {
+        "id": "dish.noodle",
+        "name": "牛肉面",
+        "price": 14,
+        "hunger": 40,
+        "emotion": 2,
+        "desc": "一碗管饱，汤头够味"
+      },
+      {
+        "id": "dish.rice",
+        "name": "盖浇饭",
+        "price": 18,
+        "hunger": 45,
+        "emotion": 3,
+        "desc": "两荤一素，米饭管加"
+      },
+      {
+        "id": "dish.set",
+        "name": "小炒套餐",
+        "price": 28,
+        "hunger": 60,
+        "emotion": 6,
+        "desc": "现炒三个菜，坐下来慢慢吃"
+      },
+      {
+        "id": "dish.soup",
+        "name": "例汤",
+        "price": 6,
+        "hunger": 8,
+        "thirst": 18,
+        "emotion": 1,
+        "desc": "今日例汤，单点也行"
+      }
+    ]
+  },
+  "mart": {
+    "zone": "shop_super",
+    "name": "惠民超市",
+    "note": "货架商品：买了立刻生效（便当/水），食材进冰箱。食材包与 groceries 里 shop_super 那条同价。",
+    "goods": [
+      {
+        "id": "good.bento",
+        "name": "速食便当",
+        "price": 12,
+        "hunger": 30,
+        "desc": "微波炉热两分钟"
+      },
+      {
+        "id": "good.water",
+        "name": "瓶装水",
+        "price": 3,
+        "thirst": 25,
+        "desc": "常温，冰的在里面"
+      },
+      {
+        "id": "good.instant",
+        "name": "泡面",
+        "price": 6,
+        "hunger": 22,
+        "thirst": -6,
+        "desc": "顶饿，但吃完更渴"
+      }
+    ]
+  },
+  "clinic": {
+    "note": "社区医院：门诊恢复状态，买药便宜但要等冷却。价格写在这里，改数值不用碰代码。",
+    "services": [
+      {
+        "id": "clinic.visit",
+        "name": "门诊",
+        "price": 60,
+        "desc": "医生看一眼：情绪 +25，饥饿/口渴 +10",
+        "effects": {
+          "emotion": 25,
+          "hunger": 10,
+          "thirst": 10
+        }
+      },
+      {
+        "id": "clinic.meds",
+        "name": "买药",
+        "price": 25,
+        "desc": "一盒药：情绪 +12，30 分钟内只能买一次",
+        "effects": {
+          "emotion": 12
+        },
+        "cooldownMinutes": 30
+      }
+    ]
+  }
+}

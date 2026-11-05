@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="80" viewBox="0 0 128 80">
+  <defs>
+    <linearGradient id="bR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4c878"/><stop offset="1" stop-color="#dfa855"/></linearGradient>
+    <linearGradient id="bL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c09048"/><stop offset="1" stop-color="#a17a3a"/></linearGradient>
+    <linearGradient id="bM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfaf2"/><stop offset="1" stop-color="#ece5d4"/></linearGradient>
+  </defs>
+  <ellipse cx="64" cy="68" rx="60" ry="9" fill="rgba(60,40,20,.15)"/>
+  <polygon points="0,41 64,57 64,70 0,54" fill="url(#bL)"/>
+  <polygon points="128,41 128,54 64,70 64,57" fill="url(#bR)"/>
+  <polygon points="64,25 128,41 64,57 0,41" fill="#d8ab63"/>
+  <path d="M10,44 L58,56" stroke="rgba(122,82,48,.35)" stroke-width="1" fill="none"/>
+  <path d="M70,49 L118,37" stroke="rgba(122,82,48,.35)" stroke-width="1" fill="none"/>
+  <polygon points="6,34 64,50 64,55 6,39" fill="#d9d2c0"/>
+  <polygon points="122,34 122,39 64,55 64,50" fill="#efe9da"/>
+  <polygon points="64,18 122,34 64,50 6,34" fill="url(#bM)"/>
+  <!-- 床头板：给床一点高度感 -->
+  <path d="M4,35 L4,17 Q4,11 10,14 L64,3 L64,18 Z" fill="url(#bL)" stroke="#8a6428" stroke-width="1"/>
+  <path d="M4,17 Q4,11 10,14 L64,3" fill="none" stroke="#d8ab63" stroke-width="2"/>
+  <path d="M22,30 L22,15 M41,26 L41,10" stroke="rgba(138,100,40,.45)" stroke-width="1.4"/> 
+  <ellipse cx="26" cy="30" rx="15" ry="7.5" fill="#ffffff" stroke="#e2dac8" stroke-width="1"/>
+  <ellipse cx="26" cy="29" rx="10" ry="4.5" fill="#f7f3e8"/>
+  <path d="M86,23 Q90,22 94,24 L122,34 Q123,36 120,38 L64,50 Q60,49 61,46 Z" fill="#7ea8c9"/>
+  <path d="M86,23 Q90,22 94,24 L122,34" fill="none" stroke="#9dc0dd" stroke-width="1.2"/>
+  <path d="M72,45 L92,37" stroke="rgba(63,96,143,.4)" stroke-width="1.2" fill="none"/>
+  <path d="M78,47 L98,39" stroke="rgba(63,96,143,.3)" stroke-width="1" fill="none"/>
+</svg>

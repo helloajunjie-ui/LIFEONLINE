@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72">
+  <defs>
+    <linearGradient id="pS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b8fb0"/><stop offset="1" stop-color="#48627e"/></linearGradient>
+  </defs>
+  <ellipse cx="32" cy="64" rx="26" ry="5.5" fill="rgba(60,40,20,.15)"/>
+  <polygon points="8,44 14,47 14,66 8,63" fill="#8a6428"/>
+  <polygon points="50,47 56,44 56,63 50,66" fill="#a97a36"/>
+  <polygon points="0,38 32,54 32,58 0,42" fill="#96682c"/>
+  <polygon points="64,38 64,42 32,58 32,54" fill="#c18d3f"/>
+  <polygon points="32,22 64,38 32,54 0,38" fill="#d8ab63"/>
+  <rect x="30" y="19" width="4" height="4" fill="#3a4652"/>
+  <ellipse cx="32" cy="23" rx="7" ry="2" fill="#3a4652"/>
+  <rect x="17" y="0" width="30" height="19" rx="2" fill="#2b3a4a"/>
+  <rect x="20" y="3" width="24" height="12" rx="1" fill="url(#pS)"/>
+  <polygon points="23,15 33,3 39,3 27,15" fill="rgba(255,255,255,.15)"/>
+  <polygon points="22,36 40,31 48,35 30,40" fill="#d5dae0" stroke="#b8bfc7" stroke-width="1"/>
+  <path d="M26,36.5 L42,32.5 M28,38.5 L44,34.5" stroke="rgba(120,128,138,.6)" stroke-width=".8" fill="none"/>
+  <ellipse cx="49" cy="31.5" rx="3" ry="2" fill="#e8734a"/>
+</svg>

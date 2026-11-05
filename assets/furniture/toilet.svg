@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="66" viewBox="0 0 64 66">
+  <defs>
+    <linearGradient id="tR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e0d2"/></linearGradient>
+    <linearGradient id="tL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ccc6b7"/><stop offset="1" stop-color="#b6b0a0"/></linearGradient>
+  </defs>
+  <ellipse cx="32" cy="56" rx="22" ry="5" fill="rgba(60,40,20,.15)"/>
+  <polygon points="20,18 32,24 32,38 20,32" fill="url(#tL)"/>
+  <polygon points="44,18 44,32 32,38 32,24" fill="url(#tR)"/>
+  <polygon points="32,10 44,18 32,24 20,18" fill="#f7f5ee"/>
+  <ellipse cx="32" cy="16.5" rx="3" ry="1.4" fill="#cfd6dd"/>
+  <polygon points="22,40 42,40 40,56 24,56" fill="url(#tR)"/>
+  <ellipse cx="32" cy="39" rx="14" ry="8" fill="#f7f5ee" stroke="#d8d0bf" stroke-width="1"/>
+  <ellipse cx="32" cy="39" rx="9.5" ry="5" fill="#b9d2e4"/>
+  <ellipse cx="30" cy="38" rx="4" ry="1.8" fill="rgba(255,255,255,.5)"/>
+</svg>

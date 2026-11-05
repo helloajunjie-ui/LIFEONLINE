@@ -1,0 +1,206 @@
+{
+  "schema": "characters/1",
+  "note": "小区 NPC：spawn 为街景初始格；home 指向 street.map 里的房屋 id",
+  "npcs": [
+    {
+      "id": "npc.n1",
+      "name": "老王",
+      "appearance": {
+        "skin": "#e8a878",
+        "hair": "#7a7a7a",
+        "top": "#5fae62",
+        "bottom": "#3a3a4a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 0,
+        "faceStyle": 2
+      },
+      "spawn": {
+        "x": 10,
+        "y": 13
+      },
+      "home": "house.2栋",
+      "behavior": {
+        "kind": "wander",
+        "radius": {
+          "x": 4,
+          "y": 3
+        },
+        "waitSec": [
+          1.5,
+          4
+        ]
+      },
+      "dialogues": {
+        "street": [
+          "今天天气不错呀。",
+          "小区最近挺安静的。"
+        ],
+        "visit": [
+          "来啦？坐坐。",
+          "家里有点乱，别介意。"
+        ]
+      }
+    },
+    {
+      "id": "npc.n2",
+      "name": "阿芳",
+      "appearance": {
+        "skin": "#f0b98e",
+        "hair": "#5a3a24",
+        "top": "#c94f6b",
+        "bottom": "#4a6b52",
+        "shoes": "#8a5a2b",
+        "face": "#3b3226",
+        "hairStyle": 2,
+        "faceStyle": 0
+      },
+      "spawn": {
+        "x": 38,
+        "y": 16
+      },
+      "home": "house.3栋",
+      "behavior": {
+        "kind": "wander",
+        "radius": {
+          "x": 4,
+          "y": 3
+        },
+        "waitSec": [
+          1.5,
+          4
+        ]
+      },
+      "dialogues": {
+        "street": [
+          "今天天气不错呀。",
+          "小区最近挺安静的。"
+        ],
+        "visit": [
+          "来啦？坐坐。",
+          "家里有点乱，别介意。"
+        ]
+      }
+    },
+    {
+      "id": "npc.n3",
+      "name": "小杰",
+      "appearance": {
+        "skin": "#f3c9a0",
+        "hair": "#c79a3a",
+        "top": "#8a6fc9",
+        "bottom": "#8a4a4a",
+        "shoes": "#f2ede2",
+        "face": "#3b3226",
+        "hairStyle": 1,
+        "faceStyle": 1
+      },
+      "spawn": {
+        "x": 16,
+        "y": 21
+      },
+      "home": "house.4栋",
+      "behavior": {
+        "kind": "wander",
+        "radius": {
+          "x": 4,
+          "y": 3
+        },
+        "waitSec": [
+          1.5,
+          4
+        ]
+      },
+      "dialogues": {
+        "street": [
+          "今天天气不错呀。",
+          "小区最近挺安静的。"
+        ],
+        "visit": [
+          "来啦？坐坐。",
+          "家里有点乱，别介意。"
+        ]
+      }
+    },
+    {
+      "id": "npc.n4",
+      "name": "王婶",
+      "appearance": {
+        "skin": "#f0b98e",
+        "hair": "#c9a2b8",
+        "top": "#6fae6f",
+        "bottom": "#5d5a78",
+        "shoes": "#8a5a2b",
+        "face": "#3b3226",
+        "hairStyle": 3,
+        "faceStyle": 0
+      },
+      "spawn": {
+        "x": 46,
+        "y": 21
+      },
+      "home": "house.5栋",
+      "behavior": {
+        "kind": "wander",
+        "radius": {
+          "x": 4,
+          "y": 3
+        },
+        "waitSec": [
+          1.5,
+          4
+        ]
+      },
+      "dialogues": {
+        "street": [
+          "今天天气不错呀。",
+          "小区最近挺安静的。"
+        ],
+        "visit": [
+          "来啦？坐坐。",
+          "家里有点乱，别介意。"
+        ]
+      }
+    },
+    {
+      "id": "npc.n5",
+      "name": "老周",
+      "appearance": {
+        "skin": "#e8a878",
+        "hair": "#5a3a24",
+        "top": "#c8964a",
+        "bottom": "#3a3a4a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 0,
+        "faceStyle": 2
+      },
+      "spawn": {
+        "x": 18,
+        "y": 41
+      },
+      "home": "house.6栋",
+      "behavior": {
+        "kind": "wander",
+        "radius": {
+          "x": 4,
+          "y": 3
+        },
+        "waitSec": [
+          1.5,
+          4
+        ]
+      },
+      "dialogues": {
+        "street": [
+          "今天天气不错呀。",
+          "小区最近挺安静的。"
+        ],
+        "visit": [
+          "来啦？坐坐。",
+          "家里有点乱，别介意。"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "achievements/achievements.json": {
+    "version": 2,
+    "hash": "f32f8e5825ce",
+    "updatedAt": "2026-11-05T14:48:31.850Z"
+  },
+  "careers/jobs.json": {
+    "version": 4,
+    "hash": "a76ea261f47b",
+    "updatedAt": "2026-11-05T19:17:35.955Z"
+  },
+  "catalog/categories.json": {
+    "version": 1,
+    "hash": "5599bf855145",
+    "updatedAt": "2026-11-05T12:55:12.499Z"
+  },
+  "catalog/furniture.core.json": {
+    "version": 3,
+    "hash": "634f86f85e9e",
+    "updatedAt": "2026-11-05T12:58:38.488Z"
+  },
+  "catalog/items.decor.json": {
+    "version": 1,
+    "hash": "f4800b19fb18",
+    "updatedAt": "2026-11-05T09:56:34.049Z"
+  },
+  "characters/npcs.neighbors.json": {
+    "version": 6,
+    "hash": "69ec7d614a13",
+    "updatedAt": "2026-11-05T18:22:16.105Z"
+  },
+  "characters/palettes.json": {
+    "version": 1,
+    "hash": "9cf60aa16886",
+    "updatedAt": "2026-11-05T09:56:34.049Z"
+  },
+  "characters/player.default.json": {
+    "version": 1,
+    "hash": "1b632f4c14f5",
+    "updatedAt": "2026-11-05T09:56:34.049Z"
+  },
+  "environment/ambient.json": {
+    "version": 3,
+    "hash": "231f68e48694",
+    "updatedAt": "2026-11-05T18:30:04.792Z"
+  },
+  "environment/climate.json": {
+    "version": 4,
+    "hash": "ef5ded811ec6",
+    "updatedAt": "2026-11-05T13:42:24.750Z"
+  },
+  "environment/seasons.json": {
+    "version": 2,
+    "hash": "0611393d2e77",
+    "updatedAt": "2026-11-05T13:42:24.753Z"
+  },
+  "house/levels.json": {
+    "version": 1,
+    "hash": "0b30ce05d329",
+    "updatedAt": "2026-11-05T09:56:34.049Z"
+  },
+  "house/residence.json": {
+    "version": 4,
+    "hash": "a43b4e06a42f",
+    "updatedAt": "2026-11-05T19:17:35.957Z"
+  },
+  "house/styles.json": {
+    "version": 1,
+    "hash": "558eb9062d64",
+    "updatedAt": "2026-11-05T09:56:34.049Z"
+  },
+  "interaction/verbs.json": {
+    "version": 1,
+    "hash": "7b5108c68803",
+    "updatedAt": "2026-11-05T12:55:12.501Z"
+  },
+  "lottery/lottery.json": {
+    "version": 1,
+    "hash": "b1cd4c62e2d5",
+    "updatedAt": "2026-11-05T19:01:54.435Z"
+  },
+  "maps/home.map.json": {
+    "version": 1,
+    "hash": "fa7263c09f78",
+    "updatedAt": "2026-11-05T09:56:34.049Z"
+  },
+  "maps/street.map.json": {
+    "version": 16,
+    "hash": "2e8a3102604b",
+    "updatedAt": "2026-11-05T19:17:35.958Z"
+  },
+  "rules/bills.json": {
+    "version": 1,
+    "hash": "2ff3cf93c8a8",
+    "updatedAt": "2026-11-05T19:17:35.958Z"
+  },
+  "rules/economy.json": {
+    "version": 5,
+    "hash": "44301bbfc094",
+    "updatedAt": "2026-11-05T19:40:49.807Z"
+  },
+  "rules/survival.json": {
+    "version": 5,
+    "hash": "1d0d3ccce7d0",
+    "updatedAt": "2026-11-05T19:42:27.307Z"
+  },
+  "ui/strings.zh-CN.json": {
+    "version": 2,
+    "hash": "9afa3735c2fe",
+    "updatedAt": "2026-11-05T09:58:52.984Z"
+  },
+  "vehicles/cars.json": {
+    "version": 2,
+    "hash": "e28eaf242a03",
+    "updatedAt": "2026-11-05T19:17:35.959Z"
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "schema": "map/1",
+  "id": "map.home",
+  "renderer": "interior",
+  "note": "家 = 房子 + 院子；网格尺寸由房型推导（室内 w/h + 两侧各 3 格院子）",
+  "base": {
+    "houseOrigin": {
+      "x": 3,
+      "y": 3
+    },
+    "yardMargin": 3
+  },
+  "yardDecor": [
+    {
+      "kind": "tree",
+      "at": [
+        4,
+        1
+      ]
+    },
+    {
+      "kind": "flower",
+      "at": [
+        9,
+        2
+      ]
+    },
+    {
+      "kind": "tree",
+      "at": [
+        15,
+        1
+      ]
+    },
+    {
+      "kind": "bush",
+      "at": [
+        6,
+        1
+      ]
+    },
+    {
+      "kind": "flower",
+      "at": [
+        13,
+        2
+      ]
+    },
+    {
+      "kind": "flower",
+      "at": [
+        4,
+        14
+      ]
+    },
+    {
+      "kind": "bush",
+      "at": [
+        9,
+        14
+      ]
+    },
+    {
+      "kind": "flower",
+      "at": [
+        15,
+        14
+      ]
+    },
+    {
+      "kind": "tree",
+      "at": [
+        6,
+        13
+      ]
+    },
+    {
+      "kind": "tree",
+      "at": [
+        13,
+        13
+      ]
+    },
+    {
+      "kind": "tree",
+      "at": [
+        1,
+        4
+      ]
+    },
+    {
+      "kind": "flower",
+      "at": [
+        2,
+        7
+      ]
+    },
+    {
+      "kind": "bush",
+      "at": [
+        1,
+        11
+      ]
+    },
+    {
+      "kind": "flower",
+      "at": [
+        2,
+        2
+      ]
+    },
+    {
+      "kind": "bush",
+      "at": [
+        18,
+        4
+      ]
+    },
+    {
+      "kind": "tree",
+      "at": [
+        17,
+        7
+      ]
+    },
+    {
+      "kind": "flower",
+      "at": [
+        18,
+        11
+      ]
+    },
+    {
+      "kind": "tree",
+      "at": [
+        17,
+        2
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "id": "home.toStreet",
+      "role": "exit",
+      "at": {
+        "x": 1,
+        "y": "bottom-1"
+      },
+      "target": "map.street"
+    },
+    {
+      "id": "home.door",
+      "role": "innerDoor",
+      "at": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "target": null
+    }
+  ],
+  "spawn": {
+    "rule": "houseCenter",
+    "fallback": "nearestFree"
+  }
+}

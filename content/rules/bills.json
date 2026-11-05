@@ -1,0 +1,66 @@
+{
+  "schema": "rules/1",
+  "id": "rules.bills.default",
+  "note": "缴费通知：到日子往楼下信箱投一张单，玩家自己去看、自己付。金额只会用到 amount 里的 source / flat / base / perAppliance / perFloor / villaBase 这几个字段——加新算法必须同步改引擎，别在数据里写代码。",
+  "mailbox": {
+    "note": "信箱挂在公寓楼门口，具体格子写在 maps/street.map.json 的 mailbox 字段。",
+    "graceDays": 3,
+    "lateEmotionPerDay": -1,
+    "lateEmotionCap": -15,
+    "paidEmotionBonus": 5,
+    "keepPaid": 8,
+    "maxOpen": 24
+  },
+  "bills": [
+    {
+      "id": "bill.rent",
+      "title": "房租",
+      "icon": "rent",
+      "cycleDays": 7,
+      "onlyWhen": "rented",
+      "amount": { "source": "rent", "period": 30 },
+      "desc": "本季房租",
+      "unitNote": "按房源月租 ÷ 30 天 × 7 天折算，租住才有这一单"
+    },
+    {
+      "id": "bill.power",
+      "title": "电费",
+      "icon": "bolt",
+      "cycleDays": 15,
+      "onlyWhen": "always",
+      "amount": { "base": 16, "perAppliance": 4 },
+      "desc": "双月电费",
+      "unitNote": "基本电费 16 元 + 每件电器 4 元（电器越多越贵）"
+    },
+    {
+      "id": "bill.water",
+      "title": "水费",
+      "icon": "water",
+      "cycleDays": 15,
+      "onlyWhen": "always",
+      "amount": { "base": 12, "perFloor": 0.3 },
+      "desc": "双月水费",
+      "unitNote": "基本水费 12 元 + 高层二次加压每层 0.3 元"
+    },
+    {
+      "id": "bill.property",
+      "title": "物业费",
+      "icon": "building",
+      "cycleDays": 30,
+      "onlyWhen": "always",
+      "amount": { "base": 38, "perFloor": 1, "villaBase": 62 },
+      "desc": "本月物业费",
+      "unitNote": "公寓按楼层递增，独栋按建筑面积固定"
+    },
+    {
+      "id": "bill.parking",
+      "title": "停车费",
+      "icon": "car",
+      "cycleDays": 7,
+      "onlyWhen": "car",
+      "amount": { "flat": 12 },
+      "desc": "本周停车费",
+      "unitNote": "有车才投这一单，停在 4S 店旁边的停车场"
+    }
+  ]
+}

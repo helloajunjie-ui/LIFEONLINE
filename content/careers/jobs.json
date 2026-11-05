@@ -1,0 +1,425 @@
+{
+  "schema": "careers/1",
+  "id": "careers.jobs.default",
+  "note": "岗位直接绑定地图分区（zone.id）：走到那个分区就能打卡上班。改班次、工资、任务数只改这里，不用碰代码。",
+  "payNote": "实发日薪 = payPerTask × tasks + completionBonus；熟练等级每完成 promoShifts 次整班 +1（上限 5），每级 +15%。monthlyPay = 日薪 × 22 个工作日，只用于面板展示和数值校对（对标 2026 年最低工资第一档 2100-2740）。",
+  "jobs": [
+    {
+      "id": "job.store",
+      "name": "便利店店员",
+      "zone": "shop1",
+      "desc": "24 小时营业：理货、收银、补货，夜里也能上班",
+      "shift": {
+        "startHour": 0,
+        "endHour": 24
+      },
+      "tasks": 6,
+      "taskSeconds": 5,
+      "taskLabels": [
+        "整理货架",
+        "收银结账",
+        "补货上架",
+        "擦柜台",
+        "查临期商品",
+        "对账"
+      ],
+      "payPerTask": 13,
+      "completionBonus": 32,
+      "costPerTask": {
+        "hunger": -1.2,
+        "thirst": -1.6,
+        "emotion": -0.5
+      },
+      "finish": {
+        "emotion": 8
+      },
+      "earlyLeave": {
+        "emotion": -6
+      },
+      "promoShifts": 3,
+      "require": {},
+      "dailyPay": 110,
+      "monthlyPay": 2420
+    },
+    {
+      "id": "job.cafe",
+      "name": "咖啡师",
+      "zone": "shop2",
+      "desc": "出品咖啡与甜点，需要一点好心情",
+      "shift": {
+        "startHour": 7,
+        "endHour": 19
+      },
+      "tasks": 6,
+      "taskSeconds": 5,
+      "taskLabels": [
+        "磨豆",
+        "打奶泡",
+        "出杯",
+        "洗杯子",
+        "擦桌子",
+        "补豆子"
+      ],
+      "payPerTask": 15,
+      "completionBonus": 40,
+      "costPerTask": {
+        "hunger": -1,
+        "thirst": -1.8,
+        "emotion": -0.4
+      },
+      "finish": {
+        "emotion": 9
+      },
+      "earlyLeave": {
+        "emotion": -6
+      },
+      "promoShifts": 3,
+      "require": {
+        "emotion": 30
+      },
+      "dailyPay": 130,
+      "monthlyPay": 2860
+    },
+    {
+      "id": "job.market",
+      "name": "生鲜理货",
+      "zone": "shop3",
+      "desc": "冷柜搬货，渴得快，但收工早",
+      "shift": {
+        "startHour": 6,
+        "endHour": 20
+      },
+      "tasks": 7,
+      "taskSeconds": 5,
+      "taskLabels": [
+        "搬菜筐",
+        "挑拣",
+        "打码称重",
+        "摆堆头",
+        "清冷柜",
+        "补冰",
+        "扫地"
+      ],
+      "payPerTask": 12,
+      "completionBonus": 31,
+      "costPerTask": {
+        "hunger": -1.6,
+        "thirst": -2.2,
+        "emotion": -0.6
+      },
+      "finish": {
+        "emotion": 6
+      },
+      "earlyLeave": {
+        "emotion": -7
+      },
+      "promoShifts": 3,
+      "require": {},
+      "dailyPay": 115,
+      "monthlyPay": 2530
+    },
+    {
+      "id": "job.courier",
+      "name": "快递分拣",
+      "zone": "shop4",
+      "desc": "单件最贵，也最累：一趟下来又饿又渴",
+      "shift": {
+        "startHour": 8,
+        "endHour": 21
+      },
+      "tasks": 7,
+      "taskSeconds": 4.5,
+      "taskLabels": [
+        "扫码入库",
+        "分拣格口",
+        "装车",
+        "核对面单",
+        "贴标",
+        "清场"
+      ],
+      "payPerTask": 16,
+      "completionBonus": 38,
+      "costPerTask": {
+        "hunger": -1.8,
+        "thirst": -2,
+        "emotion": -0.7
+      },
+      "finish": {
+        "emotion": 5
+      },
+      "earlyLeave": {
+        "emotion": -8
+      },
+      "promoShifts": 3,
+      "require": {
+        "hunger": 30
+      },
+      "dailyPay": 150,
+      "monthlyPay": 3300
+    },
+    {
+      "id": "job.coach",
+      "name": "篮球陪练",
+      "zone": "court",
+      "desc": "陪人打球，越打越开心，但要先有精神",
+      "shift": {
+        "startHour": 9,
+        "endHour": 21
+      },
+      "tasks": 5,
+      "taskSeconds": 6,
+      "taskLabels": [
+        "热身",
+        "传球练习",
+        "一对一",
+        "投篮训练",
+        "拉伸放松"
+      ],
+      "payPerTask": 22,
+      "completionBonus": 50,
+      "costPerTask": {
+        "hunger": -2,
+        "thirst": -2.4,
+        "emotion": 1
+      },
+      "finish": {
+        "emotion": 12
+      },
+      "earlyLeave": {
+        "emotion": -4
+      },
+      "promoShifts": 2,
+      "require": {
+        "emotion": 40
+      },
+      "dailyPay": 160,
+      "monthlyPay": 3520
+    },
+    {
+      "id": "job.gardener",
+      "name": "公园园丁",
+      "zone": "park",
+      "desc": "修剪花草，钱少但心情好",
+      "shift": {
+        "startHour": 7,
+        "endHour": 18
+      },
+      "tasks": 6,
+      "taskSeconds": 5,
+      "taskLabels": [
+        "浇水",
+        "修剪灌木",
+        "捡落叶",
+        "松土",
+        "换花坛",
+        "扫步道"
+      ],
+      "payPerTask": 11,
+      "completionBonus": 34,
+      "costPerTask": {
+        "hunger": -1.2,
+        "thirst": -1.8,
+        "emotion": 0.8
+      },
+      "finish": {
+        "emotion": 10
+      },
+      "earlyLeave": {
+        "emotion": -3
+      },
+      "promoShifts": 2,
+      "require": {},
+      "dailyPay": 100,
+      "monthlyPay": 2200
+    },
+    {
+      "id": "job.teashop",
+      "name": "奶茶店店员",
+      "zone": "shop5",
+      "desc": "点单、摇茶、封口，站一天手不停",
+      "shift": {
+        "startHour": 10,
+        "endHour": 22
+      },
+      "tasks": 6,
+      "taskSeconds": 4.5,
+      "taskLabels": [
+        "点单",
+        "煮珍珠",
+        "摇茶",
+        "封口",
+        "擦台面",
+        "补杯子"
+      ],
+      "payPerTask": 14,
+      "completionBonus": 36,
+      "costPerTask": {
+        "hunger": -1.2,
+        "thirst": -2,
+        "emotion": -0.4
+      },
+      "finish": {
+        "emotion": 7
+      },
+      "earlyLeave": {
+        "emotion": -6
+      },
+      "promoShifts": 3,
+      "require": {},
+      "dailyPay": 120,
+      "monthlyPay": 2640
+    },
+    {
+      "id": "job.nurse",
+      "name": "社区护士",
+      "zone": "hospital",
+      "desc": "分诊、换药、量血压，要有耐心",
+      "shift": {
+        "startHour": 7,
+        "endHour": 19
+      },
+      "tasks": 6,
+      "taskSeconds": 5.5,
+      "taskLabels": [
+        "分诊登记",
+        "量血压",
+        "换药",
+        "整理病历",
+        "消毒器械",
+        "安抚病人"
+      ],
+      "payPerTask": 20,
+      "completionBonus": 50,
+      "costPerTask": {
+        "hunger": -1.4,
+        "thirst": -1.8,
+        "emotion": -1
+      },
+      "finish": {
+        "emotion": 10
+      },
+      "earlyLeave": {
+        "emotion": -8
+      },
+      "promoShifts": 3,
+      "require": {
+        "emotion": 35
+      },
+      "dailyPay": 170,
+      "monthlyPay": 3740
+    },
+    {
+      "id": "job.teacher",
+      "name": "代课老师",
+      "zone": "school",
+      "desc": "带一节自习，讲题改作业，费嗓子",
+      "shift": {
+        "startHour": 8,
+        "endHour": 17
+      },
+      "tasks": 5,
+      "taskSeconds": 6,
+      "taskLabels": [
+        "点名",
+        "讲课",
+        "巡堂",
+        "改作业",
+        "答疑"
+      ],
+      "payPerTask": 25,
+      "completionBonus": 40,
+      "costPerTask": {
+        "hunger": -1.2,
+        "thirst": -2.2,
+        "emotion": -0.6
+      },
+      "finish": {
+        "emotion": 11
+      },
+      "earlyLeave": {
+        "emotion": -6
+      },
+      "promoShifts": 2,
+      "require": {
+        "emotion": 45
+      },
+      "dailyPay": 165,
+      "monthlyPay": 3630
+    },
+    {
+      "id": "job.police",
+      "name": "辅警",
+      "zone": "police",
+      "desc": "24 小时值班：巡逻、登记、调解纠纷，夜里也有岗",
+      "shift": {
+        "startHour": 0,
+        "endHour": 24
+      },
+      "tasks": 6,
+      "taskSeconds": 5.5,
+      "taskLabels": [
+        "片警巡逻",
+        "登记来访",
+        "调解纠纷",
+        "查看监控",
+        "写值班记录",
+        "整理装备"
+      ],
+      "payPerTask": 22,
+      "completionBonus": 48,
+      "costPerTask": {
+        "hunger": -1.6,
+        "thirst": -2,
+        "emotion": -0.9
+      },
+      "finish": {
+        "emotion": 9
+      },
+      "earlyLeave": {
+        "emotion": -9
+      },
+      "promoShifts": 3,
+      "require": {
+        "emotion": 50
+      },
+      "dailyPay": 180,
+      "monthlyPay": 3960
+    },
+    {
+      "id": "job.property",
+      "name": "物业客服",
+      "zone": "property",
+      "desc": "接报修、登记快递、催缴物业费",
+      "shift": {
+        "startHour": 9,
+        "endHour": 18
+      },
+      "tasks": 6,
+      "taskSeconds": 5,
+      "taskLabels": [
+        "接报修",
+        "登记快递",
+        "催缴物业费",
+        "巡楼",
+        "贴通知",
+        "回访"
+      ],
+      "payPerTask": 26,
+      "completionBonus": 44,
+      "costPerTask": {
+        "hunger": -1,
+        "thirst": -1.8,
+        "emotion": -0.7
+      },
+      "finish": {
+        "emotion": 7
+      },
+      "earlyLeave": {
+        "emotion": -6
+      },
+      "promoShifts": 3,
+      "require": {}
+    }
+  ],
+  "costNote": "costPerTask 是「每单带来的数值变化」，负数=消耗；finish / earlyLeave 同理"
+}

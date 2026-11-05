@@ -1,0 +1,27 @@
+{
+  "schema": "ui/1",
+  "locale": "zh-CN",
+  "note": "界面文案种子；后续把 HTML 里的硬编码文案逐步搬进来，支持多语言",
+  "strings": {
+    "app.title": "我的 2.5D 小屋",
+    "hud.work": "工作 +¥",
+    "hud.shop": "商店",
+    "hud.char": "人物",
+    "hud.edit": "整理",
+    "hud.decor": "装修",
+    "hud.expand": "房型",
+    "hud.scene.street": "小区",
+    "hud.scene.home": "回家",
+    "hud.home": "回原位",
+    "panel.shop": "家具商店",
+    "panel.inventory": "我的仓库",
+    "panel.decor": "房间装修",
+    "panel.upgrade": "房型扩建",
+    "stat.hunger": "饥饿",
+    "stat.thirst": "口渴",
+    "stat.emotion": "情绪",
+    "stat.money": "金钱",
+    "stat.cozy": "装修度",
+    "hud.version": "版本"
+  }
+}

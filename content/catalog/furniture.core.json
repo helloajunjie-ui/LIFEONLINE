@@ -1,0 +1,701 @@
+{
+  "schema": "catalog/1",
+  "note": "核心家具：有交互数值效果的一批",
+  "items": [
+    {
+      "id": "bed",
+      "name": "床",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 320,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 6,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "sleep",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 6
+        },
+        "special": "sleepToMorning"
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/bed.svg",
+        "size": {
+          "w": 128,
+          "h": 80
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 54
+        }
+      },
+      "ui": {
+        "icon": "bed",
+        "desc": "躺下休息，恢复情绪",
+        "order": 0
+      }
+    },
+    {
+      "id": "sofa",
+      "name": "沙发",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 260,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 5,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "rest",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 5
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/sofa.svg",
+        "size": {
+          "w": 128,
+          "h": 84
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 54
+        }
+      },
+      "ui": {
+        "icon": "sofa",
+        "desc": "坐下放松，恢复情绪",
+        "order": 10
+      }
+    },
+    {
+      "id": "dining",
+      "name": "餐桌",
+      "category": "furniture",
+      "tags": [
+        "food"
+      ],
+      "price": 180,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "eat",
+        "durationSec": 2,
+        "effects": {
+          "hunger": 34
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/dining.svg",
+        "size": {
+          "w": 128,
+          "h": 70
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 44
+        }
+      },
+      "ui": {
+        "icon": "dining",
+        "desc": "吃饭，补充饥饿",
+        "order": 20
+      }
+    },
+    {
+      "id": "fridge",
+      "name": "冰箱",
+      "category": "appliance",
+      "tags": [
+        "food",
+        "water",
+        "electric"
+      ],
+      "price": 460,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "snack",
+        "durationSec": 2,
+        "effects": {
+          "hunger": 20,
+          "thirst": 12
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/fridge.svg",
+        "size": {
+          "w": 64,
+          "h": 64
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 39
+        }
+      },
+      "ui": {
+        "icon": "fridge",
+        "desc": "取食，补充饥饿和口渴",
+        "order": 30
+      }
+    },
+    {
+      "id": "stove",
+      "name": "灶台",
+      "category": "appliance",
+      "tags": [
+        "food",
+        "electric"
+      ],
+      "price": 520,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "cook",
+        "durationSec": 2,
+        "effects": {
+          "hunger": 28
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/stove.svg",
+        "size": {
+          "w": 128,
+          "h": 70
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 44
+        }
+      },
+      "ui": {
+        "icon": "stove",
+        "desc": "做饭，大幅补充饥饿",
+        "order": 40
+      }
+    },
+    {
+      "id": "sink",
+      "name": "水槽",
+      "category": "furniture",
+      "tags": [
+        "water"
+      ],
+      "price": 140,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "drink",
+        "durationSec": 2,
+        "effects": {
+          "thirst": 34
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/sink.svg",
+        "size": {
+          "w": 64,
+          "h": 62
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 36
+        }
+      },
+      "ui": {
+        "icon": "sink",
+        "desc": "喝水，补充口渴",
+        "order": 50
+      }
+    },
+    {
+      "id": "tv",
+      "name": "电视",
+      "category": "appliance",
+      "tags": [
+        "comfort",
+        "electric"
+      ],
+      "price": 580,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 5,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/tv.svg",
+        "size": {
+          "w": 128,
+          "h": 68
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 48
+        }
+      },
+      "ui": {
+        "icon": "tv",
+        "desc": "看电视，恢复情绪",
+        "order": 60
+      },
+      "interactions": [
+        {
+          "verb": "watch",
+          "effects": {
+            "emotion": 7
+          },
+          "label": "看电视"
+        },
+        {
+          "verb": "play",
+          "effects": {
+            "emotion": 4
+          },
+          "label": "玩一局游戏",
+          "requirements": {
+            "statMin": {
+              "emotion": 20
+            }
+          },
+          "failText": "心情太差，先歇会儿吧"
+        }
+      ]
+    },
+    {
+      "id": "stereo",
+      "name": "音响",
+      "category": "appliance",
+      "tags": [
+        "comfort",
+        "electric"
+      ],
+      "price": 300,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "music",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 6
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/stereo.svg",
+        "size": {
+          "w": 64,
+          "h": 76
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 52
+        }
+      },
+      "ui": {
+        "icon": "stereo",
+        "desc": "听音乐，恢复情绪",
+        "order": 70
+      }
+    },
+    {
+      "id": "bookshelf",
+      "name": "书柜",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 200,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "read",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 4
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/bookshelf.svg",
+        "size": {
+          "w": 64,
+          "h": 96
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 68
+        }
+      },
+      "ui": {
+        "icon": "bookshelf",
+        "desc": "看书，恢复情绪",
+        "order": 80
+      }
+    },
+    {
+      "id": "plant",
+      "name": "绿植",
+      "category": "decor",
+      "tags": [
+        "decor"
+      ],
+      "price": 60,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "water",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 2
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/plant.svg",
+        "size": {
+          "w": 64,
+          "h": 86
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 56
+        }
+      },
+      "ui": {
+        "icon": "plant",
+        "desc": "浇花，心情愉悦",
+        "order": 90
+      }
+    },
+    {
+      "id": "wardrobe",
+      "name": "衣柜",
+      "category": "furniture",
+      "tags": [],
+      "price": 230,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": null,
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/wardrobe.svg",
+        "size": {
+          "w": 64,
+          "h": 98
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 70
+        }
+      },
+      "ui": {
+        "icon": "wardrobe",
+        "desc": "存放衣物",
+        "order": 100
+      }
+    },
+    {
+      "id": "lamp",
+      "name": "台灯",
+      "category": "decor",
+      "tags": [
+        "decor"
+      ],
+      "price": 45,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": null,
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/lamp.svg",
+        "size": {
+          "w": 64,
+          "h": 96
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 72
+        }
+      },
+      "ui": {
+        "icon": "lamp",
+        "desc": "照明装饰，夜里发光",
+        "order": 110
+      }
+    },
+    {
+      "id": "toilet",
+      "name": "马桶",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 120,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "wc",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 3
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/toilet.svg",
+        "size": {
+          "w": 64,
+          "h": 66
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 44
+        }
+      },
+      "ui": {
+        "icon": "toilet",
+        "desc": "上厕所，舒畅",
+        "order": 120
+      }
+    },
+    {
+      "id": "bathtub",
+      "name": "浴缸",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 480,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 6,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "bath",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 9
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/bathtub.svg",
+        "size": {
+          "w": 128,
+          "h": 70
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 44
+        }
+      },
+      "ui": {
+        "icon": "bathtub",
+        "desc": "泡澡，放松身心",
+        "order": 130
+      }
+    },
+    {
+      "id": "pc",
+      "name": "电脑",
+      "category": "appliance",
+      "tags": [
+        "comfort",
+        "electric"
+      ],
+      "price": 550,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 5,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": {
+        "verb": "net",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 6
+        },
+        "special": null
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/pc.svg",
+        "size": {
+          "w": 64,
+          "h": 72
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 52
+        }
+      },
+      "ui": {
+        "icon": "pc",
+        "desc": "上网冲浪，恢复情绪",
+        "order": 140
+      }
+    }
+  ]
+}

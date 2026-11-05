@@ -1,0 +1,26 @@
+{
+  "schema": "catalog-categories/1",
+  "id": "categories.default",
+  "note": "物品分类表：商店分组、图标兜底、校验器都读这里。加新品类（食物/种子/宠物用品）= 加一条，不用改代码。iconPath 是 24×24 viewBox 下的 SVG path，用于没有专属图标时的兜底。",
+
+  "categories": [
+    { "id": "furniture", "label": "家具", "order": 1,
+      "iconPath": "M4 12h16v6H4zM6 8h12v4H6z" },
+    { "id": "appliance", "label": "电器", "order": 2,
+      "iconPath": "M5 4h14v16H5zM8 8h8v2H8z" },
+    { "id": "decor", "label": "装饰", "order": 3,
+      "iconPath": "M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5z" },
+
+    { "id": "food", "label": "食物", "order": 4, "reserved": true,
+      "iconPath": "M6 3v8a3 3 0 006 0V3M9 11v10M16 3c-1.5 2-2 4-2 6h4c0-2-.5-4-2-6z" },
+    { "id": "seed", "label": "种子", "order": 5, "reserved": true,
+      "iconPath": "M12 20c-4 0-7-3-7-7 0-4 3-8 7-10 4 2 7 6 7 10 0 4-3 7-7 7z" },
+    { "id": "pet", "label": "宠物用品", "order": 6, "reserved": true,
+      "iconPath": "M8 8a2 2 0 100-4 2 2 0 000 4zm8 0a2 2 0 100-4 2 2 0 000 4zM12 20c-3 0-6-2-6-5 0-2 2-3 4-3h4c2 0 4 1 4 3 0 3-3 5-6 5z" }
+  ],
+
+  "reservedFields": {
+    "note": "未来可能给分类加的字段，引擎当前会忽略未知字段，可先写不报错",
+    "list": ["iconPath", "order", "reserved", "hiddenFromShop", "stackable", "maxStack"]
+  }
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="62" viewBox="0 0 64 62">
+  <defs>
+    <linearGradient id="kR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3d8de"/><stop offset="1" stop-color="#bcc2ca"/></linearGradient>
+    <linearGradient id="kL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8aeb8"/><stop offset="1" stop-color="#939aa5"/></linearGradient>
+  </defs>
+  <ellipse cx="32" cy="50" rx="28" ry="5" fill="rgba(60,40,20,.15)"/>
+  <polygon points="0,22 32,38 32,52 0,36" fill="url(#kL)"/>
+  <polygon points="64,22 64,36 32,52 32,38" fill="url(#kR)"/>
+  <polygon points="32,6 64,22 32,38 0,22" fill="#e8ebee"/>
+  <polygon points="4,28 28,39 28,49 4,38" fill="none" stroke="rgba(60,66,76,.35)" stroke-width="1"/>
+  <rect x="13" y="35" width="7" height="2" rx="1" fill="#7d8590"/>
+  <polygon points="36,40 60,29 60,39 36,50" fill="none" stroke="rgba(60,66,76,.3)" stroke-width="1"/>
+  <polygon points="32,16 46,23 32,30 18,23" fill="#aebdca" stroke="#8fa0b0" stroke-width="1"/>
+  <polygon points="32,19 41,23 32,27 23,23" fill="#93a7b8"/>
+  <rect x="30" y="0" width="4" height="9" rx="1.5" fill="#9aa6b8"/>
+  <path d="M32,2 Q40,2 40,9" stroke="#9aa6b8" stroke-width="3" fill="none"/>
+  <circle cx="40" cy="10" r="1.5" fill="#7d8a9c"/>
+</svg>

@@ -1,0 +1,34 @@
+{
+  "schema": "vehicles/1",
+  "note": "车款：只在 4S 店（zone shop_car）出售。speed 是相对步行的倍率（步行 4.2 格/秒）。车不占家具目录，单独一类内容。价格按「月薪 2400」的购买力定：代步车约 7 个月工资，SUV 约 13 个月，跑车约 20 个月。",
+  "models": [
+    {
+      "id": "car.mini",
+      "name": "小型代步车",
+      "price": 16800,
+      "color": "#c8553d",
+      "speed": 2.0,
+      "desc": "好停好开，新手上路先来这辆"
+    },
+    {
+      "id": "car.suv",
+      "name": "家用 SUV",
+      "price": 32000,
+      "color": "#4a6fa8",
+      "speed": 2.4,
+      "desc": "空间大、视野高，跑起来也稳"
+    },
+    {
+      "id": "car.sport",
+      "name": "双门跑车",
+      "price": 48000,
+      "color": "#d9a441",
+      "speed": 3.2,
+      "desc": "贵，但整条街最显眼的就是它"
+    }
+  ],
+  "parking": {
+    "note": "4S 店旁边的停车场：买车后停第一个空位；车位占格不再算空位",
+    "zone": "parking_4s"
+  }
+}

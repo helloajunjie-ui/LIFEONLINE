@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="82" viewBox="0 0 64 82">
+  <defs>
+    <linearGradient id="pf1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6ead3"/><stop offset="1" stop-color="#ddc9a6"/></linearGradient>
+  </defs>
+  <ellipse cx="32" cy="66" rx="19" ry="5" fill="rgba(60,40,20,.18)"/>
+  <line x1="29" y1="46" x2="15" y2="65" stroke="#a97a36" stroke-width="3" stroke-linecap="round"/>
+  <line x1="35" y1="46" x2="49" y2="65" stroke="#8a6428" stroke-width="3" stroke-linecap="round"/>
+  <line x1="32" y1="48" x2="32" y2="67" stroke="#bd8e46" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="12,6 52,13 52,45 12,38" fill="url(#pf1)" stroke="#9c7440" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="16,11 48,17 48,41 16,35" fill="#f2cd92"/>
+  <circle cx="29" cy="25" r="6.5" fill="#f0a868"/>
+  <path d="M16,32 L23,26 L30,31 L38,23 L48,29 L48,41 L16,35 Z" fill="#9bb083"/>
+  <path d="M16,32 L23,26 L30,31 L38,23 L48,29" fill="none" stroke="#7d9468" stroke-width="1"/>
+  <polygon points="12,6 52,13 52,16 12,9" fill="rgba(255,255,255,.32)"/>
+</svg>

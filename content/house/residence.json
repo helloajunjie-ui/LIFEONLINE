@@ -1,0 +1,64 @@
+{
+  "schema": "residence/1",
+  "id": "residence.default",
+  "community": "幸福小区",
+  "note": "住址体系：独栋（villa）地址就是楼号；公寓（apartment）是「楼栋 + 楼层 + 房号」，1803 = 18 层 03 号。玩家的住址在首次建档时按 uid 散列分配，之后随存档走，不再变化。",
+  "buildings": [
+    {
+      "id": "house.公寓楼",
+      "kind": "apartment",
+      "label": "公寓楼",
+      "floors": 18,
+      "unitsPerFloor": 4
+    },
+    {
+      "id": "house.12栋",
+      "kind": "villa",
+      "label": "12栋"
+    }
+  ],
+  "assign": {
+    "defaultKind": "apartment",
+    "floorMin": 3,
+    "floorMax": 18,
+    "roomMin": 1
+  },
+  "units": {
+    "note": "房态：没人住的房间按 (楼栋,楼层,房号) 做稳定散列决定状态——同一间在任何人、任何次打开都算出同一个结果，服务端不必为 72 间空房各存一行。有人住时以服务端住户列表为准（名字优先）。",
+    "states": {
+      "sale": {
+        "label": "待售",
+        "desc": "业主挂牌出售，买下即落户"
+      },
+      "rent": {
+        "label": "待租",
+        "desc": "房东出租，押一付一"
+      },
+      "vacant": {
+        "label": "空置",
+        "desc": "暂不对外，可能是业主自住未上线"
+      }
+    },
+    "salePercent": 22,
+    "rentPercent": 18,
+    "sale": {
+      "base": 12000,
+      "perFloor": 800,
+      "roundTo": 100
+    },
+    "rent": {
+      "base": 460,
+      "perFloor": 30,
+      "roundTo": 10,
+      "depositMonths": 1
+    },
+    "maxPerUser": 3,
+    "resaleRatio": 0.7,
+    "appreciate": {
+      "perYear": 0.05,
+      "yearDays": 365,
+      "note": "不动产每年增值 5%（复利）。买卖同价，卖出仍按 resaleRatio 打 7 折——所以短期倒手必亏，要涨 43%（约 7.5 年）才够回本，长期持有才是投资。租金不跟随增值，避免租客被通胀压死。"
+    },
+    "estatesNote": "每人最多持有 3 套房（含自住）；初始那间算 1 套。自有房可卖出回收 70%，租住房退租不退押金。"
+  }
+}

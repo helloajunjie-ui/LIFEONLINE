@@ -1,0 +1,67 @@
+{
+  "schema": "environment/1",
+  "note": "随机物与生长：全部由种子确定性生成，不入存档（否则每加一棵草都要写库）。玩家亲手种/浇的东西例外，存进存档的 planted[]。",
+  "scatter": {
+    "note": "按格子哈希决定是否生成，同一 seed + 同一格永远得到同一个结果 → 换设备/串门看到的是同一片草地",
+    "densityPer100": {
+      "flower": 6,
+      "grass": 12,
+      "stone": 3,
+      "mushroom": 2
+    },
+    "zones": {
+      "yard": {
+        "kinds": [
+          "flower",
+          "grass",
+          "stone"
+        ],
+        "excludeNearHouse": 1
+      },
+      "street": {
+        "kinds": [
+          "grass",
+          "stone"
+        ],
+        "excludeRoads": true
+      }
+    }
+  },
+  "growth": {
+    "note": "装饰物生长阶段由「种下时间 + 当前时间」推导，不写状态机",
+    "stages": [
+      {
+        "id": "seed",
+        "afterMinutes": 0,
+        "scale": 0.45
+      },
+      {
+        "id": "sprout",
+        "afterMinutes": 720,
+        "scale": 0.7
+      },
+      {
+        "id": "bloom",
+        "afterMinutes": 2160,
+        "scale": 1
+      }
+    ],
+    "waterBonusMinutes": 240
+  },
+  "traffic": {
+    "note": "车流：位置 = f(当前秒, 车道, 车号)，不需要服务端广播，也不需要存档。speedPerMinute 是游戏分钟口径（很慢，只用于逻辑推演），实际观感用 speedPerSecond。",
+    "speedPerMinute": 0.08,
+    "speedPerSecond": 2.4,
+    "carsPerLane": 3,
+    "kinds": [
+      "car.red",
+      "car.blue",
+      "car.gray",
+      "bike"
+    ],
+    "light": {
+      "note": "红绿灯：两个相位交替（横绿/纵绿），周期秒数由它决定；车辆在红灯前 0.6 格停车，行人站在斑马线上时两侧都停。",
+      "cycleSec": 16
+    }
+  }
+}

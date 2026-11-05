@@ -1,0 +1,859 @@
+{
+  "schema": "map/1",
+  "id": "map.street",
+  "renderer": "neighborhood",
+  "grid": {
+    "w": 68,
+    "h": 48
+  },
+  "border": {
+    "note": "边界缓冲带：绿篱与内容之间留出的草坪格数，避免楼贴着围栏",
+    "margin": 2
+  },
+  "wild": {
+    "note": "地图外围的荒野：按哈希程序化生成，不占数据、不参与寻路。将来做\"无限画布\"时，新的街区只要往 zones/houses 里加，外围自动过渡。",
+    "treeDensity": 0.045,
+    "density": 0.12
+  },
+  "layoutNote": "楼高 3 格、屋顶向上延伸约 6 格：同一条街上不要排两排楼，否则南排会挡住北排门口的人。商铺一律单行、门朝南。",
+  "houses": [
+    {
+      "id": "house.2栋",
+      "label": "2栋",
+      "rect": {
+        "x": 4,
+        "y": 4,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": "npc.n1"
+    },
+    {
+      "id": "house.3栋",
+      "label": "3栋",
+      "rect": {
+        "x": 10,
+        "y": 4,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#c7ab7f"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": "npc.n2"
+    },
+    {
+      "id": "house.4栋",
+      "label": "4栋",
+      "rect": {
+        "x": 16,
+        "y": 4,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#e0c9a0"
+      },
+      "floors": 4,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.5栋",
+      "label": "5栋",
+      "rect": {
+        "x": 4,
+        "y": 8,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#c7ab7f"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.6栋",
+      "label": "6栋",
+      "rect": {
+        "x": 10,
+        "y": 8,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.7栋",
+      "label": "7栋",
+      "rect": {
+        "x": 16,
+        "y": 8,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#cfb894"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.8栋",
+      "label": "8栋",
+      "rect": {
+        "x": 54,
+        "y": 4,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.9栋",
+      "label": "9栋",
+      "rect": {
+        "x": 59,
+        "y": 4,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#c7ab7f"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.10栋",
+      "label": "10栋",
+      "rect": {
+        "x": 54,
+        "y": 8,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#e0c9a0"
+      },
+      "floors": 4,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": "npc.n3"
+    },
+    {
+      "id": "house.11栋",
+      "label": "11栋",
+      "rect": {
+        "x": 59,
+        "y": 8,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#cfb894"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.12栋",
+      "label": "12栋",
+      "rect": {
+        "x": 12,
+        "y": 14,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.13栋",
+      "label": "13栋",
+      "rect": {
+        "x": 12,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#c7ab7f"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.14栋",
+      "label": "14栋",
+      "rect": {
+        "x": 46,
+        "y": 14,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#e0c9a0"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": "npc.n4"
+    },
+    {
+      "id": "house.15栋",
+      "label": "15栋",
+      "rect": {
+        "x": 52,
+        "y": 14,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.16栋",
+      "label": "16栋",
+      "rect": {
+        "x": 58,
+        "y": 14,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#cfb894"
+      },
+      "floors": 4,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.17栋",
+      "label": "17栋",
+      "rect": {
+        "x": 46,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#c7ab7f"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.18栋",
+      "label": "18栋",
+      "rect": {
+        "x": 52,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.19栋",
+      "label": "19栋",
+      "rect": {
+        "x": 58,
+        "y": 18,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#e0c9a0"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.公寓楼",
+      "label": "公寓楼",
+      "rect": {
+        "x": 5,
+        "y": 39,
+        "w": 2,
+        "h": 3
+      },
+      "palette": {
+        "body": "#cfc7b6"
+      },
+      "floors": 18,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null,
+      "home": true
+    },
+    {
+      "id": "house.20栋",
+      "label": "20栋",
+      "rect": {
+        "x": 12,
+        "y": 38,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#c7ab7f"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": "npc.n5"
+    },
+    {
+      "id": "house.21栋",
+      "label": "21栋",
+      "rect": {
+        "x": 26,
+        "y": 38,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.22栋",
+      "label": "22栋",
+      "rect": {
+        "x": 33,
+        "y": 38,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#cfb894"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.23栋",
+      "label": "23栋",
+      "rect": {
+        "x": 48,
+        "y": 38,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#e0c9a0"
+      },
+      "floors": 2,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    },
+    {
+      "id": "house.24栋",
+      "label": "24栋",
+      "rect": {
+        "x": 55,
+        "y": 38,
+        "w": 4,
+        "h": 3
+      },
+      "palette": {
+        "body": "#d3b98d"
+      },
+      "floors": 3,
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "owner": null
+    }
+  ],
+  "trees": [],
+  "treeRules": {
+    "note": "树的播种规则：草坪按哈希自动种，避免手工挪坐标；门口与路口保留空地",
+    "lawnDensity": 0.05,
+    "gardenDensity": 0.07,
+    "clearNearDoor": 2
+  },
+  "portals": [
+    {
+      "id": "street.toHome",
+      "role": "enter",
+      "at": {
+        "x": 7,
+        "y": 43
+      },
+      "target": "map.home"
+    }
+  ],
+  "spawn": {
+    "x": 7,
+    "y": 43
+  },
+  "zonesNote": "分区表：按面积从小到大匹配（小区域覆盖大区域）；kind=shop 是店铺，kind=civic 是公共服务建筑",
+  "zones": [
+    {
+      "id": "road_h1",
+      "kind": "road",
+      "x": 3,
+      "y": 12,
+      "w": 62,
+      "h": 2,
+      "label": "林荫北路"
+    },
+    {
+      "id": "road_h2",
+      "kind": "road",
+      "x": 3,
+      "y": 23,
+      "w": 62,
+      "h": 2,
+      "label": "中央大道"
+    },
+    {
+      "id": "road_h3",
+      "kind": "road",
+      "x": 3,
+      "y": 35,
+      "w": 62,
+      "h": 2,
+      "label": "南环路"
+    },
+    {
+      "id": "road_v1",
+      "kind": "road",
+      "x": 20,
+      "y": 3,
+      "w": 2,
+      "h": 42,
+      "label": "西支路"
+    },
+    {
+      "id": "road_v2",
+      "kind": "road",
+      "x": 42,
+      "y": 3,
+      "w": 2,
+      "h": 42,
+      "label": "东支路"
+    },
+    {
+      "id": "park",
+      "kind": "park",
+      "x": 23,
+      "y": 3,
+      "w": 18,
+      "h": 8,
+      "label": "街心公园"
+    },
+    {
+      "id": "pond",
+      "kind": "pond",
+      "x": 27,
+      "y": 5,
+      "w": 8,
+      "h": 4,
+      "label": "荷花池"
+    },
+    {
+      "id": "garden_ne",
+      "kind": "garden",
+      "x": 45,
+      "y": 3,
+      "w": 8,
+      "h": 8,
+      "label": "东花园"
+    },
+    {
+      "id": "parking",
+      "kind": "parking",
+      "x": 4,
+      "y": 14,
+      "w": 6,
+      "h": 5,
+      "label": "停车位"
+    },
+    {
+      "id": "garden_w",
+      "kind": "garden",
+      "x": 4,
+      "y": 20,
+      "w": 6,
+      "h": 2,
+      "label": "西花坛"
+    },
+    {
+      "id": "garden_c",
+      "kind": "garden",
+      "x": 23,
+      "y": 14,
+      "w": 18,
+      "h": 8,
+      "label": "中央绿地"
+    },
+    {
+      "id": "pavement",
+      "kind": "pavement",
+      "x": 3,
+      "y": 25,
+      "w": 17,
+      "h": 10,
+      "label": "商业街"
+    },
+    {
+      "id": "shop1",
+      "kind": "shop",
+      "x": 4,
+      "y": 26,
+      "w": 5,
+      "h": 3,
+      "label": "便利店",
+      "tint": "#c85a4a"
+    },
+    {
+      "id": "shop2",
+      "kind": "shop",
+      "x": 10,
+      "y": 26,
+      "w": 5,
+      "h": 3,
+      "label": "咖啡店",
+      "tint": "#6f8ba8"
+    },
+    {
+      "id": "shop3",
+      "kind": "shop",
+      "x": 15,
+      "y": 26,
+      "w": 4,
+      "h": 3,
+      "label": "菜市场",
+      "tint": "#6fae6f"
+    },
+    {
+      "id": "shop4",
+      "kind": "shop",
+      "x": 42,
+      "y": 23,
+      "w": 4,
+      "h": 3,
+      "label": "快递站",
+      "tint": "#c8964a"
+    },
+    {
+      "id": "plaza",
+      "kind": "plaza",
+      "x": 24,
+      "y": 26,
+      "w": 16,
+      "h": 7,
+      "label": "中心广场"
+    },
+    {
+      "id": "court",
+      "kind": "court",
+      "x": 46,
+      "y": 26,
+      "w": 6,
+      "h": 5,
+      "label": "篮球场"
+    },
+    {
+      "id": "sand",
+      "kind": "sand",
+      "x": 54,
+      "y": 26,
+      "w": 9,
+      "h": 5,
+      "label": "儿童乐园"
+    },
+    {
+      "id": "shop5",
+      "kind": "shop",
+      "x": 54,
+      "y": 23,
+      "w": 4,
+      "h": 3,
+      "label": "奶茶店",
+      "tint": "#d08aa0"
+    },
+    {
+      "id": "hospital",
+      "kind": "civic",
+      "x": 22,
+      "y": 12,
+      "w": 6,
+      "h": 4,
+      "label": "社区医院",
+      "tint": "#6fa8c9"
+    },
+    {
+      "id": "school",
+      "kind": "civic",
+      "x": 29,
+      "y": 12,
+      "w": 7,
+      "h": 4,
+      "label": "实验小学",
+      "tint": "#c9a24a"
+    },
+    {
+      "id": "police",
+      "kind": "civic",
+      "x": 22,
+      "y": 17,
+      "w": 5,
+      "h": 3,
+      "label": "派出所",
+      "tint": "#4a6fa8"
+    },
+    {
+      "id": "property",
+      "kind": "civic",
+      "x": 29,
+      "y": 17,
+      "w": 5,
+      "h": 3,
+      "label": "物业公司",
+      "tint": "#7a9a6a"
+    },
+    {
+      "id": "shop_car",
+      "kind": "shop",
+      "x": 44,
+      "y": 31,
+      "w": 5,
+      "h": 3,
+      "label": "4S 店",
+      "tint": "#8a8f98"
+    },
+    {
+      "id": "parking_4s",
+      "kind": "parking",
+      "x": 50,
+      "y": 31,
+      "w": 4,
+      "h": 3,
+      "label": "4S 停车场"
+    },
+    {
+      "id": "shop_lottery",
+      "kind": "shop",
+      "x": 16,
+      "y": 16,
+      "w": 4,
+      "h": 3,
+      "label": "彩票站",
+      "tint": "#c86f9a"
+    },
+    {
+      "id": "shop_restaurant",
+      "kind": "shop",
+      "x": 4,
+      "y": 31,
+      "w": 5,
+      "h": 3,
+      "label": "老张饭馆",
+      "tint": "#c9803f"
+    },
+    {
+      "id": "shop_super",
+      "kind": "shop",
+      "x": 10,
+      "y": 31,
+      "w": 6,
+      "h": 3,
+      "label": "惠民超市",
+      "tint": "#6f9a8a"
+    }
+  ],
+  "zoneKinds": {
+    "road": {
+      "note": "沥青路面",
+      "ground": "#8f8b82"
+    },
+    "plaza": {
+      "note": "广场砖石",
+      "ground": "#d5c9ae"
+    },
+    "court": {
+      "note": "塑胶球场 + 白线",
+      "ground": "#6f9c6a"
+    },
+    "pavement": {
+      "note": "商业街铺装",
+      "ground": "#cbc0a6"
+    },
+    "sand": {
+      "note": "儿童乐园沙地",
+      "ground": "#e2d2ad"
+    },
+    "parking": {
+      "note": "停车位（沥青 + 车位线）",
+      "ground": "#8a8880"
+    },
+    "park": {
+      "note": "公园草坪",
+      "ground": "#93c07a"
+    },
+    "pond": {
+      "note": "水面（不可行走，整体绘制）",
+      "ground": "#a9c489"
+    },
+    "garden": {
+      "note": "花坛草坪",
+      "ground": "#8fbb72"
+    },
+    "shop": {
+      "note": "店铺建筑占地（阻挡通行）"
+    },
+    "lawn": {
+      "note": "默认草坪，颜色随季节"
+    },
+    "civic": {
+      "note": "公共服务建筑（医院/学校/派出所/物业），楼体占格会阻挡"
+    }
+  },
+  "fences": {
+    "note": "围栏不手写整圈坐标：areas 给一个矩形（院落边界），gates 给大门格；客户端沿矩形画一圈栏杆、门格留洞，围栏格同时参与碰撞。border 是小区围墙。",
+    "border": {
+      "style": "hedge"
+    },
+    "areas": [
+      {
+        "id": "civic_block",
+        "style": "rail",
+        "rect": {
+          "x": 21,
+          "y": 11,
+          "w": 16,
+          "h": 11
+        },
+        "note": "公共服务区院落：医院/小学/派出所/物业都在围墙里，南侧两个大门（x=27、x=34）通向中央大道",
+        "gates": [
+          {
+            "x": 27,
+            "y": 22
+          },
+          {
+            "x": 34,
+            "y": 22
+          }
+        ]
+      }
+    ]
+  },
+  "mailbox": {
+    "x": 7,
+    "y": 42,
+    "label": "信箱"
+  },
+  "mailboxNote": "楼下的信箱：账单一到就投这里，点开看通知、逐条支付。位置必须在公寓楼门口附近的可走格上。"
+}

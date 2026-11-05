@@ -1,0 +1,389 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-05T19:45:38.760Z",
+  "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
+  "modules": {
+    "achievements/achievements.json": {
+      "version": 2,
+      "hash": "f32f8e5825ce",
+      "updatedAt": "2026-11-05T14:48:31.850Z"
+    },
+    "careers/jobs.json": {
+      "version": 4,
+      "hash": "a76ea261f47b",
+      "updatedAt": "2026-11-05T19:17:35.955Z"
+    },
+    "catalog/categories.json": {
+      "version": 1,
+      "hash": "5599bf855145",
+      "updatedAt": "2026-11-05T12:55:12.499Z"
+    },
+    "catalog/furniture.core.json": {
+      "version": 3,
+      "hash": "634f86f85e9e",
+      "updatedAt": "2026-11-05T12:58:38.488Z"
+    },
+    "catalog/items.decor.json": {
+      "version": 1,
+      "hash": "f4800b19fb18",
+      "updatedAt": "2026-11-05T09:56:34.049Z"
+    },
+    "characters/npcs.neighbors.json": {
+      "version": 6,
+      "hash": "69ec7d614a13",
+      "updatedAt": "2026-11-05T18:22:16.105Z"
+    },
+    "characters/palettes.json": {
+      "version": 1,
+      "hash": "9cf60aa16886",
+      "updatedAt": "2026-11-05T09:56:34.049Z"
+    },
+    "characters/player.default.json": {
+      "version": 1,
+      "hash": "1b632f4c14f5",
+      "updatedAt": "2026-11-05T09:56:34.049Z"
+    },
+    "environment/ambient.json": {
+      "version": 3,
+      "hash": "231f68e48694",
+      "updatedAt": "2026-11-05T18:30:04.792Z"
+    },
+    "environment/climate.json": {
+      "version": 4,
+      "hash": "ef5ded811ec6",
+      "updatedAt": "2026-11-05T13:42:24.750Z"
+    },
+    "environment/seasons.json": {
+      "version": 2,
+      "hash": "0611393d2e77",
+      "updatedAt": "2026-11-05T13:42:24.753Z"
+    },
+    "house/levels.json": {
+      "version": 1,
+      "hash": "0b30ce05d329",
+      "updatedAt": "2026-11-05T09:56:34.049Z"
+    },
+    "house/residence.json": {
+      "version": 4,
+      "hash": "a43b4e06a42f",
+      "updatedAt": "2026-11-05T19:17:35.957Z"
+    },
+    "house/styles.json": {
+      "version": 1,
+      "hash": "558eb9062d64",
+      "updatedAt": "2026-11-05T09:56:34.049Z"
+    },
+    "interaction/verbs.json": {
+      "version": 1,
+      "hash": "7b5108c68803",
+      "updatedAt": "2026-11-05T12:55:12.501Z"
+    },
+    "lottery/lottery.json": {
+      "version": 1,
+      "hash": "b1cd4c62e2d5",
+      "updatedAt": "2026-11-05T19:01:54.435Z"
+    },
+    "maps/home.map.json": {
+      "version": 1,
+      "hash": "fa7263c09f78",
+      "updatedAt": "2026-11-05T09:56:34.049Z"
+    },
+    "maps/street.map.json": {
+      "version": 16,
+      "hash": "2e8a3102604b",
+      "updatedAt": "2026-11-05T19:17:35.958Z"
+    },
+    "rules/bills.json": {
+      "version": 1,
+      "hash": "2ff3cf93c8a8",
+      "updatedAt": "2026-11-05T19:17:35.958Z"
+    },
+    "rules/economy.json": {
+      "version": 5,
+      "hash": "44301bbfc094",
+      "updatedAt": "2026-11-05T19:40:49.807Z"
+    },
+    "rules/survival.json": {
+      "version": 5,
+      "hash": "1d0d3ccce7d0",
+      "updatedAt": "2026-11-05T19:42:27.307Z"
+    },
+    "ui/strings.zh-CN.json": {
+      "version": 2,
+      "hash": "9afa3735c2fe",
+      "updatedAt": "2026-11-05T09:58:52.984Z"
+    },
+    "vehicles/cars.json": {
+      "version": 2,
+      "hash": "e28eaf242a03",
+      "updatedAt": "2026-11-05T19:17:35.959Z"
+    }
+  },
+  "catalog": [
+    {
+      "id": "bed",
+      "name": "床",
+      "cat": "furniture",
+      "price": 320,
+      "w": 2,
+      "h": 1,
+      "cozy": 6,
+      "walk": false,
+      "action": "sleep"
+    },
+    {
+      "id": "sofa",
+      "name": "沙发",
+      "cat": "furniture",
+      "price": 260,
+      "w": 2,
+      "h": 1,
+      "cozy": 5,
+      "walk": false,
+      "action": "rest"
+    },
+    {
+      "id": "dining",
+      "name": "餐桌",
+      "cat": "furniture",
+      "price": 180,
+      "w": 2,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": "eat"
+    },
+    {
+      "id": "fridge",
+      "name": "冰箱",
+      "cat": "appliance",
+      "price": 460,
+      "w": 1,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": "snack"
+    },
+    {
+      "id": "stove",
+      "name": "灶台",
+      "cat": "appliance",
+      "price": 520,
+      "w": 2,
+      "h": 1,
+      "cozy": 4,
+      "walk": false,
+      "action": "cook"
+    },
+    {
+      "id": "sink",
+      "name": "水槽",
+      "cat": "furniture",
+      "price": 140,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "drink"
+    },
+    {
+      "id": "tv",
+      "name": "电视",
+      "cat": "appliance",
+      "price": 580,
+      "w": 2,
+      "h": 1,
+      "cozy": 5,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "stereo",
+      "name": "音响",
+      "cat": "appliance",
+      "price": 300,
+      "w": 1,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": "music"
+    },
+    {
+      "id": "bookshelf",
+      "name": "书柜",
+      "cat": "furniture",
+      "price": 200,
+      "w": 1,
+      "h": 1,
+      "cozy": 4,
+      "walk": false,
+      "action": "read"
+    },
+    {
+      "id": "plant",
+      "name": "绿植",
+      "cat": "decor",
+      "price": 60,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "water"
+    },
+    {
+      "id": "wardrobe",
+      "name": "衣柜",
+      "cat": "furniture",
+      "price": 230,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "lamp",
+      "name": "台灯",
+      "cat": "decor",
+      "price": 45,
+      "w": 1,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "toilet",
+      "name": "马桶",
+      "cat": "furniture",
+      "price": 120,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "wc"
+    },
+    {
+      "id": "bathtub",
+      "name": "浴缸",
+      "cat": "furniture",
+      "price": 480,
+      "w": 2,
+      "h": 1,
+      "cozy": 6,
+      "walk": false,
+      "action": "bath"
+    },
+    {
+      "id": "pc",
+      "name": "电脑",
+      "cat": "appliance",
+      "price": 550,
+      "w": 1,
+      "h": 1,
+      "cozy": 5,
+      "walk": false,
+      "action": "net"
+    },
+    {
+      "id": "rug_warm",
+      "name": "暖阳地毯",
+      "cat": "decor",
+      "price": 150,
+      "w": 2,
+      "h": 2,
+      "cozy": 4,
+      "walk": true,
+      "action": null
+    },
+    {
+      "id": "rug_cool",
+      "name": "晴空地毯",
+      "cat": "decor",
+      "price": 150,
+      "w": 2,
+      "h": 2,
+      "cozy": 4,
+      "walk": true,
+      "action": null
+    },
+    {
+      "id": "painting",
+      "name": "装饰画",
+      "cat": "decor",
+      "price": 90,
+      "w": 1,
+      "h": 1,
+      "cozy": 4,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "shelf",
+      "name": "置物架",
+      "cat": "decor",
+      "price": 170,
+      "w": 1,
+      "h": 1,
+      "cozy": 4,
+      "walk": false,
+      "action": null
+    }
+  ],
+  "houseLevels": [
+    {
+      "name": "温馨一居",
+      "w": 12,
+      "h": 8,
+      "price": 0
+    },
+    {
+      "name": "两室一厅",
+      "w": 14,
+      "h": 10,
+      "price": 2000
+    },
+    {
+      "name": "豪华别墅",
+      "w": 18,
+      "h": 12,
+      "price": 8000
+    }
+  ],
+  "floorStyles": [
+    {
+      "name": "原木地板",
+      "price": 0
+    },
+    {
+      "name": "灰白瓷砖",
+      "price": 260
+    },
+    {
+      "name": "暖绒地毯",
+      "price": 520
+    },
+    {
+      "name": "深色木纹",
+      "price": 760
+    }
+  ],
+  "wallStyles": [
+    {
+      "name": "米白墙面",
+      "price": 0
+    },
+    {
+      "name": "抹茶绿墙",
+      "price": 180
+    },
+    {
+      "name": "暮霭蓝墙",
+      "price": 180
+    },
+    {
+      "name": "蔷薇粉墙",
+      "price": 220
+    }
+  ]
+}

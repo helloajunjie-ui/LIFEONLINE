@@ -1,0 +1,164 @@
+{
+  "schema": "catalog/1",
+  "note": "纯装修装饰：只贡献装修度，或提供可走/可贴墙等放置特性",
+  "items": [
+    {
+      "id": "rug_warm",
+      "name": "暖阳地毯",
+      "category": "decor",
+      "tags": [
+        "decor",
+        "walkable"
+      ],
+      "price": 150,
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": true,
+        "wallMounted": false,
+        "blocksPath": false,
+        "unique": false
+      },
+      "interaction": null,
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/rug_warm.svg",
+        "size": {
+          "w": 128,
+          "h": 64
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 32
+        }
+      },
+      "ui": {
+        "icon": "rug_warm",
+        "desc": "可踩的暖色地毯",
+        "order": 150
+      }
+    },
+    {
+      "id": "rug_cool",
+      "name": "晴空地毯",
+      "category": "decor",
+      "tags": [
+        "decor",
+        "walkable"
+      ],
+      "price": 150,
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": true,
+        "wallMounted": false,
+        "blocksPath": false,
+        "unique": false
+      },
+      "interaction": null,
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/rug_cool.svg",
+        "size": {
+          "w": 128,
+          "h": 64
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 32
+        }
+      },
+      "ui": {
+        "icon": "rug_cool",
+        "desc": "可踩的冷色地毯",
+        "order": 160
+      }
+    },
+    {
+      "id": "painting",
+      "name": "装饰画",
+      "category": "decor",
+      "tags": [
+        "decor"
+      ],
+      "price": 90,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": null,
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/painting.svg",
+        "size": {
+          "w": 64,
+          "h": 82
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 56
+        }
+      },
+      "ui": {
+        "icon": "painting",
+        "desc": "落地画架，点亮墙面",
+        "order": 170
+      }
+    },
+    {
+      "id": "shelf",
+      "name": "置物架",
+      "category": "decor",
+      "tags": [
+        "decor"
+      ],
+      "price": 170,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "interaction": null,
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/shelf.svg",
+        "size": {
+          "w": 64,
+          "h": 88
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 58
+        }
+      },
+      "ui": {
+        "icon": "shelf",
+        "desc": "摆书和绿植的小架子",
+        "order": 180
+      }
+    }
+  ]
+}

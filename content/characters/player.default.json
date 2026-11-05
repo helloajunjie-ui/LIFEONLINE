@@ -1,0 +1,21 @@
+{
+  "schema": "characters/1",
+  "id": "player.default",
+  "person": {
+    "name": "我的屋主",
+    "gender": "女",
+    "role": "自由职业",
+    "marital": "单身",
+    "address": "幸福小区 · 1栋 101"
+  },
+  "appearance": {
+    "skin": "#f3c9a0",
+    "hair": "#5a3a24",
+    "top": "#4f8ac9",
+    "bottom": "#5d5a78",
+    "shoes": "#8a5a2b",
+    "face": "#3b3226",
+    "hairStyle": 0,
+    "faceStyle": 0
+  }
+}
