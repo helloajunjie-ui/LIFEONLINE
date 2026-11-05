@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="96" viewBox="0 0 64 96">
-  <defs>
-    <radialGradient id="lg"><stop offset="0" stop-color="rgba(255,230,150,.5)"/><stop offset="1" stop-color="rgba(255,230,150,0)"/></radialGradient>
-    <linearGradient id="lp" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6428"/><stop offset=".5" stop-color="#c18d3f"/><stop offset="1" stop-color="#8a6428"/></linearGradient>
-  </defs>
-  <ellipse cx="32" cy="74" rx="18" ry="5" fill="rgba(60,40,20,.18)"/>
-  <ellipse cx="32" cy="71" rx="12" ry="4" fill="#8a6428"/>
-  <rect x="30" y="32" width="4" height="40" fill="url(#lp)"/>
-  <circle cx="32" cy="26" r="22" fill="url(#lg)"/>
-  <path d="M18,36 L46,36 L38,10 L26,10 Z" fill="#f0dfa8" stroke="#d8c080" stroke-width="1"/>
-  <path d="M18,36 Q32,42 46,36" fill="none" stroke="#e0cc90" stroke-width="1.5"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="111" viewBox="0 0 64 111"><ellipse cx="32" cy="104" rx="26.9" ry="9.1" fill="rgba(58,40,22,.22)"/><ellipse cx="32" cy="86" rx="13" ry="6.4" fill="#8a7f6e" stroke="rgba(58,40,22,.32)" stroke-width="1"/><ellipse cx="32" cy="84" rx="13" ry="6.4" fill="#a89b86" stroke="rgba(58,40,22,.32)" stroke-width="1"/><rect x="30.4" y="30" width="3.2" height="56" fill="#9a8d78"/><polygon points="23,8 41,8 49,32 15,32" fill="#f2e6c8" stroke="rgba(120,100,70,.45)" stroke-width="1"/><polygon points="23,8 41,8 38,14 26,14" fill="#fdf6e4" stroke="none"/><ellipse cx="32" cy="32" rx="9" ry="3.2" fill="rgba(255,226,150,.85)"/></svg>

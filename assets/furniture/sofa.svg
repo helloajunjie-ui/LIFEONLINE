@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="84" viewBox="0 0 128 84">
-  <defs>
-    <linearGradient id="sR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8c6e4"/><stop offset="1" stop-color="#8fb0d2"/></linearGradient>
-    <linearGradient id="sL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7b93ad"/><stop offset="1" stop-color="#68829c"/></linearGradient>
-  </defs>
-  <ellipse cx="64" cy="68" rx="58" ry="9" fill="rgba(60,40,20,.15)"/>
-  <polygon points="0,38 64,54 64,70 0,54" fill="url(#sL)"/>
-  <polygon points="128,38 128,54 64,70 64,54" fill="url(#sR)"/>
-  <polygon points="64,22 128,38 64,54 0,38" fill="#8aa8c8"/>
-  <polygon points="0,38 64,22 64,8 0,24" fill="#6f8dab"/>
-  <polygon points="64,22 70,24 70,10 64,8" fill="#5f7a95"/>
-  <path d="M2,25 L62,10" stroke="#89a7c5" stroke-width="1.5" fill="none"/>
-  <polygon points="22,40 45,35 80,44 58,49" fill="#a8c4e0" stroke="#6f8dab" stroke-width="1"/>
-  <polygon points="51,33 74,28 109,37 86,42" fill="#a8c4e0" stroke="#6f8dab" stroke-width="1"/>
-  <path d="M34,42 L56,48" stroke="rgba(111,141,171,.5)" stroke-width="1" fill="none"/>
-  <polygon points="104,32 126,37 126,53 104,48" fill="#9ab7db" stroke="#6f8dab" stroke-width="1"/>
-  <polygon points="104,32 104,48 98,46 98,30" fill="#7b93ad"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="143" viewBox="0 0 128 143"><ellipse cx="64" cy="136" rx="53.8" ry="18.3" fill="rgba(58,40,22,.22)"/><polygon points="0,78 64,110 64,134 0,102" fill="#51708c" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="128,78 64,110 64,134 128,102" fill="#6388aa" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="64,46 128,78 64,110 0,78" fill="#729dc5" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="35.8,92.1 62.7,78.6 90.9,92.7 64.0,106.2" fill="#79a6d0" stroke="rgba(40,60,85,.3)" stroke-width="1"/><polygon points="65.3,77.4 92.2,63.9 120.3,78.0 93.4,91.4" fill="#79a6d0" stroke="rgba(40,60,85,.3)" stroke-width="1"/><polygon points="6.4,52.6 65.3,23.2 65.3,49.2 6.4,78.6" fill="#658bae" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="6.4,52.6 65.3,23.2 59.3,16.2 0.4,45.6" fill="#7dacd7" stroke="rgba(58,40,22,.32)" stroke-width="1"/><line x1="35.8" y1="39.9" x2="35.8" y2="61.9" stroke="rgba(40,60,85,.3)" stroke-width="1.2"/><ellipse cx="57.0" cy="104.6" rx="10" ry="6.5" fill="#5f82a3" stroke="rgba(58,40,22,.32)" stroke-width="1"/><ellipse cx="117.1" cy="74.5" rx="10" ry="6.5" fill="#5f82a3" stroke="rgba(58,40,22,.32)" stroke-width="1"/><line x1="65.3" y1="104.2" x2="65.3" y2="110.2" stroke="#7a5a34" stroke-width="3" stroke-linecap="round"/><line x1="116.5" y1="78.6" x2="116.5" y2="84.6" stroke="#7a5a34" stroke-width="3" stroke-linecap="round"/></svg>

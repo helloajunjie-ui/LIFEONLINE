@@ -36,7 +36,8 @@ content/                 内容层（唯一真相）：26 个 JSON 包
   achievements/ ui/       生活目标、文案
 assets/                   SVG 素材（家具）
 tools/                    内容校验与打包、构建、无头回归、性能基准
-tests/regression.js       浏览器内回归（229 项）
+  gen-furniture.py        家具 SVG 参数化生成器（统一等距几何，改家具走这里）
+tests/regression.js       浏览器内回归（286 项）
 server/                   Go + SQLite 服务端
 dist/                     构建产物（单文件 HTML + 引擎 bundle）
 ```
@@ -46,7 +47,7 @@ dist/                     构建产物（单文件 HTML + 引擎 bundle）
 **改内容**（家具价格、工资、房价、账单周期、地图分区……）——只动 `content/` 下的 JSON，不用碰代码：
 
 ```bash
-node tools/content.mjs validate   # 校验：引用完整性、数值合法性（V1–V4.13）
+node tools/content.mjs validate   # 校验：引用完整性、数值合法性（V1–V4.15）
 node tools/content.mjs all        # extract → validate → bundle（生成服务端用的 content.json）
 node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 ```

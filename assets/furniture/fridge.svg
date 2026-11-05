@@ -1,15 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="fR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e8e2d4"/></linearGradient>
-    <linearGradient id="fL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cbc5b6"/><stop offset="1" stop-color="#b5af9f"/></linearGradient>
-  </defs>
-  <ellipse cx="32" cy="56" rx="30" ry="6" fill="rgba(60,40,20,.15)"/>
-  <polygon points="0,23 32,39 32,55 0,39" fill="url(#fL)"/>
-  <polygon points="64,23 64,39 32,55 32,39" fill="url(#fR)"/>
-  <polygon points="32,7 64,23 32,39 0,23" fill="#f2ede2"/>
-  <path d="M64,29 L32,45 L0,29" fill="none" stroke="#b8b2a2" stroke-width="1.2"/>
-  <rect x="50" y="27" width="3" height="5" rx="1.5" fill="#9aa6b8"/>
-  <rect x="50" y="35" width="3" height="7" rx="1.5" fill="#9aa6b8"/>
-  <path d="M10,20 L32,9" stroke="rgba(255,255,255,.8)" stroke-width="2" fill="none"/>
-  <circle cx="32" cy="23" r="1.5" fill="#c94f6b"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="109" viewBox="0 0 64 109"><ellipse cx="32" cy="102" rx="26.9" ry="9.1" fill="rgba(58,40,22,.22)"/><polygon points="0,28 32,44 32,100 0,84" fill="#b0b2b3" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="64,28 32,44 32,100 64,84" fill="#d1d4d5" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="32,12 64,28 32,44 0,28" fill="#eef1f2" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="62.7,31.6 33.3,46.4 33.3,48.4 62.7,33.6" fill="#c3c9cc" stroke="rgba(58,40,22,.32)" stroke-width="0.8"/><polygon points="62.7,47.6 33.3,62.4 33.3,64.4 62.7,49.6" fill="#c3c9cc" stroke="rgba(58,40,22,.32)" stroke-width="0.8"/><polygon points="60.8,36.6 58.9,37.6 58.9,45.6 60.8,44.6" fill="#9aa3a8" stroke="rgba(58,40,22,.32)" stroke-width="0.6"/><polygon points="60.8,53.6 58.9,54.6 58.9,64.6 60.8,63.6" fill="#9aa3a8" stroke="rgba(58,40,22,.32)" stroke-width="0.6"/><ellipse cx="18.6" cy="27.7" rx="6" ry="2.6" fill="rgba(255,255,255,.30)"/></svg>

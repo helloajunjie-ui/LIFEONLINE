@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="62" viewBox="0 0 64 62">
-  <defs>
-    <linearGradient id="kR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3d8de"/><stop offset="1" stop-color="#bcc2ca"/></linearGradient>
-    <linearGradient id="kL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8aeb8"/><stop offset="1" stop-color="#939aa5"/></linearGradient>
-  </defs>
-  <ellipse cx="32" cy="50" rx="28" ry="5" fill="rgba(60,40,20,.15)"/>
-  <polygon points="0,22 32,38 32,52 0,36" fill="url(#kL)"/>
-  <polygon points="64,22 64,36 32,52 32,38" fill="url(#kR)"/>
-  <polygon points="32,6 64,22 32,38 0,22" fill="#e8ebee"/>
-  <polygon points="4,28 28,39 28,49 4,38" fill="none" stroke="rgba(60,66,76,.35)" stroke-width="1"/>
-  <rect x="13" y="35" width="7" height="2" rx="1" fill="#7d8590"/>
-  <polygon points="36,40 60,29 60,39 36,50" fill="none" stroke="rgba(60,66,76,.3)" stroke-width="1"/>
-  <polygon points="32,16 46,23 32,30 18,23" fill="#aebdca" stroke="#8fa0b0" stroke-width="1"/>
-  <polygon points="32,19 41,23 32,27 23,23" fill="#93a7b8"/>
-  <rect x="30" y="0" width="4" height="9" rx="1.5" fill="#9aa6b8"/>
-  <path d="M32,2 Q40,2 40,9" stroke="#9aa6b8" stroke-width="3" fill="none"/>
-  <circle cx="40" cy="10" r="1.5" fill="#7d8a9c"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="93" viewBox="0 0 64 93"><ellipse cx="32" cy="86" rx="26.9" ry="9.1" fill="rgba(58,40,22,.22)"/><polygon points="0,28 32,44 32,84 0,68" fill="#b0b2b3" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="64,28 32,44 32,84 64,68" fill="#d6d9da" stroke="rgba(58,40,22,.32)" stroke-width="1"/><polygon points="32,12 64,28 32,44 0,28" fill="#eef1f2" stroke="rgba(58,40,22,.32)" stroke-width="1"/><ellipse cx="33.6" cy="28.8" rx="17" ry="9" fill="#cdd6da" stroke="rgba(120,130,140,.6)" stroke-width="1"/><ellipse cx="33.6" cy="28.8" rx="14" ry="7" fill="#aab8bf"/><rect x="19.759999999999998" y="8.879999999999999" width="4" height="15" fill="#9aa6b0" stroke="rgba(90,100,110,.6)" stroke-width="0.8"/><rect x="19.759999999999998" y="6.879999999999999" width="11" height="4" fill="#9aa6b0" stroke="rgba(90,100,110,.6)" stroke-width="0.8"/><polyline points="0,28 32,12 64,28" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.6"/></svg>
