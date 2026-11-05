@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-05T20:26:26.934Z",
+  "generatedAt": "2026-11-05T20:40:24.814Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -9,9 +9,9 @@
       "updatedAt": "2026-11-05T14:48:31.850Z"
     },
     "business/business.json": {
-      "version": 1,
-      "hash": "4a4f2674d33d",
-      "updatedAt": "2026-11-05T20:26:26.836Z"
+      "version": 3,
+      "hash": "5e5248ad66a2",
+      "updatedAt": "2026-11-05T20:32:27.142Z"
     },
     "careers/jobs.json": {
       "version": 4,

@@ -2217,19 +2217,42 @@
         bizNameOf(BIZ_SHOPS.find(s => s.id === 'biz.lottery')) === '2737 号 · 彩票站',
         bizNameOf(BIZ_SHOPS.find(s => s.id === 'biz.lottery')));
 
-      // Z5 结算：两天 65/天
+      // Z5 结算：按天累加（每天客流不同，不能再是"平均数 × 天数"）
       DAY = 50; MONEY = 1000; BIZ_LAST_DAY = 48;
       BIZ_LIST = [{ shopId: 'biz.store', start: 40, end: 70, fee: 1500 }];
+      let expect5 = 0;
+      for (let d = 49; d <= 50; d++) expect5 += bizDayIncome('biz.store', d);
       const got = settleBusiness();
-      P('Z5 settle pays daily rate', got === 130 && MONEY === 1130,
-        JSON.stringify({ got: got, money: MONEY }));
+      P('Z5 settle sums per-day income', got === expect5 && MONEY === 1000 + expect5,
+        JSON.stringify({ got: got, expect: expect5, money: MONEY }));
 
       // Z6 离线补结算有上限（最多 catchUpDays 天）
       DAY = 200; MONEY = 0; BIZ_LAST_DAY = 1;
       BIZ_LIST = [{ shopId: 'biz.store', start: 1, end: 400, fee: 1500 }];
+      let expect6 = 0, days6 = 0;
+      for (let d = 200 - BIZ_CATCHUP + 1; d <= 200; d++){ expect6 += bizDayIncome('biz.store', d); days6++; }
       const capped = settleBusiness();
       P('Z6 catch-up is capped at catchUpDays',
-        capped === 65 * BIZ_CATCHUP, JSON.stringify({ capped: capped, cap: BIZ_CATCHUP, rate: 65 }));
+        capped === expect6 && days6 === BIZ_CATCHUP,
+        JSON.stringify({ capped: capped, expect: expect6, cap: BIZ_CATCHUP }));
+
+      // Z12 每日收入确实有起伏（不是固定值）
+      const vals = {};
+      for (let d = 1; d <= 30; d++) vals['v' + bizDayIncome('biz.store', d)] = 1;
+      P('Z12 daily income varies day to day', Object.keys(vals).length >= 8,
+        'distinct=' + Object.keys(vals).length);
+
+      // Z13 同一天同一家店反复算，结果必须一样（读档不能变）
+      P('Z13 factor is stable for the same day',
+        bizDayFactor('biz.store', 42) === bizDayFactor('biz.store', 42) &&
+        bizDayIncome('biz.store', 42) === bizDayIncome('biz.store', 42));
+
+      // Z14 周末系数更高（同一天：周末日 vs 工作日）
+      const wkEnd = 7;                       // 7 % 7 = 0 → 周末
+      const wkDay = 3;
+      P('Z14 weekend factor is boosted',
+        bizIsWeekend(wkEnd) === true && bizIsWeekend(wkDay) === false,
+        JSON.stringify({ end: bizIsWeekend(wkEnd), day: bizIsWeekend(wkDay) }));
 
       // Z7 过期记录在结算时被清掉
       DAY = 60; BIZ_LAST_DAY = 59; MONEY = 0;

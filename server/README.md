@@ -63,7 +63,7 @@ cd E:/QHTML/server && ./home-server.exe
 | POST 🔒 | `/api/v1/friends/{userId}` | 加好友（单向关注，幂等） |
 | DELETE 🔒 | `/api/v1/friends/{userId}` | 删好友 |
 | GET | `/api/v1/business` | 功能点承包状态：`{day, items:[{shopId,userId,nickname,daysLeft}], mine:[shopId]}`。带 token 时多返回 `mine`，客户端不用自己存 userId |
-| POST 🔒 | `/api/v1/business/{shopId}/take` | 承包 / 续约。一个门牌同时只能有一个承包人，被别人占着返回 **409** |
+| POST 🔒 | `/api/v1/business/{shopId}/take` | 承包 / 续租，body `{termDays, fee}`。一个门牌同时只能有一个承包人，被别人占着返回 **409**；自己在租期内再租是**顺延**到期日（返回 `extended:true`），不是从今天重算 |
 | POST 🔒 | `/api/v1/business/{shopId}/release` | 退包（只能退自己的） |
 
 ## 4. 数据表（9 张）
@@ -127,5 +127,6 @@ minute = total - (day-1) × 1440
 |---|---|---|
 | `curl` 连 `127.0.0.1:8787` 超时 | 环境里有 `http_proxy=127.0.0.1:xxxxx`，把本地请求也代理走了 | 用 `--noproxy '*'`，或 `unset http_proxy https_proxy`；只在这台机器上要处理 |
 | `建表失败: no such column: res_building` | 老库缺 `res_*` 列，而 `schema.sql` 里的 `CREATE INDEX` 比 `migrate()` 的 `ALTER TABLE` 先执行 | 已把该索引挪进 `migrate()` 里建；老库启动时自动补列，无需手动干预 |
-| 两人同时承包同一家店，第二个 409 | 正常行为 | `takeBusiness` 用一条带 WHERE 的 upsert 做「检查 + 占用」，不存在两次请求之间的空窗 |
+| 两人同时承包同一家店，第二个 409 | 正常行为 | `takeBusiness` 先试"续租顺延"的 UPDATE，再走带 WHERE 的 upsert，不存在两次请求之间的空窗 |
+| 自测里带 token 调 `/business` 卡死 | `SetMaxOpenConns(1)` 下 rows 没读完又发新查询，自己把唯一连接占住 | 先算 `optionalUser`，再开 `rows` |
 | `go: downloading go1.26.0` 卡住 | `go.mod` 要求 1.26，本机 `D:/Go/go` 是 1.22.5 | 用上面第 1 节的 toolchain 路径；或让 Go 自动下载（首次会慢） |

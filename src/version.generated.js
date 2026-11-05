@@ -4,16 +4,16 @@ export const BUILD = {
   "minAppVersion": "1.6.0",
   "saveSchema": 12,
   "contentVersion": 1,
-  "contentHash": "848ff2d2e45c",
-  "builtAt": "2026-11-05T20:27:39.893Z",
+  "contentHash": "714b48491543",
+  "builtAt": "2026-11-05T20:40:24.921Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
       "hash": "f32f8e5825ce"
     },
     "content/business/business.json": {
-      "version": 1,
-      "hash": "4a4f2674d33d"
+      "version": 3,
+      "hash": "5e5248ad66a2"
     },
     "content/careers/jobs.json": {
       "version": 4,
@@ -105,7 +105,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "848ff2d2e45c"
+      "hash": "714b48491543"
     },
     "src/core/clock.js": {
       "version": null,

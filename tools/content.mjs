@@ -978,8 +978,8 @@ function validate(){
           if (net <= 0) problems.push('[承包] ' + who + ' 一个周期净利为负（日收 ' + daily + ' × ' + term + ' ≤ 承包金 ' + fee + '）');
           else {
             const rate = net / fee;
-            if (rate < 0.05 || rate > 0.6)
-              problems.push('[承包] ' + who + ' 月回报率 ' + (rate * 100).toFixed(0) + '% 不在 5%-60% 之间（太低没人包，太高破坏经济）');
+            if (rate < 0.15 || rate > 0.8)
+              problems.push('[承包] ' + who + ' 月回报率 ' + (rate * 100).toFixed(0) + '% 不在 15%-80% 之间（太低没人包，太高破坏经济）');
           }
         }
       }

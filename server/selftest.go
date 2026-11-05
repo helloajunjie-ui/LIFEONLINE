@@ -563,8 +563,48 @@ func (s *selftest) caseBusiness() {
 	rec = s.do("POST", "/api/v1/business/biz.store/take", body, auth)
 	s.check("承包店铺 200", rec.Code, http.StatusOK)
 
+	// 刚承包 30 天，再租 30 天应当**顺延**到 60 天，而不是重置回 30 天
+	var firstEnd int
+	{
+		var l struct {
+			Items []struct {
+				ShopID   string `json:"shopId"`
+				DaysLeft int    `json:"daysLeft"`
+			} `json:"items"`
+		}
+		r0 := s.do("GET", "/api/v1/business", "", auth)
+		_ = json.Unmarshal(r0.Body.Bytes(), &l)
+		for _, it := range l.Items {
+			if it.ShopID == "biz.store" {
+				firstEnd = it.DaysLeft
+			}
+		}
+	}
 	rec = s.do("POST", "/api/v1/business/biz.store/take", body, auth)
 	s.check("自己续约 200", rec.Code, http.StatusOK)
+	{
+		var l struct {
+			Items []struct {
+				ShopID   string `json:"shopId"`
+				DaysLeft int    `json:"daysLeft"`
+			} `json:"items"`
+		}
+		r0 := s.do("GET", "/api/v1/business", "", auth)
+		_ = json.Unmarshal(r0.Body.Bytes(), &l)
+		after := 0
+		for _, it := range l.Items {
+			if it.ShopID == "biz.store" {
+				after = it.DaysLeft
+			}
+		}
+		if after >= firstEnd+29 {
+			s.pass++
+			fmt.Printf("PASS | 续租顺延 %d 天 → %d 天\n", firstEnd, after)
+		} else {
+			s.failed++
+			fmt.Printf("FAIL | 续租没有顺延 %d 天 → %d 天\n", firstEnd, after)
+		}
+	}
 
 	b := s.newGuest("承包乙")
 	if b.Token == "" {

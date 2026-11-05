@@ -428,6 +428,9 @@ func (a *App) listBusiness(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	day := worldDay(total)
+	/* 必须先问"我是谁"再开 rows：SetMaxOpenConns(1) 下，
+	 * rows 没读完之前新的查询拿不到连接，会直接死锁（踩过）。 */
+	me := a.optionalUser(r)
 	rows, err := a.db.Query(`SELECT b.shop_id, b.user_id, COALESCE(u.nickname,''), b.start_day, b.end_day, b.fee
 		FROM businesses b LEFT JOIN users u ON u.id = b.user_id
 		WHERE b.end_day >= ? ORDER BY b.end_day`, day)
@@ -437,7 +440,6 @@ func (a *App) listBusiness(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	items := []map[string]any{}
-	me := a.optionalUser(r)
 	mine := []string{}
 	for rows.Next() {
 		var shopID, userID, nick string
@@ -486,8 +488,30 @@ func (a *App) takeBusiness(w http.ResponseWriter, r *http.Request, u ctxUser) {
 		return
 	}
 	day := worldDay(total)
-	// WHERE 条件就是并发锁：只有「本来就是我」或「已过期」才允许覆盖
-	res, err := a.db.Exec(`INSERT INTO businesses(shop_id, user_id, start_day, end_day, fee, updated_at)
+
+	// 路径 1：自己还在租期内 → 续租**顺延**（新到期日 = 原到期日 + 本次租期）。
+	// 为什么不能简单重置成「今天 + 租期」：租了 3 个月的人第 50 天再续 1 个月，
+	// 会把剩下 40 天直接抹掉——玩家白亏一个多月。
+	res, err := a.db.Exec(`UPDATE businesses SET end_day = end_day + ?, fee = fee + ?, updated_at = ?
+		WHERE shop_id = ? AND user_id = ? AND end_day >= ?`,
+		body.TermDays, body.Fee, now(), shopID, u.ID, day)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		var endDay int
+		_ = a.db.QueryRow(`SELECT end_day FROM businesses WHERE shop_id = ?`, shopID).Scan(&endDay)
+		if endDay == 0 {
+			endDay = day + body.TermDays
+		}
+		ok(w, map[string]any{"ok": true, "day": day, "endDay": endDay, "extended": true})
+		return
+	}
+
+	// 路径 2：新租，或接手别人已到期的。WHERE 条件就是并发锁：
+	// 只有「本来就是我」或「已过期」才允许覆盖，别人还在租期内一定抢不走。
+	res, err = a.db.Exec(`INSERT INTO businesses(shop_id, user_id, start_day, end_day, fee, updated_at)
 		VALUES(?,?,?,?,?,?)
 		ON CONFLICT(shop_id) DO UPDATE SET
 			user_id=excluded.user_id, start_day=excluded.start_day,
@@ -503,7 +527,7 @@ func (a *App) takeBusiness(w http.ResponseWriter, r *http.Request, u ctxUser) {
 		fail(w, http.StatusConflict, "这家店已经被别人承包了")
 		return
 	}
-	ok(w, map[string]any{"ok": true, "day": day, "endDay": day + body.TermDays})
+	ok(w, map[string]any{"ok": true, "day": day, "endDay": day + body.TermDays, "extended": false})
 }
 
 func (a *App) releaseBusiness(w http.ResponseWriter, r *http.Request, u ctxUser) {

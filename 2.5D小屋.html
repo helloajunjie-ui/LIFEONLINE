@@ -285,6 +285,12 @@
   #biz .bf2 button:disabled{background:#d9cdb8; color:#fff; cursor:not-allowed;}
   #biz .barwrap{height:4px; border-radius:99px; background:rgba(122,82,48,.12); margin-top:7px; overflow:hidden;}
   #biz .barwrap i{display:block; height:100%; background:#6f9a6a; border-radius:99px;}
+  #biz .terms{display:flex; gap:6px; margin:0 0 9px;}
+  #biz .terms button{
+    flex:1; border:1px solid rgba(122,82,48,.25); background:#fff; color:var(--accent2);
+    border-radius:9px; padding:6px 4px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  #biz .terms button.on{background:var(--accent); color:#fff; border-color:transparent;}
   #counter .cnote{font-size:11px; color:#9a8a6a; line-height:1.7; padding:2px 2px 10px;}
   #counter .ctag{
     display:inline-block; margin-left:6px; font-size:10px; font-weight:800;
@@ -9487,6 +9493,16 @@ const BIZ_TERM = Math.max(1, Math.round(Number(BIZ_DEF.termDays) || 30));
 const BIZ_MAX = Math.max(1, Math.min(6, Math.round(Number(BIZ_DEF.maxOwned) || 3)));
 const BIZ_REFUND = Math.max(0, Math.min(1, Number(BIZ_DEF.refundRatio) || 0.5));
 const BIZ_CATCHUP = Math.max(1, Math.round(Number(BIZ_DEF.catchUpDays) || 30));
+/* 1 个月起租，可以一次租 2–3 个月（越长单价越便宜）。
+ * 租金一次付清，租期内全自动营业——不用盯，也不跟上班冲突。 */
+const BIZ_TERMS = (Array.isArray(BIZ_DEF.termOptions) && BIZ_DEF.termOptions.length)
+  ? BIZ_DEF.termOptions.map(o => ({
+      months: Math.max(1, Math.round(Number(o.months) || 1)),
+      mul: Math.max(0.1, Number(o.mul) || 1),
+      note: String(o.note || '')
+    }))
+  : [{ months: 1, mul: 1, note: '' }];
+let BIZ_TERM_PICK = BIZ_TERMS[0].months;      // 当前选中的租期（月）
 
 let BIZ_LIST = [];        // 我的承包 [{shopId, start, end, fee}]，start/end 是游戏日
 let BIZ_LAST_DAY = 0;     // 上次结算日（离线回来按天数补）
@@ -9509,7 +9525,45 @@ function bizActiveList(){ return BIZ_LIST.filter(bizRunning); }
 function bizDailyNet(){ return bizActiveList().reduce((s, b) => s + (Number((bizShop(b.shopId) || {}).daily) || 0), 0); }
 function bizFeeOf(shop){ return Math.max(0, Math.round(Number(shop.fee) || 0)); }
 function bizDailyOf(shop){ return Math.max(0, Math.round(Number(shop.daily) || 0)); }
+function bizTermOpt(months){
+  return BIZ_TERMS.find(o => o.months === months) || BIZ_TERMS[0];
+}
+function bizPickOpt(){ return bizTermOpt(BIZ_TERM_PICK); }
+/** 选中的租期一共几天、一共多少钱（租金一次付清，不打折的是标准价 × 月数） */
+function bizPickDays(){ return BIZ_TERM * bizPickOpt().months; }
+function bizFeeFor(shop, months){
+  const opt = bizTermOpt(months || BIZ_TERM_PICK);
+  return Math.max(0, Math.round(bizFeeOf(shop) * opt.months * opt.mul));
+}
 function bizMonthNet(shop){ return bizDailyOf(shop) * BIZ_TERM - bizFeeOf(shop); }
+
+/* 客流波动：daily 只是「平日期望」，实际每天乘一个系数。
+ * 系数由「门牌 + 游戏日」稳定散列出来——同一天谁来算都一样，读档不会变，
+ * 但每天都不同，所以经营是"有起伏"而不是一个死数。周末额外多两成半。 */
+const BIZ_FACTOR = BIZ_DEF.factor || { min: 0.7, max: 1.3, weekendMul: 1.25, weekendDays: [0, 6] };
+function bizFactorMin(){ return Math.max(0.1, Number(BIZ_FACTOR.min) || 0.7); }
+function bizFactorMax(){ return Math.max(bizFactorMin(), Number(BIZ_FACTOR.max) || 1.3); }
+function bizIsWeekend(day){ return (BIZ_FACTOR.weekendDays || []).indexOf(((day % 7) + 7) % 7) >= 0; }
+function bizDayFactor(shopId, day){
+  const idx = Math.max(0, BIZ_SHOPS.findIndex(s => s.id === shopId));
+  const r = hashPos(day, idx + 1, 977);
+  let f = bizFactorMin() + r * (bizFactorMax() - bizFactorMin());
+  if (bizIsWeekend(day)) f *= (Number(BIZ_FACTOR.weekendMul) || 1);
+  return f;
+}
+/** 某一家店在某一天的实收 */
+function bizDayIncome(shopId, day){
+  const shop = bizShop(shopId);
+  if (!shop) return 0;
+  return Math.round(bizDailyOf(shop) * bizDayFactor(shopId, day));
+}
+/** 今天的实收（没承包就是 0），面板上用来告诉玩家"今天客流怎么样" */
+function bizTodayIncome(shopId){
+  const b = bizEntry(shopId);
+  if (!bizRunning(b) || DAY <= b.start) return 0;
+  return bizDayIncome(shopId, DAY);
+}
+let BIZ_LAST_INCOME = 0;      // 昨天收了多少钱（面板显示，不进存档）
 /** 门牌号：编号是实体的身份，不是品类的（2737 号彩票站和 2738 号彩票站是两家店） */
 function bizCodeOf(shop){ return String((shop && shop.code) || '').trim(); }
 function bizNameOf(shop){ return bizCodeOf(shop) ? (bizCodeOf(shop) + ' 号 · ' + shop.name) : shop.name; }
@@ -9557,12 +9611,12 @@ async function loadBizRemote(){
   return BIZ_REMOTE;
 }
 
-async function bizPost(path){
+async function bizPost(path, termDays, fee){
   if (!SAVE.token) throw new Error('no-token');
   const r = await fetch(SAVE_API + path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SAVE.token },
-    body: JSON.stringify({ termDays: BIZ_TERM })
+    body: JSON.stringify({ termDays: termDays || BIZ_TERM, fee: fee || 0 })
   });
   return r;
 }
@@ -9581,7 +9635,9 @@ async function takeBusiness(shopId){
     showFloat('最多同时承包 ' + BIZ_MAX + ' 处，先把到期的腾出来', px, py);
     SND.err(); return false;
   }
-  const fee = bizFeeOf(s);
+  const months = bizPickOpt().months;
+  const termDays = BIZ_TERM * months;
+  const fee = bizFeeFor(s, months);
   if (MONEY < fee){
     showFloat('承包金还差 ¥' + (fee - MONEY), px, py);
     SND.err(); return false;
@@ -9592,7 +9648,7 @@ async function takeBusiness(shopId){
   }
   let res;
   try {
-    res = await bizPost('/api/v1/business/' + encodeURIComponent(shopId) + '/take');
+    res = await bizPost('/api/v1/business/' + encodeURIComponent(shopId) + '/take', termDays, fee);
   } catch (e){
     showFloat('连不上服务端，承包没成', px, py);
     SND.err(); return false;
@@ -9605,14 +9661,25 @@ async function takeBusiness(shopId){
     showFloat('承包失败（' + res.status + '）', px, py);
     SND.err(); return false;
   }
-  let endDay = DAY + BIZ_TERM;
-  try { const j = await res.json(); if (j && j.endDay) endDay = j.endDay | 0; } catch(e){}
+  let endDay = DAY + termDays;
+  let extended = false;
+  try {
+    const j = await res.json();
+    if (j){ if (j.endDay) endDay = j.endDay | 0; extended = !!j.extended; }
+  } catch(e){}
   MONEY -= fee;
-  if (exist){ exist.start = DAY; exist.end = endDay; exist.fee = fee; }
-  else BIZ_LIST.push({ shopId: shopId, start: DAY, end: endDay, fee: fee });
+  if (exist){
+    /* 期内续租是「顺延」：到期日往后加，不是从今天重算（否则剩下的天数会被抹掉） */
+    exist.end = endDay;
+    exist.fee = (Number(exist.fee) || 0) + fee;
+    if (!extended) exist.start = DAY;
+  } else {
+    BIZ_LIST.push({ shopId: shopId, start: DAY, end: endDay, fee: fee });
+  }
   if (BIZ_LAST_DAY <= 0) BIZ_LAST_DAY = DAY;
   SND.coin();
-  showFloat('承包「' + bizNameOf(s) + '」· ¥' + fee + ' / ' + BIZ_TERM + ' 天，日入 ¥' + bizDailyOf(s), px, py);
+  showFloat((extended ? '续租「' : '承包「') + bizNameOf(s) + '」· ' + months + ' 个月 ¥' + fee +
+    '，租到第 ' + endDay + ' 天', px, py);
   updateHUD(); saveGame(); renderBiz();
   return true;
 }
@@ -9652,17 +9719,22 @@ function settleBusiness(){
   if (to <= BIZ_LAST_DAY) return 0;
   const from = Math.max(BIZ_LAST_DAY, to - BIZ_CATCHUP);
   let total = 0;
+  let days = 0;
   for (const b of BIZ_LIST){
     const s = Math.max(from, b.start);
     const e = Math.min(to, b.end);
-    const days = e - s;
-    if (days > 0) total += days * bizDailyOf(bizShop(b.shopId) || {});
+    // 逐日累加：每天客流不同，不能拿"平均数 × 天数"糊过去
+    for (let d = s; d < e; d++){
+      total += bizDayIncome(b.shopId, d + 1);
+      days++;
+    }
   }
   BIZ_LAST_DAY = to;
   BIZ_LIST = BIZ_LIST.filter(b => DAY <= b.end);   // 清掉彻底过期的，存档别无限长
   if (total > 0){
     MONEY += total;
-    showFloat('经营收入 +¥' + total, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    BIZ_LAST_INCOME = total;
+    showFloat('经营收入 +¥' + total + (days > 1 ? '（' + days + ' 天）' : ''), Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     SND.coin();
     updateHUD(); saveGame();
   }
@@ -9696,16 +9768,23 @@ function bizCard(s){
   const running = bizRunning(b);
   const expired = !!b && !running;
   const other = bizOccupiedBy(s.id);
-  const fee = bizFeeOf(s), daily = bizDailyOf(s), net = bizMonthNet(s);
+  const opt = bizPickOpt();
+  const days = bizPickDays();
+  const fee = bizFeeFor(s, opt.months), daily = bizDailyOf(s);
+  const gross = daily * days;
+  const net = gross - fee;
   const cls = running ? ' shop mine' : (other ? ' shop taken' : (expired ? ' shop expired' : ' shop'));
 
   let state, btns;
   if (running){
     state = '<span class="bstate mine">我在经营 · 剩 ' + bizDaysLeft(b) + ' 天</span>';
-    btns = '<button class="ghost" data-release="' + s.id + '">退包 ¥' + Math.round(fee * BIZ_REFUND) + '</button>';
+    // 退包按「当初实付」算，不能按当前选中的租期价——否则切换租期就能刷退款
+    btns = '<button class="ghost" data-release="' + s.id + '">退包 ¥' +
+      Math.round((Number(b.fee) || 0) * BIZ_REFUND) + '</button>';
   } else if (other){
     state = '<span class="bstate taken">' + (other.nickname || '邻居') + ' 经营中 · 剩 ' + other.daysLeft + ' 天</span>';
-    btns = '<button disabled>已被承包</button>';
+    btns = '<button disabled title="' + (other.nickname || '邻居') + ' 租到第 ' +
+      (DAY + other.daysLeft) + ' 天，到期后才能接手">已被承包</button>';
   } else if (!BIZ_REMOTE.ok){
     state = '<span class="bstate">未承包</span>';
     btns = '<button disabled title="需要连接服务端">离线不可承包</button>';
@@ -9713,21 +9792,30 @@ function bizCard(s){
     state = expired ? '<span class="bstate expired">已到期</span>' : '<span class="bstate">可承包</span>';
     const can = MONEY >= fee;
     btns = '<button data-take="' + s.id + '"' + (can ? '' : ' disabled') + '>' +
-      (can ? ((expired ? '续约 ¥' : '承包 ¥') + fee) : '差 ¥' + (fee - MONEY)) + '</button>';
+      (can ? ((expired ? '续租 ' : '承包 ') + opt.months + ' 个月 ¥' + fee) : '差 ¥' + (fee - MONEY)) + '</button>';
   }
 
   const prog = running
     ? Math.max(0, Math.min(100, Math.round((DAY - b.start) / Math.max(1, BIZ_TERM) * 100)))
     : 0;
   const bar = running ? '<div class="barwrap"><i style="width:' + prog + '%"></i></div>' : '';
+  /* 日收给区间而不是一个死数：玩家要能看出"客流会变"这件事 */
+  const lo = Math.round(daily * bizFactorMin());
+  const hi = Math.round(daily * bizFactorMax() * (Number(BIZ_FACTOR.weekendMul) || 1));
+  const today = (running && DAY > b.start) ? bizTodayIncome(s.id) : 0;
+  const todayLine = (running && DAY > b.start)
+    ? '<div class="sd" style="margin-top:4px;color:#6a5a44">今天客流 ' +
+      Math.round(bizDayFactor(s.id, DAY) * 100) + '% → 入账 <b style="color:#4a6a32">¥' + today +
+      '</b>（明天到账）</div>'
+    : '';
 
   return '<div class="' + cls + '">' +
     '<div class="sh"><span class="sn">' + bizNameOf(s) + '</span>' +
       (s.tag ? '<span class="btag">' + s.tag + '</span>' : '') + state + '</div>' +
     '<div class="sd">' + (s.desc || '') + '</div>' +
-    '<div class="num"><span>日收 <b>¥' + daily + '</b></span>' +
-      '<span>' + BIZ_TERM + ' 天共 <b>¥' + (daily * BIZ_TERM) + '</b></span>' +
-      '<span>净赚 <i>¥' + net + '</i></span></div>' + bar +
+    '<div class="num"><span>日收 <b>¥' + lo + '–' + hi + '</b></span>' +
+      '<span>' + days + ' 天约 <b>¥' + gross + '</b></span>' +
+      '<span>' + opt.months + ' 月净赚 <i>¥' + net + '</i></span></div>' + bar + todayLine +
     '<div class="bf2">' + btns + '</div></div>';
 }
 
@@ -9739,15 +9827,21 @@ function renderBiz(){
   if (bizBalEl) bizBalEl.textContent = '¥' + MONEY;
 
   const out = [];
-  out.push('<div class="cnote" style="font-size:11px;color:#9a8a6a;line-height:1.7;padding:2px 2px 8px">' +
-    '付一个月承包金，承包期内每天自动结算净收益，到期需要重新续约。' +
-    '一家店同一时间只能有一个老板，最多同时承包 ' + BIZ_MAX + ' 处。' +
+  out.push('<div class="cnote" style="font-size:11px;color:#9a8a6a;line-height:1.7;padding:2px 2px 6px">' +
+    '<b>1 个月起租</b>，租金一次付清；租期内<b>全自动营业</b>，每天按客流结算（0.7–1.3 倍，周末多两成半），' +
+    '不用盯着，也不影响上班。一家店同一时间只有一个老板，最多同时承包 ' + BIZ_MAX + ' 处。' +
     (BIZ_REMOTE.ok ? '' : '<br><b style="color:#a8392a">当前没连上服务端，承包与退包暂不可用</b>') +
+    '</div>');
+  // 租期：一次租得越久单价越便宜
+  out.push('<div class="terms">' + BIZ_TERMS.map(o =>
+    '<button class="' + (o.months === BIZ_TERM_PICK ? 'on' : '') + '" data-term="' + o.months + '">' +
+      o.months + ' 个月' + (o.mul < 1 ? ' · ' + Math.round(o.mul * 100) + ' 折' : '') + '</button>').join('') +
     '</div>');
 
   if (active.length){
+    const todaySum = active.reduce((sum, b) => sum + bizTodayIncome(b.shopId), 0);
     out.push('<div class="sgroup">我的生意 · ' + active.length + '/' + BIZ_MAX +
-      ' · 每天净入 ¥' + income + '</div>');
+      ' · 今天入账 ¥' + todaySum + ' · 平均每天 ¥' + income + '</div>');
     for (const b of active){
       const s = bizShop(b.shopId);
       if (s) out.push(bizCard(s));
@@ -9769,6 +9863,12 @@ if (bizEl){
     if (take && !take.disabled){ takeBusiness(take.getAttribute('data-take')); return; }
     const rel = ev.target.closest('[data-release]');
     if (rel){ releaseBusiness(rel.getAttribute('data-release')); return; }
+    const term = ev.target.closest('[data-term]');
+    if (term){
+      BIZ_TERM_PICK = Number(term.getAttribute('data-term')) || BIZ_TERMS[0].months;
+      renderBiz();
+      return;
+    }
   });
   /* 点面板以外任何地方都收起（HUD 按钮除外：否则点开就被这一下关掉） */
   document.addEventListener('pointerdown', (e) => {
