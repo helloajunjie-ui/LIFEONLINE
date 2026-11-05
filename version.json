@@ -1,7 +1,7 @@
 {
-  "app": "1.25.0",
+  "app": "1.27.0",
   "minApp": "1.6.0",
-  "saveSchema": 12,
+  "saveSchema": 13,
   "note": "app=客户端构建版本；minApp=服务端接受的最低客户端版本；saveSchema=存档结构版本（改动存档字段时 +1 并在客户端加迁移函数）",
   "clockMode": "global",
   "clockModeNote": "global=全服统一世界时间（服务端懒推进，客户端插值校准）；local=每人自己走钟（离线可玩）。world 模式下暂停/倍速关闭。"

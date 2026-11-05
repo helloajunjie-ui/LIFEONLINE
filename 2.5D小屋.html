@@ -209,21 +209,21 @@
   }
   #inventory.open{transform:translateX(0);}
   /* 社区面板（排行榜 + 串门） */
-  #social, #work, #ach, #building, #carshop, #clinic, #lottery, #counter, #mailbox, #biz{
+  #social, #work, #ach, #building, #carshop, #clinic, #lottery, #counter, #mailbox, #biz, #ledger{
     position:absolute; top:0; right:0; bottom:0; z-index:22;
     width:min(340px, 90vw); background:var(--panel); color:var(--ink);
     box-shadow:-8px 0 30px rgba(0,0,0,.25);
     display:flex; flex-direction:column; transform:translateX(105%);
     transition:transform .25s ease; border-left:1px solid rgba(122,82,48,.2);
   }
-  #social.open, #work.open, #ach.open, #building.open, #carshop.open, #clinic.open, #lottery.open, #counter.open, #mailbox.open, #biz.open{transform:translateX(0);}
-  #social .shead, #work .shead, #ach .shead, #building .shead, #carshop .shead, #clinic .shead, #lottery .shead, #counter .shead, #mailbox .shead, #biz .shead{
+  #social.open, #work.open, #ach.open, #building.open, #carshop.open, #clinic.open, #lottery.open, #counter.open, #mailbox.open, #biz.open, #ledger.open{transform:translateX(0);}
+  #social .shead, #work .shead, #ach .shead, #building .shead, #carshop .shead, #clinic .shead, #lottery .shead, #counter .shead, #mailbox .shead, #biz .shead, #ledger .shead{
     display:flex; align-items:center; gap:10px; padding:14px 16px;
     border-bottom:1px solid rgba(122,82,48,.18); flex-wrap:wrap;
   }
-  #social .shead .st, #work .shead .st, #ach .shead .st, #building .shead .st, #carshop .shead .st, #clinic .shead .st, #lottery .shead .st, #counter .shead .st, #mailbox .shead .st, #biz .shead .st{font-size:16px; font-weight:800; color:var(--accent2); margin-right:auto;}
-  #social .list, #work .list, #ach .list, #building .list, #carshop .list, #clinic .list, #lottery .list, #counter .list, #mailbox .list, #biz .list{flex:1; overflow-y:auto; padding:10px 16px 20px;}
-  #social .sgroup, #work .sgroup, #ach .sgroup, #building .sgroup, #carshop .sgroup, #clinic .sgroup, #lottery .sgroup, #counter .sgroup, #mailbox .sgroup, #biz .sgroup{font-size:11px; font-weight:800; letter-spacing:.04em; color:#9a8a6a; margin:10px 0 6px;}
+  #social .shead .st, #work .shead .st, #ach .shead .st, #building .shead .st, #carshop .shead .st, #clinic .shead .st, #lottery .shead .st, #counter .shead .st, #mailbox .shead .st, #biz .shead .st, #ledger .shead .st{font-size:16px; font-weight:800; color:var(--accent2); margin-right:auto;}
+  #social .list, #work .list, #ach .list, #building .list, #carshop .list, #clinic .list, #lottery .list, #counter .list, #mailbox .list, #biz .list, #ledger .list{flex:1; overflow-y:auto; padding:10px 16px 20px;}
+  #social .sgroup, #work .sgroup, #ach .sgroup, #building .sgroup, #carshop .sgroup, #clinic .sgroup, #lottery .sgroup, #counter .sgroup, #mailbox .sgroup, #biz .sgroup, #ledger .sgroup{font-size:11px; font-weight:800; letter-spacing:.04em; color:#9a8a6a; margin:10px 0 6px;}
   #social .rank, #work .rank, #ach .rank{width:20px; text-align:center; font-weight:800; color:#a08a5e; font-size:12px; flex:none;}
   #social .item .price, #work .item .price, #ach .item .price{font-size:12px;}
   /* 社区：好友操作按钮与标签 */
@@ -259,7 +259,7 @@
   #lottery .lrow .lp{flex:none; color:#9a5f1e; font-weight:700;}
 
   /* ---- 柜台（饭馆 / 超市）：菜单行 + 一句说明 ---- */
-  #counter, #mailbox, #biz{width:min(400px, 94vw);}
+  #counter, #mailbox, #biz, #ledger{width:min(400px, 94vw);}
   /* ---- 生意：承包卡片 ---- */
   #biz .shop{border:1px solid rgba(122,82,48,.18); border-radius:12px; padding:10px 12px; margin-bottom:8px; background:#fff;}
   #biz .shop.mine{border-color:rgba(110,150,90,.5); background:#f7fbf2;}
@@ -291,6 +291,39 @@
     border-radius:9px; padding:6px 4px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
   }
   #biz .terms button.on{background:var(--accent); color:#fff; border-color:transparent;}
+  /* ---- 账本 ---- */
+  #ledger .lsum{display:flex; gap:6px; margin:2px 2px 10px;}
+  #ledger .lc{flex:1; background:#fff; border:1px solid rgba(122,82,48,.16); border-radius:10px; padding:7px 8px; text-align:center;}
+  #ledger .lk{display:block; font-size:10.5px; color:#9a8a6a; margin-bottom:2px;}
+  #ledger .lc b{font-size:14.5px; font-variant-numeric:tabular-nums;}
+  #ledger .lvin{color:#3f8a44;}
+  #ledger .lvout{color:#b8493a;}
+  #ledger .lweek{margin:0 2px 10px;}
+  #ledger .lday{display:flex; align-items:center; gap:7px; margin-bottom:4px;}
+  #ledger .ld{flex:none; width:38px; font-size:10.5px; color:#9a8a6a; font-variant-numeric:tabular-nums;}
+  #ledger .lday.now .ld{color:var(--accent); font-weight:800;}
+  #ledger .lbars{flex:1; display:flex; flex-direction:column; gap:2px;}
+  #ledger .lbars i{display:block; height:4px; border-radius:99px; min-width:2px;}
+  #ledger .lbars .bi{background:#7fb47a;}
+  #ledger .lbars .bo{background:#d98a7a;}
+  #ledger .ln{flex:none; width:52px; text-align:right; font-size:10.5px; color:#4a6a32; font-weight:700; font-variant-numeric:tabular-nums;}
+  #ledger .ln.neg{color:#b8493a;}
+  #ledger .lrow{display:flex; align-items:center; gap:8px; padding:5px 2px;}
+  #ledger .lc2{flex:none; width:58px; font-size:12px; color:#6a5a44;}
+  #ledger .lbar{flex:1; height:5px; background:rgba(122,82,48,.1); border-radius:99px; overflow:hidden;}
+  #ledger .lbar i{display:block; height:100%; background:#7fb47a; border-radius:99px;}
+  #ledger .lbar i.out{background:#d98a7a;}
+  #ledger .lpa{flex:none; font-size:12px; font-weight:800; font-variant-numeric:tabular-nums;}
+  #ledger .lpa.in{color:#3f8a44;}
+  #ledger .lpa.out{color:#b8493a;}
+  #ledger .lflow{display:flex; align-items:center; gap:7px; padding:5px 2px; border-bottom:1px dashed rgba(122,82,48,.1);}
+  #ledger .lt{flex:none; font-size:10.5px; color:#a89a80; font-variant-numeric:tabular-nums;}
+  #ledger .lnm{flex:1; font-size:12px; color:#4a3f30; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #ledger .lnm em{font-style:normal; font-size:10px; color:#a89a80; margin-left:5px;}
+  #ledger .lempty{padding:22px 10px; text-align:center; color:#a89a80; font-size:12px; line-height:1.9;}
+  /* 金钱条是账本入口：加个可点的暗示 */
+  #stMoney{cursor:pointer;}
+  #stMoney:hover .val{text-decoration:underline dotted;}
   #counter .cnote{font-size:11px; color:#9a8a6a; line-height:1.7; padding:2px 2px 10px;}
   #counter .ctag{
     display:inline-block; margin-left:6px; font-size:10px; font-weight:800;
@@ -776,6 +809,16 @@
     <div class=list id=bizList></div>
   </aside>
 
+  <!-- 收支账本：点金钱条打开，看今天钱从哪来、花到哪去 -->
+  <aside id=ledger role=dialog aria-label=账本>
+    <div class=shead>
+      <span class=st id=ledgerTitle>收支账本</span>
+      <span class=sbal id=ledgerBal>—</span>
+      <button class=closeX id=ledgerClose aria-label=关闭>×</button>
+    </div>
+    <div class=list id=ledgerList></div>
+  </aside>
+
   <!-- 柜台：饭馆点菜 / 超市拿货，商品全部来自 rules/economy.json -->
   <aside id=counter role=dialog aria-label=柜台>
     <div class=shead>
@@ -1133,6 +1176,232 @@ function bagRoom(){ return Math.max(0, bagCap() - BAG); }
 function foodTotal(){ return PANTRY + BAG; }
 let MINUTE = RULE.START_MINUTE;          // 游戏内分钟（默认从 08:00 起）
 let DAY = 1;                             // 游戏天数（跨天 +1）
+/* ===================== 收支账本 =====================
+ * 之前 24 处收入支出都是直接 `MONEY += / -=`，玩家只能看见余额跳一下，
+ * 完全看不出"今天到底赚了多少、钱花在哪了"。经济系统做完之后这是最大的盲区：
+ * 工资、经营、彩票、卖车进账，吃喝、账单、承包金出账，全糊成一个数字。
+ * 账本把每一笔记成一条：按天汇总（看趋势）+ 按类聚合（看结构）+ 最近流水（看明细）。
+ * 纯本地记账，不参与任何数值判定——记错了顶多显示错，不会影响玩法。 */
+const LEDGER_KEEP_DAYS = 30;    // 保留最近 30 天的每日汇总（够看趋势）
+const LEDGER_KEEP_LOG  = 60;    // 保留最近 60 条流水（再老的滚动丢弃）
+const LEDGER_CATS = {
+  in: {
+    wage:    '工资',
+    biz:     '经营',
+    sell:    '变卖',
+    lottery: '中奖',
+    ach:     '奖励',
+    refund:  '退款',
+    other:   '其他'
+  },
+  out: {
+    food:    '吃喝',
+    bill:    '水电房租',
+    estate:  '房产',
+    car:     '车',
+    furn:    '家具',
+    decor:   '装修',
+    clinic:  '看病',
+    lottery: '彩票',
+    biz:     '承包金',
+    other:   '其他'
+  }
+};
+/* today.in / today.out 是 { 分类: 金额 }；days 只存已结算完的日子，
+ * log 是按时间倒序取用的流水。三者都不存进"太多"的规模，睡眠/挂机也不会撑爆存档。 */
+let LEDGER = {
+  day: 1,
+  today: { in: {}, out: {} },
+  days: [],
+  log: []
+};
+
+function ledgerCat(kind, cat){
+  const m = LEDGER_CATS[kind];
+  return (m && m[cat]) ? cat : 'other';
+}
+function ledgerCatLabel(kind, cat){
+  const m = LEDGER_CATS[kind];
+  return (m && m[cat]) || '其他';
+}
+function ledgerDaySum(){
+  let i = 0, o = 0;
+  for (const k in LEDGER.today.in) i += LEDGER.today.in[k];
+  for (const k in LEDGER.today.out) o += LEDGER.today.out[k];
+  return { i: i, o: o };
+}
+/* 跨天：把 today 结进 days 再清空。
+ * 只有真有账才落一天——挂机一整天空记录堆满数组没意义，也读不出信息。 */
+function ledgerRollover(){
+  if (LEDGER.day === DAY) return false;
+  const s = ledgerDaySum();
+  if (s.i || s.o) LEDGER.days.push({ d: LEDGER.day, i: s.i, o: s.o });
+  if (LEDGER.days.length > LEDGER_KEEP_DAYS){
+    LEDGER.days.splice(0, LEDGER.days.length - LEDGER_KEEP_DAYS);
+  }
+  LEDGER.day = DAY;
+  LEDGER.today = { in: {}, out: {} };
+  return true;
+}
+/** 记一笔（不动 MONEY）。返回规整后的金额，0 表示没记 */
+function ledgerAdd(kind, cat, amount, note){
+  const a = Math.round(Number(amount) || 0);
+  if (a <= 0) return 0;
+  ledgerRollover();
+  const c = ledgerCat(kind, cat);
+  const bucket = LEDGER.today[kind] || (LEDGER.today[kind] = {});
+  bucket[c] = (bucket[c] || 0) + a;
+  LEDGER.log.push({
+    d: DAY,
+    m: Math.round(Number(MINUTE) || 0),
+    k: kind, c: c, a: a,
+    n: String(note || '').slice(0, 26)
+  });
+  if (LEDGER.log.length > LEDGER_KEEP_LOG){
+    LEDGER.log.splice(0, LEDGER.log.length - LEDGER_KEEP_LOG);
+  }
+  return a;
+}
+/** 进账：记账 + 加钱。返回实际到账金额 */
+function credit(amount, cat, note){
+  const a = ledgerAdd('in', cat, amount, note);
+  if (a) MONEY += a;
+  return a;
+}
+/** 出账：记账 + 扣钱。调用方负责先判断钱够不够 */
+function debit(amount, cat, note){
+  const a = ledgerAdd('out', cat, amount, note);
+  if (a) MONEY -= a;
+  return a;
+}
+/** 最近 n 天的每日汇总，缺的天补 0（柱状图要连续才看得出趋势） */
+function ledgerRecent(n){
+  const out = [];
+  const map = {};
+  for (const r of LEDGER.days) map[r.d] = r;
+  const today = ledgerDaySum();
+  for (let d = Math.max(1, DAY - (n - 1)); d <= DAY; d++){
+    if (d === DAY) out.push({ d: d, i: today.i, o: today.o });
+    else out.push(map[d] || { d: d, i: 0, o: 0 });
+  }
+  return out;
+}
+/** 当天分类明细，按金额降序 */
+function ledgerBreakdown(kind){
+  const bucket = LEDGER.today[kind] || {};
+  return Object.keys(bucket)
+    .map(c => ({ c: c, label: ledgerCatLabel(kind, c), a: bucket[c] }))
+    .filter(x => x.a > 0)
+    .sort((x, y) => y.a - x.a);
+}
+/** 时间戳转 HH:MM */
+function ledgerClock(min){
+  const m = ((Math.round(Number(min) || 0) % 1440) + 1440) % 1440;
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+let ledgerOpen = false;
+function toggleLedger(force){
+  const next = (force === undefined) ? !ledgerOpen : !!force;
+  ledgerOpen = next;
+  const el = document.getElementById('ledger');
+  if (el) el.classList.toggle('open', next);
+  if (next){
+    // 一次只开一个面板：账本和生意/商店同时开着会挤在一起
+    if (typeof bizOpen !== 'undefined' && bizOpen) toggleBiz(false);
+    if (typeof counterOpen !== 'undefined' && counterOpen) toggleCounter(false);
+    if (typeof mailboxOpen !== 'undefined' && mailboxOpen) toggleMailbox(false);
+    if (typeof shopOpen !== 'undefined' && shopOpen) toggleShop(false);
+    renderLedger();
+  }
+}
+
+function renderLedger(){
+  const list = document.getElementById('ledgerList');
+  if (!list) return;
+  const bal = document.getElementById('ledgerBal');
+  if (bal) bal.textContent = '¥' + Math.round(MONEY);
+  ledgerRollover();
+
+  const t = ledgerDaySum();
+  const net = t.i - t.o;
+  const out = [];
+
+  /* ① 今日三格：收入 / 支出 / 净额。净额为负时标红，一眼看出今天在亏 */
+  out.push('<div class="lsum">' +
+    '<div class="lc"><span class="lk">今日收入</span><b class="lvin">+¥' + t.i + '</b></div>' +
+    '<div class="lc"><span class="lk">今日支出</span><b class="lvout">−¥' + t.o + '</b></div>' +
+    '<div class="lc"><span class="lk">今日净额</span><b class="' + (net < 0 ? 'lvout' : 'lvin') + '">' +
+      (net < 0 ? '−¥' + Math.abs(net) : '+¥' + net) + '</b></div>' +
+    '</div>');
+
+  /* ② 近 7 天：横向双色条，长度按当期最大值归一化。
+   * 用两条并排而不是堆叠，收入支出各占一行更不容易看错。 */
+  const week = ledgerRecent(7);
+  let peak = 1;
+  for (const r of week) peak = Math.max(peak, r.i, r.o);
+  /* 归一化用平方根：某天突然赚了一大笔时，其余几天的条子不会被压成一条缝。
+   * 线性归一化在这份数据上几乎读不出差异（1225 vs 60 就是 100% vs 5%）。 */
+  const norm = (v) => Math.round(Math.sqrt(Math.max(0, v) / peak) * 100);
+  const bars = week.map(r => {
+    const wi = norm(r.i);
+    const wo = norm(r.o);
+    const n = r.i - r.o;
+    return '<div class="lday' + (r.d === DAY ? ' now' : '') + '">' +
+      '<span class="ld">' + (r.d === DAY ? '今天' : '第' + r.d + '天') + '</span>' +
+      '<span class="lbars">' +
+        '<i class="bi" style="width:' + wi + '%"></i>' +
+        '<i class="bo" style="width:' + wo + '%"></i>' +
+      '</span>' +
+      '<span class="ln ' + (n < 0 ? 'neg' : '') + '">' + (n < 0 ? '−' : '+') + Math.abs(n) + '</span>' +
+      '</div>';
+  }).join('');
+  const wIn = week.reduce((s2, r) => s2 + r.i, 0);
+  const wOut = week.reduce((s2, r) => s2 + r.o, 0);
+  out.push('<div class="sgroup">近 7 天 · 收入 ¥' + wIn + ' · 支出 ¥' + wOut +
+    ' · 净 ' + (wIn - wOut >= 0 ? '+' : '−') + '¥' + Math.abs(wIn - wOut) + '</div>' +
+    '<div class="lweek">' + bars + '</div>');
+
+  /* ③ 今天的结构：钱从哪来、花到哪去 */
+  const bi = ledgerBreakdown('in');
+  const bo = ledgerBreakdown('out');
+  if (bi.length){
+    out.push('<div class="sgroup">今天的收入</div>');
+    for (const r of bi){
+      out.push('<div class="lrow"><span class="lc2">' + r.label + '</span>' +
+        '<span class="lbar"><i style="width:' + Math.round(r.a / Math.max(1, t.i) * 100) + '%"></i></span>' +
+        '<span class="lpa in">+¥' + r.a + '</span></div>');
+    }
+  }
+  if (bo.length){
+    out.push('<div class="sgroup">今天的支出</div>');
+    for (const r of bo){
+      out.push('<div class="lrow"><span class="lc2">' + r.label + '</span>' +
+        '<span class="lbar"><i class="out" style="width:' + Math.round(r.a / Math.max(1, t.o) * 100) + '%"></i></span>' +
+        '<span class="lpa out">−¥' + r.a + '</span></div>');
+    }
+  }
+  if (!bi.length && !bo.length){
+    out.push('<div class="lempty">今天还没有账目。<br>去上个班、买点菜、或者收个账单，这里就记上了。</div>');
+  }
+
+  /* ④ 流水：最近的在前。只显示最近 12 条，再往前翻意义不大 */
+  const logs = LEDGER.log.slice(-12).reverse();
+  if (logs.length){
+    out.push('<div class="sgroup">最近流水</div>');
+    for (const r of logs){
+      const isIn = r.k === 'in';
+      out.push('<div class="lflow">' +
+        '<span class="lt">' + ledgerClock(r.m) + '</span>' +
+        '<span class="lnm">' + (r.n || ledgerCatLabel(r.k, r.c)) +
+          '<em>' + ledgerCatLabel(r.k, r.c) + '</em></span>' +
+        '<span class="lpa ' + (isIn ? 'in' : 'out') + '">' +
+          (isIn ? '+' : '−') + '¥' + r.a + '</span>' +
+        '</div>');
+    }
+  }
+  list.innerHTML = out.join('');
+}
+
 let SPEED = 1;                           // 时间倍率 0/1/2
 const SPEED_LABEL = ['暂停','1×','2×'];
 // 衰减按"游戏分钟"计算（1× 下 1 游戏分钟 = 1 现实秒）——数值全部来自内容层
@@ -5091,8 +5360,7 @@ function finishTask(){
   if (!j) return;
   SHIFT.timer = 0;
   SHIFT.done++;
-  const pay = careerPay(j);
-  MONEY += pay;
+  const pay = credit(careerPay(j), 'wage', j.name + ' · ' + SHIFT.taskLabel);
   for (const k in (j.costPerTask || {})) STATS[k] = clampStat(k, (STATS[k] || 0) + j.costPerTask[k]);
   showFloat(SHIFT.taskLabel + ' +¥' + pay, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f4d35e', 8);
@@ -5106,7 +5374,7 @@ function completeShift(){
   const j = SHIFT.job;
   if (!j) return;
   const bonus = j.completionBonus || 0;
-  MONEY += bonus;
+  credit(bonus, 'wage', j.name + ' 整班');
   for (const k in (j.finish || {})) STATS[k] = clampStat(k, (STATS[k] || 0) + j.finish[k]);
   const before = careerLevel(j);
   CAREER.shiftsByJob[j.id] = careerShifts(j.id) + 1;
@@ -5203,7 +5471,7 @@ function achProgress(a){
 
 function grantAchievementReward(a){
   const rw = (a && a.reward) || {};
-  if (rw.money) MONEY += rw.money;
+  if (rw.money) credit(rw.money, 'ach', (a && a.name) || '目标奖励');
   for (const k in (rw.effects || {})) STATS[k] = clampStat(k, (STATS[k] || 0) + rw.effects[k]);
   for (const id in (rw.items || {})) invAdd(id, rw.items[id]);
 }
@@ -5249,7 +5517,7 @@ function updateWork(dt){
     work.active = false;
     work.remaining = 0;
     // 干完了才发钱 + 扣体力
-    MONEY += WORK_PAY;
+    credit(WORK_PAY, 'wage', '零工');
     showFloat('发工资 +¥' + WORK_PAY, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f4d35e', 12);
     SND.pay();
@@ -5984,6 +6252,12 @@ const statsEl = { money: { el: null, bar: null, val: null, def: null } };
 function syncStatBars(){
   const wrap = document.getElementById('stats');
   const moneyEl = document.getElementById('stMoney');
+  /* 金钱条就是账本入口：这是玩家最常盯的那根条子，点它比再加一个 HUD 按钮自然 */
+  if (moneyEl && !moneyEl._ledgerBound){
+    moneyEl._ledgerBound = true;
+    moneyEl.title = '收支账本：点开看今天钱从哪来、花到哪去';
+    moneyEl.addEventListener('click', () => toggleLedger());
+  }
   if (!wrap) return;
   // 1) 缺的条子补上 DOM
   for (const s of STATS_DEF.list){
@@ -6827,6 +7101,10 @@ if (billChip) billChip.addEventListener('click', () => {
   toggleMailbox(true);
 });
 
+{
+  const lc = document.getElementById('ledgerClose');
+  if (lc) lc.addEventListener('click', () => toggleLedger(false));
+}
 if (bizBtn) bizBtn.addEventListener('click', ()=>{
   if (bizOpen) toggleBiz(false); else toggleBiz(true);
 });
@@ -6913,7 +7191,7 @@ function sellFurniture(catalogId){
   if (!d || !slot || slot.count <= 0) return false;
   const price = sellPriceOf(d);
   invRemove(catalogId);
-  MONEY += price;
+  credit(price, 'sell', '卖 ' + d.name);
   showFloat('卖出 ' + d.name + ' +¥' + price, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   SND.coin();
   invRender(); updateHUD(); markDirty(); saveGame();
@@ -6988,7 +7266,7 @@ bbCancel.addEventListener('click', cancelBuild);
 function buyFurniture(d){
   markDirty();
   if (MONEY < d.price) return false;
-  MONEY -= d.price;
+  debit(d.price, 'furn', '买 ' + d.name);
   invAdd(d.id);
   dirtyPlaced = true;
   SND.coin();
@@ -7480,7 +7758,7 @@ expandBtn.addEventListener('click', ()=>{
 upGo.addEventListener('click', ()=>{
   const next = HOUSE_LEVELS[houseLevel+1];
   if (!next || MONEY < next.price) return;
-  MONEY -= next.price;
+  debit(next.price, 'decor', '房型 ' + (next.name || ''));
   houseLevel++;
   const moved = applyHouseLevel(true);
   upBackdrop.classList.remove('show');
@@ -7533,7 +7811,7 @@ function pickDecor(kind, i){
   if (!st) return;
   if (!owned.includes(i)){
     if (MONEY < st.price){ showFloat('钱不够啦，去工作赚点', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return; }
-    MONEY -= st.price;
+    debit(st.price, 'decor', (kind === 'floor' ? '地板 ' : '墙面 ') + st.name);
     owned.push(i);
     SND.coin();
   }
@@ -7685,6 +7963,8 @@ function collectSave(){
     pantry: PANTRY,
     bag: BAG,
     biz: { list: BIZ_LIST, lastDay: BIZ_LAST_DAY },
+    /* 账本：只存最近 30 天汇总 + 60 条流水，够看趋势又不撑存档 */
+    ledger: { day: LEDGER.day, today: LEDGER.today, days: LEDGER.days, log: LEDGER.log },
     world: { total: worldNow(), rate: WORLD.rate },
     bills: {
       list: BILLS,
@@ -7760,6 +8040,12 @@ function migrateSave(d){
     if (schema === 11){
       // v12：功能点承包。老玩家从"没有任何店"开始——升级不该白送一份资产
       d.biz = (d.biz && typeof d.biz === 'object') ? d.biz : { list: [], lastDay: 0 };
+    }
+    if (schema === 12){
+      // v13：收支账本。老存档没有历史流水，从今天开始记——不伪造过去
+      d.ledger = (d.ledger && typeof d.ledger === 'object')
+        ? d.ledger
+        : { day: d.day || 1, today: { in: {}, out: {} }, days: [], log: [] };
     }
     schema++;
   }
@@ -7851,6 +8137,43 @@ function applySave(d){
       BIZ_LIST.push({ shopId: String(b.shopId), start: st, end: en, fee: Math.max(0, Math.floor(Number(b.fee) || 0)) });
     }
     BIZ_LAST_DAY = Math.max(0, Math.floor(Number(bd.lastDay) || 0));
+  }
+  // 账本：脏存档不能塞进无穷多条记录，按时长/条数截断；金额一律取正
+  {
+    const raw = (d.ledger && typeof d.ledger === 'object') ? d.ledger : {};
+    // 按 kind 分别过白名单：收入和支出的分类名不重合，用同一张表会把收入全滤掉
+    const clean = (m, kind) => {
+      const o = {};
+      if (!m || typeof m !== 'object') return o;
+      const cats = LEDGER_CATS[kind] || {};
+      for (const k in m){
+        const v = Math.round(Number(m[k]) || 0);
+        if (v > 0 && cats[k]) o[k] = v;
+      }
+      return o;
+    };
+    const today = (raw.today && typeof raw.today === 'object') ? raw.today : {};
+    LEDGER = {
+      day: Math.max(0, Math.floor(Number(raw.day) || 0)) || DAY,
+      today: { in: clean(today.in, 'in'), out: clean(today.out, 'out') },
+      days: (Array.isArray(raw.days) ? raw.days : [])
+        .filter(r => r && Number(r.d) > 0)
+        .slice(-LEDGER_KEEP_DAYS)
+        .map(r => ({ d: Math.floor(Number(r.d)), i: Math.max(0, Math.round(Number(r.i) || 0)), o: Math.max(0, Math.round(Number(r.o) || 0)) })),
+      log: (Array.isArray(raw.log) ? raw.log : [])
+        .filter(r => r && (r.k === 'in' || r.k === 'out') && LEDGER_CATS[r.k][r.c])
+        .slice(-LEDGER_KEEP_LOG)
+        .map(r => ({
+          d: Math.max(0, Math.floor(Number(r.d) || 0)),
+          m: Math.max(0, Math.round(Number(r.m) || 0)),
+          k: r.k,
+          c: r.c,
+          a: Math.max(0, Math.round(Number(r.a) || 0)),
+          n: String(r.n || '').slice(0, 26)
+        }))
+    };
+    // 读档当天要跟当前 DAY 对齐，否则跨天开新档会把旧账混进今天
+    if (LEDGER.day !== DAY){ LEDGER = { day: DAY, today: { in: {}, out: {} }, days: LEDGER.days, log: LEDGER.log }; }
   }
   // 账单：只认结构合法的条目，游标按模板 id 白名单收
   {
@@ -8136,7 +8459,7 @@ function moveInto(floor, room){
     SND.err();
     return false;
   }
-  MONEY -= cost;
+  debit(cost, 'estate', (st === 'sale' ? '买房 ' : '租房押金 ') + floor + ' 层 ' + room + ' 号');
   ESTATES.push({
     buildingId: b.id, floor: floor, room: room,
     mode: st === 'sale' ? 'owned' : 'rented', paid: cost
@@ -8187,7 +8510,7 @@ function sellEstate(floor, room){
   }
   const refund = estateResaleValue(e);
   ESTATES = ESTATES.filter(x => estateKey(x.buildingId, x.floor, x.room) !== estateKey(b.id, floor, room));
-  MONEY += refund;
+  credit(refund, 'sell', (e.mode === 'rented' ? '退租 ' : '卖房 ') + floor + ' 层 ' + room + ' 号');
   buildingSelected = null;
   SND.coin();
   showFloat((e.mode === 'rented' ? '退租' : '卖出') + ' ¥' + refund + ' · 房 ' +
@@ -8539,7 +8862,7 @@ function sellCar(){
   const m = carModel(MY_CAR.model) || {};
   const back = carResaleValue();
   MY_CAR = null;
-  MONEY += back;
+  credit(back, 'sell', '卖 ' + (m.name || '车'));
   SND.coin();
   showFloat('卖掉 ' + (m.name || '车') + ' ¥' + back, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   updateHUD(); saveGame(); renderCarShop(); render();
@@ -8558,7 +8881,7 @@ function buyCar(id){
     showFloat('4S 停车场没位子了', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     SND.err(); return false;
   }
-  MONEY -= m.price;
+  debit(m.price, 'car', '买 ' + m.name);
   MY_CAR = { model: id, gx: slot.gx, gy: slot.gy };
   SND.coin();
   showFloat('买下 ' + m.name + ' · 停在旁边的停车场', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
@@ -8693,7 +9016,7 @@ function useClinic(id){
     showFloat('还差 ¥' + (s.price - MONEY), Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     SND.err(); return false;
   }
-  MONEY -= (s.price || 0);
+  debit(s.price || 0, 'clinic', s.name || '门诊');
   if (s.cooldownMinutes) MED_LAST_MINUTE = MINUTE;
   applyFx(s.effects || {}, { gx: Math.round(PLAYER.fx), gy: Math.round(PLAYER.fy) });
   updateHUD(); saveGame(); renderClinic();
@@ -8742,7 +9065,7 @@ function collectRent(){
       RENT_LAST_DAY = DAY;          // 别每帧刷屏：这一期算欠着，下期再试
       break;
     }
-    MONEY -= cost;
+    debit(cost, 'bill', '房租');
     RENT_LAST_DAY += RENT_CYCLE;
     paid += cost;
   }
@@ -8896,7 +9219,7 @@ function playLottery(n, rng){
     showFloat('还差 ¥' + (cost - MONEY), Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     SND.err(); return null;
   }
-  MONEY -= cost;
+  debit(cost, 'lottery', '彩票 ' + count + ' 注');
   const win = lotteryPick(rng);
   let prize = 0;
   const results = [];
@@ -8906,7 +9229,7 @@ function playLottery(n, rng){
     if (chk.tier){ prize += chk.tier.prize; }
     results.push({ ticket: ticket, win: win, tier: chk.tier, red: chk.red, blue: chk.blue });
   }
-  MONEY += prize;
+  credit(prize, 'lottery', '彩票中奖');
   LOTTERY_STATS.bought += count;
   LOTTERY_STATS.won += prize;
   LOTTERY_LOG = results.slice(0, 5).concat(LOTTERY_LOG).slice(0, 6);
@@ -8955,7 +9278,7 @@ function buyGroceries(zoneId, packs){
     showFloat('还差 ¥' + (cost - MONEY), px, py);
     SND.err(); return 0;
   }
-  MONEY -= cost;
+  debit(cost, 'food', '食材 ' + gain + ' 份');
   BAG += gain;
   SND.ok();
   showFloat('买了 ' + gain + ' ' + foodUnit() + ' · ¥' + cost + '（背包 ' + BAG + '/' + bagCap() + '）', px, py);
@@ -9082,7 +9405,7 @@ function eatDish(id){
   if (!d) return false;
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
   if (MONEY < d.price){ showFloat('还差 ¥' + (d.price - MONEY), px, py); SND.err(); return false; }
-  MONEY -= d.price;
+  debit(d.price, 'food', d.name);
   applyFx({ hunger: d.hunger, thirst: d.thirst, emotion: d.emotion }, { gx: px, gy: py });
   showFloat(d.name + ' · ¥' + d.price, px, py);
   SND.coin();
@@ -9098,7 +9421,7 @@ function takeGood(id){
   if (!g) return false;
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
   if (MONEY < g.price){ showFloat('还差 ¥' + (g.price - MONEY), px, py); SND.err(); return false; }
-  MONEY -= g.price;
+  debit(g.price, 'food', g.name);
   applyFx({ hunger: g.hunger, thirst: g.thirst }, { gx: px, gy: py });
   showFloat(g.name + ' · ¥' + g.price, px, py);
   SND.coin();
@@ -9296,7 +9619,7 @@ function payBill(key){
     SND.err(); return false;
   }
   const wasLate = DAY > b.due;
-  MONEY -= b.amount;
+  debit(b.amount, 'bill', b.title);
   b.paid = DAY;
   if (wasLate) STATS.emotion = clampStat('emotion', (STATS.emotion || 0) + MAIL_BONUS);
   SND.coin();
@@ -9313,7 +9636,7 @@ function payAllBills(){
   for (const b of list){
     if (MONEY < b.amount) continue;
     const wasLate = DAY > b.due;
-    MONEY -= b.amount;
+    debit(b.amount, 'bill', b.title);
     b.paid = DAY;
     if (wasLate) STATS.emotion = clampStat('emotion', (STATS.emotion || 0) + MAIL_BONUS);
     paid += b.amount;
@@ -9667,7 +9990,7 @@ async function takeBusiness(shopId){
     const j = await res.json();
     if (j){ if (j.endDay) endDay = j.endDay | 0; extended = !!j.extended; }
   } catch(e){}
-  MONEY -= fee;
+  debit(fee, 'biz', (extended ? '续租 ' : '承包 ') + months + ' 个月');
   if (exist){
     /* 期内续租是「顺延」：到期日往后加，不是从今天重算（否则剩下的天数会被抹掉） */
     exist.end = endDay;
@@ -9703,7 +10026,7 @@ async function releaseBusiness(shopId){
     }
   }
   const refund = bizRunning(b) ? Math.round((Number(b.fee) || 0) * BIZ_REFUND) : 0;
-  MONEY += refund;
+  credit(refund, 'refund', '退包');
   BIZ_LIST = BIZ_LIST.filter(x => x !== b);
   SND.coin();
   showFloat(refund ? ('退出「' + bizNameOf(s) + '」· 退回 ¥' + refund) : ('「' + bizNameOf(s) + '」承包已到期，直接撤下'), px, py);
@@ -9732,7 +10055,7 @@ function settleBusiness(){
   BIZ_LAST_DAY = to;
   BIZ_LIST = BIZ_LIST.filter(b => DAY <= b.end);   // 清掉彻底过期的，存档别无限长
   if (total > 0){
-    MONEY += total;
+    credit(total, 'biz', '经营收入');
     BIZ_LAST_INCOME = total;
     showFloat('经营收入 +¥' + total + (days > 1 ? '（' + days + ' 天）' : ''), Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     SND.coin();

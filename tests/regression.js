@@ -2293,6 +2293,145 @@
       DAY = bk.day; MONEY = bk.money; BIZ_LIST = bk.list; BIZ_LAST_DAY = bk.last; BIZ_REMOTE = bk.remote;
     }
 
+    /* ---------- AA 组：收支账本 ---------- */
+    {
+      const bk = {
+        money: MONEY, day: DAY,
+        ledger: JSON.stringify(LEDGER)
+      };
+
+      // AA1 分类表齐全：收入 7 类、支出 10 类，且都有中文名
+      const inCats = Object.keys(LEDGER_CATS.in);
+      const outCats = Object.keys(LEDGER_CATS.out);
+      P('AA1 ledger categories are complete',
+        inCats.length >= 6 && outCats.length >= 9 &&
+        inCats.every(k => !!LEDGER_CATS.in[k]) && outCats.every(k => !!LEDGER_CATS.out[k]),
+        'in=' + inCats.length + ' out=' + outCats.length);
+
+      // AA2 进账：加钱 + 记分类 + 记流水
+      DAY = 40; MONEY = 100;
+      LEDGER = { day: 40, today: { in: {}, out: {} }, days: [], log: [] };
+      const got = credit(180, 'wage', '辅警');
+      P('AA2 credit adds money and records the entry',
+        got === 180 && MONEY === 280 && LEDGER.today.in.wage === 180 &&
+        LEDGER.log.length === 1 && LEDGER.log[0].k === 'in' && LEDGER.log[0].a === 180,
+        JSON.stringify({ got: got, money: MONEY, wage: LEDGER.today.in.wage }));
+
+      // AA3 出账：扣钱 + 记分类
+      const paid = debit(28, 'bill', '电费');
+      P('AA3 debit subtracts money and records the entry',
+        paid === 28 && MONEY === 252 && LEDGER.today.out.bill === 28,
+        JSON.stringify({ paid: paid, money: MONEY, bill: LEDGER.today.out.bill }));
+
+      // AA4 同一分类累加合并，不是一行一条
+      credit(70, 'wage', '第二单');
+      P('AA4 same category accumulates', LEDGER.today.in.wage === 250,
+        'wage=' + LEDGER.today.in.wage);
+
+      // AA5 未知分类落到 other（不能被静默丢掉，否则账对不上）
+      credit(15, 'nonsense', '说不清的进账');
+      P('AA5 unknown category falls back to other',
+        LEDGER.today.in.other === 15 && MONEY === 337,
+        JSON.stringify(LEDGER.today.in));
+
+      // AA6 0 / 负数 / NaN 不记账（避免出现 0 元流水污染列表）
+      const before = LEDGER.log.length;
+      credit(0, 'wage', 'x'); credit(-50, 'wage', 'x'); credit(NaN, 'wage', 'x');
+      P('AA6 zero and negative amounts are ignored',
+        LEDGER.log.length === before && MONEY === 337, 'log=' + LEDGER.log.length);
+
+      // AA7 分类明细按金额降序
+      debit(60, 'food', '买菜'); debit(12, 'clinic', '买药');
+      const bd = ledgerBreakdown('out');
+      P('AA7 breakdown is sorted desc',
+        bd.length === 3 && bd[0].c === 'food' && bd[1].c === 'bill' && bd[2].c === 'clinic',
+        bd.map(r => r.c + ':' + r.a).join(','));
+
+      // AA8 跨天：昨天的账落进 days，today 清空
+      const ySum = ledgerDaySum();
+      DAY = 41;
+      credit(10, 'wage', '新的一天');
+      const rec = LEDGER.days[LEDGER.days.length - 1];
+      P('AA8 rollover files yesterday into days',
+        !!rec && rec.d === 40 && rec.i === ySum.i && rec.o === ySum.o &&
+        LEDGER.today.in.wage === 10 && LEDGER.today.out.bill === undefined,
+        JSON.stringify({ rec: rec, today: LEDGER.today }));
+
+      // AA9 近 7 天补零，且末位是今天
+      const week = ledgerRecent(7);
+      P('AA9 recent week is padded to 7 days',
+        week.length === 7 && week[6].d === 41 && week[6].i === 10 &&
+        week.slice(0, 6).some(r => r.i === 0 && r.o === 0),
+        week.map(r => r.d + ':' + r.i + '/' + r.o).join(' '));
+
+      // AA10 挂机空账不落记录（否则 days 会被空白天堆满）
+      // 当前 today 还挂在 day 41 上，直接跳到 day 49：中间 7 天是空的，只该结出 1 条
+      const dLen = LEDGER.days.length;
+      const dayBefore = LEDGER.day;
+      DAY = 49; credit(1, 'wage', 'b');
+      const hasGap = LEDGER.days.some(r => r.d > dayBefore && r.d < 49);
+      P('AA10 empty days are not recorded',
+        LEDGER.days.length === dLen + 1 && !hasGap,
+        'days=' + LEDGER.days.length + ' expected=' + (dLen + 1) + ' gap=' + hasGap);
+
+      // AA11 流水条数上限
+      for (let i = 0; i < LEDGER_KEEP_LOG + 20; i++) credit(1, 'wage', 'p' + i);
+      P('AA11 log is capped', LEDGER.log.length === LEDGER_KEEP_LOG,
+        'log=' + LEDGER.log.length + ' cap=' + LEDGER_KEEP_LOG);
+
+      // AA12 每日汇总条数上限
+      for (let d = 44; d < 44 + LEDGER_KEEP_DAYS + 10; d++){ DAY = d; credit(1, 'wage', 'd'); }
+      P('AA12 daily summary is capped', LEDGER.days.length === LEDGER_KEEP_DAYS,
+        'days=' + LEDGER.days.length + ' cap=' + LEDGER_KEEP_DAYS);
+
+      // AA13 存档往返：写进去再读回来，分类和流水都对得上
+      DAY = 60; MONEY = 500;
+      LEDGER = { day: 60, today: { in: { wage: 300 }, out: { food: 40 } }, days: [{ d: 59, i: 200, o: 30 }], log: [] };
+      credit(120, 'biz', '经营收入'); debit(25, 'clinic', '门诊');
+      const saved = collectSave();
+      P('AA13 save carries the ledger',
+        saved.ledger && saved.ledger.day === 60 &&
+        saved.ledger.today.in.wage === 300 && saved.ledger.today.in.biz === 120 &&
+        saved.ledger.today.out.food === 40 && saved.ledger.today.out.clinic === 25 &&
+        saved.ledger.days.length === 1,
+        JSON.stringify(saved.ledger && saved.ledger.today));
+
+      // AA14 读档时脏数据被清掉：负数、未知分类、超量记录
+      const dirty = {
+        schema: 13, money: 100, day: 70, minute: 480,
+        ledger: {
+          day: 70,
+          today: { in: { wage: 100, junk: 999, bad: -5 }, out: { food: 20 } },
+          days: Array.from({ length: 50 }, (_, i) => ({ d: i + 1, i: 10, o: 5 })),
+          log: Array.from({ length: 99 }, () => ({ k: 'in', c: 'wage', a: 5 }))
+        }
+      };
+      applySave(dirty);
+      P('AA14 dirty ledger is sanitised',
+        LEDGER.today.in.wage === 100 && LEDGER.today.in.junk === undefined &&
+        LEDGER.today.in.bad === undefined && LEDGER.days.length <= LEDGER_KEEP_DAYS &&
+        LEDGER.log.length <= LEDGER_KEEP_LOG,
+        JSON.stringify({ today: LEDGER.today, days: LEDGER.days.length, log: LEDGER.log.length }));
+
+      // AA15 面板渲染不报错，且关键区块都在
+      const box = document.getElementById('ledgerList');
+      if (box){
+        toggleLedger(true);
+        const html = box.innerHTML;
+        P('AA15 ledger panel renders',
+          html.indexOf('今日收入') >= 0 && html.indexOf('今日支出') >= 0 &&
+          html.indexOf('近 7 天') >= 0,
+          'len=' + html.length);
+        toggleLedger(false);
+      } else {
+        P('AA15 ledger panel renders', false, 'no #ledgerList');
+      }
+
+      // 收尾：恢复现场
+      DAY = bk.day; MONEY = bk.money;
+      LEDGER = JSON.parse(bk.ledger);
+    }
+
     flush();
   } catch (e){
     out.push('FATAL | ' + (e && e.message) + ' | ' + (e && e.stack ? e.stack.split('\n')[1] : ''));
