@@ -209,21 +209,21 @@
   }
   #inventory.open{transform:translateX(0);}
   /* 社区面板（排行榜 + 串门） */
-  #social, #work, #ach, #building, #carshop, #clinic, #lottery, #counter, #mailbox, #biz, #ledger{
+  #social, #work, #ach, #building, #carshop, #clinic, #lottery, #counter, #mailbox, #biz, #ledger, #bank, #stock{
     position:absolute; top:0; right:0; bottom:0; z-index:22;
     width:min(340px, 90vw); background:var(--panel); color:var(--ink);
     box-shadow:-8px 0 30px rgba(0,0,0,.25);
     display:flex; flex-direction:column; transform:translateX(105%);
     transition:transform .25s ease; border-left:1px solid rgba(122,82,48,.2);
   }
-  #social.open, #work.open, #ach.open, #building.open, #carshop.open, #clinic.open, #lottery.open, #counter.open, #mailbox.open, #biz.open, #ledger.open{transform:translateX(0);}
-  #social .shead, #work .shead, #ach .shead, #building .shead, #carshop .shead, #clinic .shead, #lottery .shead, #counter .shead, #mailbox .shead, #biz .shead, #ledger .shead{
+  #social.open, #work.open, #ach.open, #building.open, #carshop.open, #clinic.open, #lottery.open, #counter.open, #mailbox.open, #biz.open, #ledger.open, #bank.open, #stock.open{transform:translateX(0);}
+  #social .shead, #work .shead, #ach .shead, #building .shead, #carshop .shead, #clinic .shead, #lottery .shead, #counter .shead, #mailbox .shead, #biz .shead, #ledger .shead, #bank .shead, #stock .shead{
     display:flex; align-items:center; gap:10px; padding:14px 16px;
     border-bottom:1px solid rgba(122,82,48,.18); flex-wrap:wrap;
   }
-  #social .shead .st, #work .shead .st, #ach .shead .st, #building .shead .st, #carshop .shead .st, #clinic .shead .st, #lottery .shead .st, #counter .shead .st, #mailbox .shead .st, #biz .shead .st, #ledger .shead .st{font-size:16px; font-weight:800; color:var(--accent2); margin-right:auto;}
-  #social .list, #work .list, #ach .list, #building .list, #carshop .list, #clinic .list, #lottery .list, #counter .list, #mailbox .list, #biz .list, #ledger .list{flex:1; overflow-y:auto; padding:10px 16px 20px;}
-  #social .sgroup, #work .sgroup, #ach .sgroup, #building .sgroup, #carshop .sgroup, #clinic .sgroup, #lottery .sgroup, #counter .sgroup, #mailbox .sgroup, #biz .sgroup, #ledger .sgroup{font-size:11px; font-weight:800; letter-spacing:.04em; color:#9a8a6a; margin:10px 0 6px;}
+  #social .shead .st, #work .shead .st, #ach .shead .st, #building .shead .st, #carshop .shead .st, #clinic .shead .st, #lottery .shead .st, #counter .shead .st, #mailbox .shead .st, #biz .shead .st, #ledger .shead .st, #bank .shead .st, #stock .shead .st{font-size:16px; font-weight:800; color:var(--accent2); margin-right:auto;}
+  #social .list, #work .list, #ach .list, #building .list, #carshop .list, #clinic .list, #lottery .list, #counter .list, #mailbox .list, #biz .list, #ledger .list, #bank .list, #stock .list{flex:1; overflow-y:auto; padding:10px 16px 20px;}
+  #social .sgroup, #work .sgroup, #ach .sgroup, #building .sgroup, #carshop .sgroup, #clinic .sgroup, #lottery .sgroup, #counter .sgroup, #mailbox .sgroup, #biz .sgroup, #ledger .sgroup, #bank .sgroup, #stock .sgroup{font-size:11px; font-weight:800; letter-spacing:.04em; color:#9a8a6a; margin:10px 0 6px;}
   #social .rank, #work .rank, #ach .rank{width:20px; text-align:center; font-weight:800; color:#a08a5e; font-size:12px; flex:none;}
   #social .item .price, #work .item .price, #ach .item .price{font-size:12px;}
   /* 社区：好友操作按钮与标签 */
@@ -259,7 +259,7 @@
   #lottery .lrow .lp{flex:none; color:#9a5f1e; font-weight:700;}
 
   /* ---- 柜台（饭馆 / 超市）：菜单行 + 一句说明 ---- */
-  #counter, #mailbox, #biz, #ledger{width:min(400px, 94vw);}
+  #counter, #mailbox, #biz, #ledger, #bank, #stock{width:min(410px, 94vw);}
   /* ---- 生意：承包卡片 ---- */
   #biz .shop{border:1px solid rgba(122,82,48,.18); border-radius:12px; padding:10px 12px; margin-bottom:8px; background:#fff;}
   #biz .shop.mine{border-color:rgba(110,150,90,.5); background:#f7fbf2;}
@@ -292,12 +292,12 @@
   }
   #biz .terms button.on{background:var(--accent); color:#fff; border-color:transparent;}
   /* ---- 账本 ---- */
-  #ledger .lsum{display:flex; gap:6px; margin:2px 2px 10px;}
-  #ledger .lc{flex:1; background:#fff; border:1px solid rgba(122,82,48,.16); border-radius:10px; padding:7px 8px; text-align:center;}
-  #ledger .lk{display:block; font-size:10.5px; color:#9a8a6a; margin-bottom:2px;}
+  :is(#ledger, #bank, #stock) .lsum{display:flex; gap:6px; margin:2px 2px 10px;}
+  :is(#ledger, #bank, #stock) .lc{flex:1; background:#fff; border:1px solid rgba(122,82,48,.16); border-radius:10px; padding:7px 8px; text-align:center;}
+  :is(#ledger, #bank, #stock) .lk{display:block; font-size:10.5px; color:#9a8a6a; margin-bottom:2px;}
   #ledger .lc b{font-size:14.5px; font-variant-numeric:tabular-nums;}
-  #ledger .lvin{color:#3f8a44;}
-  #ledger .lvout{color:#b8493a;}
+  :is(#ledger, #bank, #stock) .lvin{color:#3f8a44;}
+  :is(#ledger, #bank, #stock) .lvout{color:#b8493a;}
   #ledger .lweek{margin:0 2px 10px;}
   #ledger .lday{display:flex; align-items:center; gap:7px; margin-bottom:4px;}
   #ledger .ld{flex:none; width:38px; font-size:10.5px; color:#9a8a6a; font-variant-numeric:tabular-nums;}
@@ -321,9 +321,43 @@
   #ledger .lnm{flex:1; font-size:12px; color:#4a3f30; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   #ledger .lnm em{font-style:normal; font-size:10px; color:#a89a80; margin-left:5px;}
   #ledger .lempty{padding:22px 10px; text-align:center; color:#a89a80; font-size:12px; line-height:1.9;}
+  #ledger .lxfer{margin:0 2px 10px; padding:5px 8px; border-radius:8px; background:rgba(122,82,48,.07);
+    font-size:10.5px; color:#8a7a62; line-height:1.6;}
+  #ledger .lxfer em{display:block; font-style:normal; color:#a89a80;}
   /* 金钱条是账本入口：加个可点的暗示 */
   #stMoney{cursor:pointer;}
   #stMoney:hover .val{text-decoration:underline dotted;}
+  /* ---- 银行 / 股市 ---- */
+  #bank .fitem, #stock .stk{
+    display:flex; align-items:center; gap:8px; border:1px solid rgba(122,82,48,.16);
+    border-radius:10px; padding:8px 10px; margin:0 2px 7px; background:#fff;
+  }
+  #bank .fitem.bad{border-color:rgba(200,85,61,.45); background:#fff9f7;}
+  #bank .fb{flex:1; min-width:0;}
+  #bank .fn2{font-size:12.5px; font-weight:800; color:var(--accent2);}
+  #bank .fd{font-size:11px; color:#9a8a6a; margin-top:3px; line-height:1.6;}
+  #bank .sd{padding:0 2px 6px; color:#9a8a6a; line-height:1.7; font-size:11px;}
+  #bank .brow{display:flex; gap:6px; margin:0 2px 7px;}
+  #bank .brow .fbtn{flex:1; padding:7px 4px; font-size:12px;}
+  #bank .fitem .fbtn, #stock .stk .fbtn{flex:none;}
+  .fbtn{
+    border:none; border-radius:8px; padding:6px 11px; font-size:12px; font-weight:700;
+    background:var(--accent); color:#fff; cursor:pointer; font-family:inherit; white-space:nowrap;
+  }
+  .fbtn.ghost{background:rgba(122,82,48,.13); color:var(--ink);}
+  .fbtn:disabled{background:#d9cdb8; color:#fff; cursor:not-allowed;}
+  #stock .stk{flex-direction:column; align-items:stretch; cursor:pointer;}
+  #stock .stk.sel{border-color:var(--accent); box-shadow:0 0 0 2px rgba(122,82,48,.1) inset;}
+  #stock .stk .sh{display:flex; align-items:center; gap:7px;}
+  #stock .sn{font-size:13px; font-weight:800; color:var(--accent2);}
+  #stock .sc{font-size:10.5px; color:#a89a80; font-variant-numeric:tabular-nums;}
+  #stock .sp{margin-left:auto; font-size:13.5px; font-weight:800; font-variant-numeric:tabular-nums;}
+  #stock .scg{font-size:11px; font-weight:800; width:56px; text-align:right; font-variant-numeric:tabular-nums;}
+  #stock .up{color:#c0392b;}
+  #stock .down{color:#2f8a52;}
+  #stock .sd{font-size:11px; color:#9a8a6a; margin-top:4px; line-height:1.6;}
+  #stock .brow{display:flex; gap:6px; margin-top:6px;}
+  #stock .brow .fbtn{flex:1; padding:6px 4px; font-size:11.5px;}
   #counter .cnote{font-size:11px; color:#9a8a6a; line-height:1.7; padding:2px 2px 10px;}
   #counter .ctag{
     display:inline-block; margin-left:6px; font-size:10px; font-weight:800;
@@ -809,6 +843,26 @@
     <div class=list id=bizList></div>
   </aside>
 
+  <!-- 银行：存款拿利息，贷款先花后还 -->
+  <aside id=bank role=dialog aria-label=银行>
+    <div class=shead>
+      <span class=st id=bankTitle>民生银行</span>
+      <span class=sbal id=bankBal>—</span>
+      <button class=closeX id=bankClose aria-label=关闭>×</button>
+    </div>
+    <div class=list id=bankList></div>
+  </aside>
+
+  <!-- 证券营业部：六支股票，每天一个收盘价 -->
+  <aside id=stock role=dialog aria-label=证券营业部>
+    <div class=shead>
+      <span class=st id=stockTitle>证券营业部</span>
+      <span class=sbal id=stockBal>—</span>
+      <button class=closeX id=stockClose aria-label=关闭>×</button>
+    </div>
+    <div class=list id=stockList></div>
+  </aside>
+
   <!-- 收支账本：点金钱条打开，看今天钱从哪来、花到哪去 -->
   <aside id=ledger role=dialog aria-label=账本>
     <div class=shead>
@@ -1192,6 +1246,9 @@ const LEDGER_CATS = {
     lottery: '中奖',
     ach:     '奖励',
     refund:  '退款',
+    bank:    '银行取出',
+    stock:   '卖出股票',
+    loan:    '贷款到账',
     other:   '其他'
   },
   out: {
@@ -1204,9 +1261,20 @@ const LEDGER_CATS = {
     clinic:  '看病',
     lottery: '彩票',
     biz:     '承包金',
+    bank:    '存入银行',
+    stock:   '买入股票',
+    loan:    '还贷',
     other:   '其他'
   }
 };
+/* 这几类不是"花掉了钱"，而是钱换了个地方放（现金 → 存款/持仓）。
+ * 账本要把它们单列出来，否则「存 5000 进银行」会让今天的支出凭空多 5000，
+ * 玩家会以为自己在亏钱。 */
+const LEDGER_XFER = {
+  in:  { bank: 1, stock: 1, loan: 1 },
+  out: { bank: 1, stock: 1 }
+};
+function ledgerIsXfer(kind, cat){ return !!(LEDGER_XFER[kind] && LEDGER_XFER[kind][cat]); }
 /* today.in / today.out 是 { 分类: 金额 }；days 只存已结算完的日子，
  * log 是按时间倒序取用的流水。三者都不存进"太多"的规模，睡眠/挂机也不会撑爆存档。 */
 let LEDGER = {
@@ -1225,17 +1293,24 @@ function ledgerCatLabel(kind, cat){
   return (m && m[cat]) || '其他';
 }
 function ledgerDaySum(){
-  let i = 0, o = 0;
-  for (const k in LEDGER.today.in) i += LEDGER.today.in[k];
-  for (const k in LEDGER.today.out) o += LEDGER.today.out[k];
-  return { i: i, o: o };
+  let i = 0, o = 0, xi = 0, xo = 0;
+  for (const k in LEDGER.today.in){
+    i += LEDGER.today.in[k];
+    if (ledgerIsXfer('in', k)) xi += LEDGER.today.in[k];
+  }
+  for (const k in LEDGER.today.out){
+    o += LEDGER.today.out[k];
+    if (ledgerIsXfer('out', k)) xo += LEDGER.today.out[k];
+  }
+  return { i: i, o: o, xi: xi, xo: xo };
 }
 /* 跨天：把 today 结进 days 再清空。
  * 只有真有账才落一天——挂机一整天空记录堆满数组没意义，也读不出信息。 */
 function ledgerRollover(){
   if (LEDGER.day === DAY) return false;
   const s = ledgerDaySum();
-  if (s.i || s.o) LEDGER.days.push({ d: LEDGER.day, i: s.i, o: s.o });
+  // 转移额一起存：历史柱状图也要能算「不含资产转移」的净额
+  if (s.i || s.o) LEDGER.days.push({ d: LEDGER.day, i: s.i, o: s.o, xi: s.xi, xo: s.xo });
   if (LEDGER.days.length > LEDGER_KEEP_DAYS){
     LEDGER.days.splice(0, LEDGER.days.length - LEDGER_KEEP_DAYS);
   }
@@ -1281,8 +1356,12 @@ function ledgerRecent(n){
   for (const r of LEDGER.days) map[r.d] = r;
   const today = ledgerDaySum();
   for (let d = Math.max(1, DAY - (n - 1)); d <= DAY; d++){
-    if (d === DAY) out.push({ d: d, i: today.i, o: today.o });
-    else out.push(map[d] || { d: d, i: 0, o: 0 });
+    if (d === DAY) out.push({ d: d, i: today.i, o: today.o, xi: today.xi, xo: today.xo });
+    else {
+      const r = map[d];
+      out.push(r ? { d: d, i: r.i, o: r.o, xi: Number(r.xi) || 0, xo: Number(r.xo) || 0 }
+                 : { d: d, i: 0, o: 0, xi: 0, xo: 0 });
+    }
   }
   return out;
 }
@@ -1323,29 +1402,40 @@ function renderLedger(){
   ledgerRollover();
 
   const t = ledgerDaySum();
-  const net = t.i - t.o;
+  /* 口径：三格只算「真的赚了/真的花了」，存款和买股票是资产转移，不算支出。
+   * 否则存 1 万 2 会显示"今天亏 1 万"，玩家会以为自己出事了。 */
+  const inReal = Math.max(0, t.i - t.xi);
+  const outReal = Math.max(0, t.o - t.xo);
+  const net = inReal - outReal;
   const out = [];
 
   /* ① 今日三格：收入 / 支出 / 净额。净额为负时标红，一眼看出今天在亏 */
   out.push('<div class="lsum">' +
-    '<div class="lc"><span class="lk">今日收入</span><b class="lvin">+¥' + t.i + '</b></div>' +
-    '<div class="lc"><span class="lk">今日支出</span><b class="lvout">−¥' + t.o + '</b></div>' +
+    '<div class="lc"><span class="lk">今日收入</span><b class="lvin">+¥' + inReal + '</b></div>' +
+    '<div class="lc"><span class="lk">今日支出</span><b class="lvout">−¥' + outReal + '</b></div>' +
     '<div class="lc"><span class="lk">今日净额</span><b class="' + (net < 0 ? 'lvout' : 'lvin') + '">' +
       (net < 0 ? '−¥' + Math.abs(net) : '+¥' + net) + '</b></div>' +
     '</div>');
+  /* 存银行 / 买股票 / 贷款到账不改变净资产，只是钱换了个地方放。
+   * 不单独说明的话，玩家存 5000 会看到"今日支出 ¥5000"，以为自己亏了。 */
+  if (t.xi > 0 || t.xo > 0){
+    out.push('<div class="lxfer">其中资产转移：转入 ¥' + t.xi + ' · 转出 ¥' + t.xo +
+      '<em>存银行 / 买股票不算花掉，只是换了个地方放</em></div>');
+  }
 
   /* ② 近 7 天：横向双色条，长度按当期最大值归一化。
    * 用两条并排而不是堆叠，收入支出各占一行更不容易看错。 */
   const week = ledgerRecent(7);
+  for (const r of week){ r.ni = Math.max(0, r.i - r.xi); r.no = Math.max(0, r.o - r.xo); }
   let peak = 1;
-  for (const r of week) peak = Math.max(peak, r.i, r.o);
+  for (const r of week) peak = Math.max(peak, r.ni, r.no);
   /* 归一化用平方根：某天突然赚了一大笔时，其余几天的条子不会被压成一条缝。
    * 线性归一化在这份数据上几乎读不出差异（1225 vs 60 就是 100% vs 5%）。 */
   const norm = (v) => Math.round(Math.sqrt(Math.max(0, v) / peak) * 100);
   const bars = week.map(r => {
-    const wi = norm(r.i);
-    const wo = norm(r.o);
-    const n = r.i - r.o;
+    const wi = norm(r.ni);
+    const wo = norm(r.no);
+    const n = r.ni - r.no;
     return '<div class="lday' + (r.d === DAY ? ' now' : '') + '">' +
       '<span class="ld">' + (r.d === DAY ? '今天' : '第' + r.d + '天') + '</span>' +
       '<span class="lbars">' +
@@ -1355,8 +1445,8 @@ function renderLedger(){
       '<span class="ln ' + (n < 0 ? 'neg' : '') + '">' + (n < 0 ? '−' : '+') + Math.abs(n) + '</span>' +
       '</div>';
   }).join('');
-  const wIn = week.reduce((s2, r) => s2 + r.i, 0);
-  const wOut = week.reduce((s2, r) => s2 + r.o, 0);
+  const wIn = week.reduce((s2, r) => s2 + r.ni, 0);
+  const wOut = week.reduce((s2, r) => s2 + r.no, 0);
   out.push('<div class="sgroup">近 7 天 · 收入 ¥' + wIn + ' · 支出 ¥' + wOut +
     ' · 净 ' + (wIn - wOut >= 0 ? '+' : '−') + '¥' + Math.abs(wIn - wOut) + '</div>' +
     '<div class="lweek">' + bars + '</div>');
@@ -5551,6 +5641,9 @@ function loop(now){
     _lastSceneTag = scene;
     if (scene === 'home' && typeof stashBag === 'function') stashBag();
   }
+  /* 银行利息 / 定期到期 / 贷款扣款：挂在主循环里检测"结算日落后了"，
+   * 而不是在三个跨天点各调一次。financeTick 自带游标，重复调用无害。 */
+  if (typeof financeTick === 'function' && BANK.lastDay !== DAY) financeTick();
 
   // 更新角色移动
   updatePlayer(dt);
@@ -5800,6 +5893,16 @@ function clickHandler(e){
     // 点店铺 / 公共建筑 → 走到门口并打开工作面板（岗位由分区 id 绑定）
     const prop = STREET_PROPS.find(pp => (pp.kind === 'shop' || pp.kind === 'civic') &&
       gx >= pp.x && gx < pp.x + pp.w && gy >= pp.y && gy < pp.y + pp.h);
+    if (prop && prop.zoneId === 'shop_bank'){
+      walkTo(prop.x + Math.floor(prop.w / 2), prop.y + prop.h);
+      toggleBank(true);
+      return;
+    }
+    if (prop && prop.zoneId === 'shop_stock'){
+      walkTo(prop.x + Math.floor(prop.w / 2), prop.y + prop.h);
+      toggleStock(true);
+      return;
+    }
     if (prop && prop.zoneId === 'shop_lottery'){
       walkTo(prop.x + Math.floor(prop.w / 2), prop.y + prop.h);
       toggleLottery(true);
@@ -7105,6 +7208,56 @@ if (billChip) billChip.addEventListener('click', () => {
   const lc = document.getElementById('ledgerClose');
   if (lc) lc.addEventListener('click', () => toggleLedger(false));
 }
+/* 银行 / 证券：按钮是每次渲染重新生成的，所以用事件委托挂在容器上，别逐个绑 */
+{
+  const bl = document.getElementById('bankList');
+  if (bl && !bl._bound){
+    bl._bound = true;
+    bl.addEventListener('click', (ev) => {
+      const t = ev.target.closest('button');
+      if (!t || t.disabled) return;
+      const amt = Number(t.getAttribute('data-amt'));
+      if (t.hasAttribute('data-bank')){
+        if (t.getAttribute('data-bank') === 'dep') bankDeposit(amt < 0 ? Math.floor(MONEY) : amt);
+        else bankWithdraw(amt < 0 ? BANK.savings : amt);
+      } else if (t.hasAttribute('data-fixed')){
+        bankOpenFixed(t.getAttribute('data-fixed'), amt);
+      } else if (t.hasAttribute('data-break')){
+        bankBreakFixed(t.getAttribute('data-break'));
+      } else if (t.hasAttribute('data-loan')){
+        bankTakeLoan(t.getAttribute('data-loan'));
+      } else if (t.hasAttribute('data-repay')){
+        bankRepay(t.getAttribute('data-repay'), amt);
+      }
+      renderBank();
+    });
+  }
+  const sl = document.getElementById('stockList');
+  if (sl && !sl._bound){
+    sl._bound = true;
+    sl.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('button');
+      if (btn && !btn.disabled){
+        if (btn.hasAttribute('data-buy')) stockBuy(btn.getAttribute('data-buy'), Number(btn.getAttribute('data-n')));
+        else if (btn.hasAttribute('data-sell')) stockSell(btn.getAttribute('data-sell'), Number(btn.getAttribute('data-n')));
+        renderStock();
+        return;
+      }
+      const row = ev.target.closest('[data-stock]');
+      if (row){
+        const id = row.getAttribute('data-stock');
+        stockSel = (stockSel === id) ? null : id;
+        renderStock();
+      }
+    });
+  }
+  const bc = document.getElementById('bankClose');
+  if (bc) bc.addEventListener('click', () => toggleBank(false));
+  const sc = document.getElementById('stockClose');
+  if (sc) sc.addEventListener('click', () => toggleStock(false));
+  const bizc = document.getElementById('bizClose');
+  if (bizc) bizc.addEventListener('click', () => toggleBiz(false));
+}
 if (bizBtn) bizBtn.addEventListener('click', ()=>{
   if (bizOpen) toggleBiz(false); else toggleBiz(true);
 });
@@ -7965,6 +8118,14 @@ function collectSave(){
     biz: { list: BIZ_LIST, lastDay: BIZ_LAST_DAY },
     /* 账本：只存最近 30 天汇总 + 60 条流水，够看趋势又不撑存档 */
     ledger: { day: LEDGER.day, today: LEDGER.today, days: LEDGER.days, log: LEDGER.log },
+    /* 银行与持仓。股价不存档——它是由「股票编号 + 游戏日」推导出来的纯函数，
+     * 存档只记"买了多少股、花了多少钱"这种不可推导的事实。 */
+    bank: {
+      savings: BANK.savings, acc: BANK.acc,
+      fixed: BANK.fixed, loans: BANK.loans,
+      lastDay: BANK.lastDay, lateTotal: BANK.lateTotal
+    },
+    stock: { hold: STOCK_HOLD },
     world: { total: worldNow(), rate: WORLD.rate },
     bills: {
       list: BILLS,
@@ -8046,6 +8207,14 @@ function migrateSave(d){
       d.ledger = (d.ledger && typeof d.ledger === 'object')
         ? d.ledger
         : { day: d.day || 1, today: { in: {}, out: {} }, days: [], log: [] };
+    }
+    if (schema === 13){
+      // v14：银行与股市。老玩家没有存款也没有持仓，从零开始；
+      // lastDay 对齐到当天，免得一升级就补算一堆不存在的利息
+      d.bank = (d.bank && typeof d.bank === 'object')
+        ? d.bank
+        : { savings: 0, acc: 0, fixed: [], loans: [], lastDay: d.day || 1, lateTotal: 0 };
+      d.stock = (d.stock && typeof d.stock === 'object') ? d.stock : { hold: [] };
     }
     schema++;
   }
@@ -8174,6 +8343,134 @@ function applySave(d){
     };
     // 读档当天要跟当前 DAY 对齐，否则跨天开新档会把旧账混进今天
     if (LEDGER.day !== DAY){ LEDGER = { day: DAY, today: { in: {}, out: {} }, days: LEDGER.days, log: LEDGER.log }; }
+  }
+  /* 银行与持仓：脏存档不能变出钱来。
+   * 定期只认内容里存在的档位、贷款只认存在的档位，条数也设上限——
+   * 否则一份手工改过的存档能塞进一万笔定期，每天结算时把主循环拖死。 */
+  {
+    const bd = (d.bank && typeof d.bank === 'object') ? d.bank : {};
+    const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
+    const fixed = (Array.isArray(bd.fixed) ? bd.fixed : [])
+      .filter(f => f && bankTerm(f.termId) && Number(f.amount) > 0)
+      .slice(0, 20)
+      .map((f, i) => {
+        const st = Math.max(0, Math.floor(Number(f.start) || DAY));
+        let en = Math.max(0, Math.floor(Number(f.end) || DAY));
+        if (en <= st) en = st + 30;
+        const term = bankTerm(f.termId);
+        return {
+          uid: String(f.uid || ('fx' + st + '_' + i)),
+          termId: f.termId,
+          amount: num(f.amount, 1, 1e9),
+          start: st, end: en,
+          rate: Math.max(0, Number(f.rate) || Number(term.dailyRate) || 0)
+        };
+      });
+    const loans = (Array.isArray(bd.loans) ? bd.loans : [])
+      .filter(l => l && bankTier(l.id))
+      .slice(0, 6)
+      .map((l, i) => {
+        const tier = bankTier(l.id);
+        const principal = num(l.principal, 1, 1e9);
+        const total = Math.max(principal, num(l.total, 0, 1e9));
+        const paid = num(l.paid, 0, total);
+        const days = Math.max(1, Math.round(Number(tier.days) || 30));
+        return {
+          id: l.id, principal: principal, total: total, paid: paid,
+          due: Math.max(0, Math.floor(Number(l.due) || DAY)),
+          perDay: Math.max(1, num(l.perDay, 1, 1e9) || Math.ceil(total / days)),
+          missed: num(l.missed, 0, 9999),
+          start: Math.max(0, Math.floor(Number(l.start) || DAY))
+        };
+      })
+      .filter(l => l.total > l.paid);
+    BANK = {
+      savings: num(bd.savings, 0, BANK_SAVE_CAP),
+      acc: Math.max(0, Math.min(0.999, Number(bd.acc) || 0)),
+      fixed: fixed,
+      loans: loans,
+      lastDay: Math.max(0, Math.floor(Number(bd.lastDay) || 0)),
+      lateTotal: Math.max(BANK_LATE_CAP, Math.min(0, Math.round(Number(bd.lateTotal) || 0)))
+    };
+    // 同一天开始结算：不补算读档之前的利息（老档本来就没有这笔钱）
+    if (!BANK.lastDay) BANK.lastDay = DAY;
+
+    const sd = (d.stock && typeof d.stock === 'object') ? d.stock : {};
+    const seen = {};
+    STOCK_HOLD = (Array.isArray(sd.hold) ? sd.hold : [])
+      .filter(h => h && stockDef(h.id) && Number(h.shares) > 0 && !seen[h.id] && (seen[h.id] = 1))
+      .slice(0, STOCK_MAX)
+      .map(h => ({
+        id: h.id,
+        shares: Math.max(STOCK_LOT, Math.round(Number(h.shares) / STOCK_LOT) * STOCK_LOT),
+        cost: num(h.cost, 1, 1e9)
+      }));
+    stockSel = null;
+    _stockDay = 0; _stockPx = {};
+  }
+  /* 银行与持仓：脏存档不能变出钱来。
+   * 定期只认内容里存在的档位、贷款只认存在的档位，条数也设上限——
+   * 否则一份手工改过的存档能塞进一万笔定期，每天结算时把主循环拖死。 */
+  {
+    const bd = (d.bank && typeof d.bank === 'object') ? d.bank : {};
+    const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
+    const fixed = (Array.isArray(bd.fixed) ? bd.fixed : [])
+      .filter(f => f && bankTerm(f.termId) && Number(f.amount) > 0)
+      .slice(0, 20)
+      .map((f, i) => {
+        const st = Math.max(0, Math.floor(Number(f.start) || DAY));
+        let en = Math.max(0, Math.floor(Number(f.end) || DAY));
+        if (en <= st) en = st + 30;
+        const term = bankTerm(f.termId);
+        return {
+          uid: String(f.uid || ('fx' + st + '_' + i)),
+          termId: f.termId,
+          amount: num(f.amount, 1, 1e9),
+          start: st, end: en,
+          rate: Math.max(0, Number(f.rate) || Number(term.dailyRate) || 0)
+        };
+      });
+    const loans = (Array.isArray(bd.loans) ? bd.loans : [])
+      .filter(l => l && bankTier(l.id))
+      .slice(0, 6)
+      .map((l, i) => {
+        const tier = bankTier(l.id);
+        const principal = num(l.principal, 1, 1e9);
+        const total = Math.max(principal, num(l.total, 0, 1e9));
+        const paid = num(l.paid, 0, total);
+        const days = Math.max(1, Math.round(Number(tier.days) || 30));
+        return {
+          id: l.id, principal: principal, total: total, paid: paid,
+          due: Math.max(0, Math.floor(Number(l.due) || DAY)),
+          perDay: Math.max(1, num(l.perDay, 1, 1e9) || Math.ceil(total / days)),
+          missed: num(l.missed, 0, 9999),
+          start: Math.max(0, Math.floor(Number(l.start) || DAY))
+        };
+      })
+      .filter(l => l.total > l.paid);
+    BANK = {
+      savings: num(bd.savings, 0, BANK_SAVE_CAP),
+      acc: Math.max(0, Math.min(0.999, Number(bd.acc) || 0)),
+      fixed: fixed,
+      loans: loans,
+      lastDay: Math.max(0, Math.floor(Number(bd.lastDay) || 0)),
+      lateTotal: Math.max(BANK_LATE_CAP, Math.min(0, Math.round(Number(bd.lateTotal) || 0)))
+    };
+    // 同一天开始结算：不补算读档之前的利息（老档本来就没有这笔钱）
+    if (!BANK.lastDay) BANK.lastDay = DAY;
+
+    const sd = (d.stock && typeof d.stock === 'object') ? d.stock : {};
+    const seen = {};
+    STOCK_HOLD = (Array.isArray(sd.hold) ? sd.hold : [])
+      .filter(h => h && stockDef(h.id) && Number(h.shares) > 0 && !seen[h.id] && (seen[h.id] = 1))
+      .slice(0, STOCK_MAX)
+      .map(h => ({
+        id: h.id,
+        shares: Math.max(STOCK_LOT, Math.round(Number(h.shares) / STOCK_LOT) * STOCK_LOT),
+        cost: num(h.cost, 1, 1e9)
+      }));
+    stockSel = null;
+    _stockDay = 0; _stockPx = {};
   }
   // 账单：只认结构合法的条目，游标按模板 id 白名单收
   {
@@ -10200,6 +10497,581 @@ if (bizEl){
     if (e.target.id === 'bizBtn' || (e.target.closest && e.target.closest('#bizBtn'))) return;
     toggleBiz(false);
   }, true);
+}
+
+/* ===================== 银行与股市 =====================
+ * 经济系统跑到现在，钱的"出口"很多（吃饭、账单、买房、买车、承包金、彩票），
+ * 但"钱放哪儿"只有一个答案：躺在 MONEY 里。于是钱多到一定程度就没有玩法了。
+ * 银行和股市补上这一个洞：
+ *   银行 —— 存款拿利息（低、稳、无上限），贷款先花后还（要付利息，是持续出口）
+ *   股市 —— 用波动换收益（期望比存款高，但可能亏），手续费是另一条小出口
+ *
+ * 两条设计红线：
+ * 1) 利率按「游戏天」算，不是年化。1 天 = 24 分钟真实时间，"年化 3%" 在这里毫无意义。
+ * 2) 股价由「股票编号 + 游戏日」的稳定散列推导，同一天所有人看到同一个价，
+ *    读档也不变。所以行情不需要服务端存，也不存在"两个人价格不同"的破窗。
+ * ==================================================== */
+
+const BANK_DEF = HomeCore.content.bank() || {};
+const STOCK_DEF = HomeCore.content.stock() || { stocks: [] };
+
+/* ---- 银行参数（全部来自 content/bank/bank.json） ---- */
+const BANK_SAVE_RATE = Math.max(0, Number((BANK_DEF.savings || {}).dailyRate) || 0.002);
+const BANK_SAVE_CAP  = Math.max(0, Number((BANK_DEF.savings || {}).cap) || 500000);
+const BANK_FIXED     = Array.isArray((BANK_DEF.fixed || {}).terms) ? BANK_DEF.fixed.terms : [];
+const BANK_PENALTY   = Math.max(0, Math.min(1, Number((BANK_DEF.fixed || {}).penaltyRatio) || 0.2));
+const BANK_LOANS     = Array.isArray((BANK_DEF.loan || {}).tiers) ? BANK_DEF.loan.tiers : [];
+const BANK_MAX_LOANS = Math.max(1, Math.round(Number((BANK_DEF.loan || {}).maxActive) || 2));
+const BANK_LATE_EMO  = Number((BANK_DEF.loan || {}).lateEmotionPerDay) || -1;
+const BANK_LATE_CAP  = Number((BANK_DEF.loan || {}).lateEmotionCap) || -20;
+const BANK_LATE_FEE  = Math.max(0, Number((BANK_DEF.loan || {}).lateFeeRate) || 0.001);
+
+/* 银行状态。savings 是整数元，acc 存不足 1 元的零头——
+ * 直接给 savings 加小数的话，显示要取整、存档要带浮点，越滚越脏。 */
+let BANK = { savings: 0, acc: 0, fixed: [], loans: [], lastDay: 0, lateTotal: 0 };
+
+/* ---- 股市参数 ---- */
+const STOCKS      = Array.isArray(STOCK_DEF.stocks) ? STOCK_DEF.stocks : [];
+const STOCK_FEE   = Math.max(0, Number(STOCK_DEF.feeRate) || 0.0015);
+const STOCK_MAX   = Math.max(1, Math.round(Number(STOCK_DEF.maxHoldings) || 6));
+const STOCK_LOT   = Math.max(1, Math.round(Number(STOCK_DEF.lotSize) || 100));
+const STOCK_MODEL = STOCK_DEF.model || {};
+let STOCK_HOLD = [];          // [{ id, shares, cost }]；cost 是含手续费的买入总成本
+let stockSel = null;          // 面板里选中的股票 id
+
+function bankTerm(id){ return BANK_FIXED.find(t => t.id === id) || null; }
+function bankTier(id){ return BANK_LOANS.find(t => t.id === id) || null; }
+function stockDef(id){ return STOCKS.find(s => s.id === id) || null; }
+function stockIdx(id){ return STOCKS.findIndex(s => s.id === id); }
+
+/* ===================== 股市价格 ===================== */
+
+/* 单日涨跌率。drift 是日均漂移，vol 是单日波动幅度，抖动来自稳定散列。
+ * 尾部事件（约 2.5% 的日子）幅度放大 2.5 倍——这是"刺激感"的全部来源。 */
+function stockStepOf(st, idx, day){
+  const r = hashPos(day, idx + 1, 613);
+  let step = (Number(st.drift) || 0) + (r - 0.5) * 2 * (Number(st.vol) || 0);
+  const tailP = Number(STOCK_MODEL.tailProb) || 0.025;
+  if (r < tailP || r > 1 - tailP) step *= (Number(STOCK_MODEL.tailMul) || 2.5);
+  return step;
+}
+function stockNextPrice(st, idx, day, prev){
+  const next = prev * (1 + stockStepOf(st, idx, day));
+  const floor = (Number(st.base) || 10) * (Number(STOCK_MODEL.floorRatio) || 0.15);
+  return Math.max(floor, Math.round(next * 100) / 100);
+}
+
+/* 价格序列缓存。玩家只会往前走，所以缓存命中率极高；
+ * 需要回看更早的日子（算涨跌）时，价格是纯函数，随时能重算。 */
+let _stockDay = 0, _stockPx = {};
+function stockSeriesAt(day){
+  const d = Math.max(1, Math.floor(day));
+  if (_stockDay === d && Object.keys(_stockPx).length) return _stockPx;
+  let px = {}, from = 2;
+  if (_stockDay > 0 && d > _stockDay && Object.keys(_stockPx).length){
+    px = Object.assign({}, _stockPx);
+    from = _stockDay + 1;
+  } else {
+    for (const s of STOCKS) px[s.id] = Number(s.base) || 10;
+  }
+  for (let dd = from; dd <= d; dd++){
+    for (let i = 0; i < STOCKS.length; i++){
+      const s = STOCKS[i];
+      px[s.id] = stockNextPrice(s, i, dd, px[s.id]);
+    }
+  }
+  _stockDay = d; _stockPx = px;
+  return px;
+}
+/** 今天的收盘价 */
+function stockPrice(id){
+  const p = stockSeriesAt(DAY);
+  return Number(p[id]) || 0;
+}
+/** 昨天收盘价（算涨跌幅用；第 1 天没有昨天，返回初始价） */
+function stockPrevPrice(id){
+  const p = stockSeriesAt(Math.max(1, DAY - 1));
+  return Number(p[id]) || 0;
+}
+function stockChange(id){
+  const now = stockPrice(id), prev = stockPrevPrice(id);
+  if (!prev) return 0;
+  return (now - prev) / prev;
+}
+
+/* ===================== 持仓 ===================== */
+function stockHoldOf(id){ return STOCK_HOLD.find(h => h.id === id) || null; }
+function stockShares(id){ const h = stockHoldOf(id); return h ? h.shares : 0; }
+/** 持仓市值（按今天的价格） */
+function stockMarketValue(){
+  let v = 0;
+  for (const h of STOCK_HOLD) v += Math.round(stockPrice(h.id) * h.shares);
+  return v;
+}
+/** 持仓浮动盈亏 = 市值 - 买入成本 */
+function stockPnl(){
+  let cost = 0;
+  for (const h of STOCK_HOLD) cost += h.cost;
+  return stockMarketValue() - cost;
+}
+
+/* ===================== 股票买卖 ===================== */
+/** 买入。shares 必须是整手；含手续费。返回实际扣款，0 表示没成交 */
+function stockBuy(id, shares){
+  const s = stockDef(id);
+  if (!s) return 0;
+  const n = Math.max(STOCK_LOT, Math.round((shares | 0) / STOCK_LOT) * STOCK_LOT);
+  const px = stockPrice(id);
+  if (!px) return 0;
+  const gross = Math.round(px * n);
+  const fee = Math.max(1, Math.round(gross * STOCK_FEE));
+  const total = gross + fee;
+  const px2 = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  if (MONEY < total){
+    showFloat('还差 ¥' + (total - MONEY), px2, py);
+    SND.err(); return 0;
+  }
+  if (!stockHoldOf(id) && STOCK_HOLD.length >= STOCK_MAX){
+    showFloat('最多同时持有 ' + STOCK_MAX + ' 支，先卖掉一支', px2, py);
+    SND.err(); return 0;
+  }
+  debit(total, 'stock', '买入 ' + s.name + ' ' + n + ' 股');
+  const h = stockHoldOf(id);
+  if (h){ h.shares += n; h.cost += total; }
+  else STOCK_HOLD.push({ id: id, shares: n, cost: total });
+  SND.coin();
+  showFloat('买入 ' + s.name + ' ' + n + ' 股 · ¥' + total + '（含手续费 ¥' + fee + '）', px2, py);
+  updateHUD(); saveGame();
+  return total;
+}
+/** 卖出。含手续费，向下取整。返回实际到账，0 表示没成交 */
+function stockSell(id, shares){
+  const s = stockDef(id);
+  const h = stockHoldOf(id);
+  if (!s || !h) return 0;
+  const n = Math.max(0, Math.min(h.shares, Math.round((shares | 0) / STOCK_LOT) * STOCK_LOT));
+  if (n <= 0) return 0;
+  const px = stockPrice(id);
+  const gross = Math.floor(px * n);
+  const fee = Math.max(1, Math.round(gross * STOCK_FEE));
+  const net = Math.max(0, gross - fee);
+  /* 成本按比例结转：卖掉一部分，剩下的成本跟着缩，盈亏才不会被算成整支的 */
+  const costOut = Math.round(h.cost * (n / h.shares));
+  h.shares -= n;
+  h.cost = Math.max(0, h.cost - costOut);
+  if (h.shares <= 0) STOCK_HOLD = STOCK_HOLD.filter(x => x !== h);
+  credit(net, 'stock', '卖出 ' + s.name + ' ' + n + ' 股');
+  SND.coin();
+  const pnl = net - costOut;
+  showFloat('卖出 ' + s.name + ' ' + n + ' 股 · ¥' + net + '（' + (pnl >= 0 ? '赚 +' : '亏 ') + '¥' + Math.abs(pnl) + '）',
+    Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  updateHUD(); saveGame();
+  return net;
+}
+
+/* ===================== 银行：存取与定期 ===================== */
+
+/** 存钱进活期。上限 BANK_SAVE_CAP */
+function bankDeposit(amount){
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  const n = Math.max(1, Math.floor(Number(amount) || 0));
+  if (BANK.savings >= BANK_SAVE_CAP){
+    showFloat('活期账户满了（¥' + BANK_SAVE_CAP + '）', px, py);
+    SND.err(); return 0;
+  }
+  const room = Math.max(0, BANK_SAVE_CAP - BANK.savings);
+  const real = Math.min(n, room, Math.floor(MONEY));
+  if (real <= 0){
+    showFloat(MONEY < 1 ? '手里没钱' : '超出上限', px, py);
+    SND.err(); return 0;
+  }
+  BANK.savings += real;
+  debit(real, 'bank', '存入活期');
+  SND.coin();
+  showFloat('存入 ¥' + real + '（活期 ¥' + BANK.savings + '）', px, py);
+  updateHUD(); saveGame();
+  return real;
+}
+/** 从活期取钱 */
+function bankWithdraw(amount){
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  const n = Math.max(1, Math.floor(Number(amount) || 0));
+  const real = Math.min(n, BANK.savings);
+  if (real <= 0){
+    showFloat('活期里没钱', px, py);
+    SND.err(); return 0;
+  }
+  BANK.savings -= real;
+  credit(real, 'bank', '取出活期');
+  SND.ok();
+  showFloat('取出 ¥' + real, px, py);
+  updateHUD(); saveGame();
+  return real;
+}
+/** 存定期：从活期划走，到期还本付息 */
+function bankOpenFixed(termId, amount){
+  const t = bankTerm(termId);
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  if (!t) return 0;
+  const min = Math.max(1, Math.round(Number(t.minAmount) || 1));
+  const n = Math.max(min, Math.floor(Number(amount) || min));
+  if (BANK.savings < n){
+    showFloat('活期不够 ¥' + n + '（现在 ¥' + BANK.savings + '）', px, py);
+    SND.err(); return 0;
+  }
+  BANK.savings -= n;
+  const days = Math.max(1, Math.round(Number(t.days) || 30));
+  BANK.fixed.push({
+    uid: 'fx' + DAY + '_' + Math.round(Math.random() * 1e6),
+    termId: termId,
+    amount: n,
+    start: DAY,
+    end: DAY + days,
+    rate: Number(t.dailyRate) || 0
+  });
+  SND.coin();
+  showFloat('存定期 ¥' + n + ' · ' + days + ' 天到期', px, py);
+  updateHUD(); saveGame();
+  return n;
+}
+/** 提前支取定期：本金打 8 折（罚 20%），利息全没 */
+function bankBreakFixed(uid){
+  const f = BANK.fixed.find(x => x.uid === uid);
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  if (!f) return 0;
+  const back = Math.floor(f.amount * (1 - BANK_PENALTY));
+  BANK.fixed = BANK.fixed.filter(x => x !== f);
+  credit(back, 'bank', '定期提前支取');
+  SND.err();
+  showFloat('提前支取 ¥' + back + '（扣 ' + Math.round(BANK_PENALTY * 100) + '% 违约金）', px, py);
+  updateHUD(); saveGame();
+  return back;
+}
+/** 定期到期能拿多少（整数） */
+function bankFixedValue(f){
+  const days = Math.max(0, f.end - f.start);
+  return Math.round(f.amount * Math.pow(1 + (Number(f.rate) || 0), days));
+}
+
+/* ===================== 银行：贷款 ===================== */
+
+function bankLoanOf(id){ return BANK.loans.find(l => l.id === id) || null; }
+function bankLoanTotal(){
+  let t = 0;
+  for (const l of BANK.loans) t += Math.max(0, l.total - l.paid);
+  return t;
+}
+/** 借钱：一次性到账，之后每天自动扣一期 */
+function bankTakeLoan(tierId){
+  const t = bankTier(tierId);
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  if (!t) return 0;
+  if (BANK.loans.length >= BANK_MAX_LOANS){
+    showFloat('最多同时背 ' + BANK_MAX_LOANS + ' 笔贷款', px, py);
+    SND.err(); return 0;
+  }
+  if (bankLoanOf(tierId)){
+    showFloat('这笔已经借过了，先还清再借', px, py);
+    SND.err(); return 0;
+  }
+  const amount = Math.max(0, Math.round(Number(t.amount) || 0));
+  const days = Math.max(1, Math.round(Number(t.days) || 30));
+  const total = Math.round(amount * (1 + (Number(t.rate) || 0)));
+  BANK.loans.push({
+    id: tierId, principal: amount, total: total, paid: 0,
+    due: DAY + days, perDay: Math.ceil(total / days), missed: 0, start: DAY
+  });
+  credit(amount, 'loan', '贷款到账');
+  SND.coin();
+  showFloat('贷款 ¥' + amount + ' 到账 · ' + days + ' 天还清 ¥' + total, px, py);
+  updateHUD(); saveGame();
+  return amount;
+}
+/** 手动还款（一次性结清或还一部分） */
+function bankRepay(loanId, amount){
+  const l = bankLoanOf(loanId);
+  if (!l) return 0;
+  const owe = Math.max(0, l.total - l.paid);
+  const n = Math.min(owe, Math.max(0, Math.floor(Number(amount) || 0)));
+  if (n <= 0) return 0;
+  if (MONEY < n){
+    showFloat('还差 ¥' + (n - MONEY), Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    SND.err(); return 0;
+  }
+  debit(n, 'loan', '还贷');
+  l.paid += n;
+  if (l.paid >= l.total){
+    BANK.loans = BANK.loans.filter(x => x !== l);
+    showFloat('贷款结清', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    SND.ok();
+  }
+  updateHUD(); saveGame();
+  return n;
+}
+
+/* ===================== 每日结算 =====================
+ * 用一个"上次结算日"做游标，可以一次补多天——离线几天回来也能算对。
+ * 逐日循环而不是"天数 × 利率"：贷款扣款要看每天现金够不够，定期可能中途到期，
+ * 这些都不是线性关系，必须一天一天过。 */
+function financeTick(){
+  if (!BANK.lastDay){ BANK.lastDay = DAY; return 0; }
+  if (DAY <= BANK.lastDay) return 0;
+  const days = Math.min(90, DAY - BANK.lastDay);      // 离线最多补 90 天
+  let gained = 0, paidOut = 0, lateDays = 0;
+  for (let k = 0; k < days; k++){
+    BANK.lastDay++;
+
+    /* ① 活期利息：只对本金计息，零头留在 acc 里避免反复取整丢钱 */
+    if (BANK.savings > 0){
+      const raw = BANK.savings * BANK_SAVE_RATE + BANK.acc;
+      const whole = Math.floor(raw);
+      BANK.acc = raw - whole;
+      if (BANK.savings < BANK_SAVE_CAP){
+        const add = Math.min(whole, BANK_SAVE_CAP - BANK.savings);
+        BANK.savings += add;
+        gained += add;
+      }
+    }
+
+    /* ② 定期到期：本息一次性回到活期 */
+    const dueFixed = BANK.fixed.filter(f => f.end <= BANK.lastDay);
+    for (const f of dueFixed){
+      const back = bankFixedValue(f);
+      BANK.savings = Math.min(BANK_SAVE_CAP, BANK.savings + back);
+      BANK.fixed = BANK.fixed.filter(x => x !== f);
+      gained += back;
+    }
+
+    /* ③ 贷款：每天自动扣一期。现金不够就是逾期（罚息 + 扣情绪，不强制收房） */
+    for (const l of BANK.loans.slice()){
+      const owe = Math.max(0, l.total - l.paid);
+      if (owe <= 0){ BANK.loans = BANK.loans.filter(x => x !== l); continue; }
+      const pay = Math.min(l.perDay, owe);
+      if (MONEY >= pay){
+        debit(pay, 'loan', '还贷');
+        l.paid += pay;
+        paidOut += pay;
+      } else {
+        l.missed++;
+        lateDays++;
+        l.total += Math.max(1, Math.ceil(owe * BANK_LATE_FEE));
+        BANK.lateTotal = Math.max(BANK_LATE_CAP, BANK.lateTotal + BANK_LATE_EMO);
+      }
+      if (l.paid >= l.total) BANK.loans = BANK.loans.filter(x => x !== l);
+    }
+  }
+  if (lateDays > 0){
+    STATS.emotion = clampStat('emotion', (STATS.emotion || 0) + BANK_LATE_EMO * lateDays);
+  }
+  if (gained > 0){
+    showFloat('银行结息 +¥' + gained, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    SND.coin();
+  }
+  if (paidOut > 0){
+    showFloat('贷款自动还款 ¥' + paidOut, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  }
+  saveGame();
+  return gained;
+}
+
+/* ===================== 面板 =====================
+ * 这两个面板互斥。关闭别的面板用「直接改状态 + remove class」而不是调 toggleXxx(false)，
+ * 否则 toggleBank ↔ toggleStock 会互相递归（踩过一个 immediate stack overflow）。 */
+let bankOpen = false, stockOpen = false;
+
+function _panelOff(id, setter){
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+  setter(false);
+}
+function toggleBank(force){
+  const next = (force === undefined) ? !bankOpen : !!force;
+  bankOpen = next;
+  const el = document.getElementById('bank');
+  if (el) el.classList.toggle('open', next);
+  if (!next) return;
+  _panelOff('stock', v => { stockOpen = v; });
+  if (typeof shopOpen !== 'undefined' && shopOpen) toggleShop(false);
+  if (typeof bizOpen !== 'undefined' && bizOpen) toggleBiz(false);
+  if (typeof ledgerOpen !== 'undefined' && ledgerOpen) toggleLedger(false);
+  renderBank();
+}
+function toggleStock(force){
+  const next = (force === undefined) ? !stockOpen : !!force;
+  stockOpen = next;
+  const el = document.getElementById('stock');
+  if (el) el.classList.toggle('open', next);
+  if (!next) return;
+  _panelOff('bank', v => { bankOpen = v; });
+  if (typeof shopOpen !== 'undefined' && shopOpen) toggleShop(false);
+  if (typeof bizOpen !== 'undefined' && bizOpen) toggleBiz(false);
+  if (typeof ledgerOpen !== 'undefined' && ledgerOpen) toggleLedger(false);
+  renderStock();
+}
+
+/* ---------- 银行面板 ---------- */
+function renderBank(){
+  const list = document.getElementById('bankList');
+  if (!list) return;
+  const bal = document.getElementById('bankBal');
+  if (bal) bal.textContent = '¥' + Math.round(MONEY);
+
+  const out = [];
+  const saveCap = BANK_SAVE_CAP;
+  const daily = Math.floor(BANK.savings * BANK_SAVE_RATE);
+  out.push('<div class="lsum">' +
+    '<div class="lc"><span class="lk">活期余额</span><b class="lvin">¥' + BANK.savings + '</b></div>' +
+    '<div class="lc"><span class="lk">每天利息</span><b class="lvin">+¥' + daily + '</b></div>' +
+    '<div class="lc"><span class="lk">贷款欠款</span><b class="' + (bankLoanTotal() > 0 ? 'lvout' : '') + '">¥' + bankLoanTotal() + '</b></div>' +
+    '</div>');
+  if (BANK.savings >= saveCap){
+    out.push('<div class="sd" style="color:#a8392a">活期已经到上限 ¥' + saveCap + '，多出来的利息不再计。想赚更多可以存定期或买股票。</div>');
+  }
+
+  /* 存取款 */
+  out.push('<div class="sgroup">活期存取 · ' + (BANK_SAVE_RATE * 100).toFixed(2) + '%/天</div>');
+  const canIn = MONEY >= 100 && BANK.savings < saveCap;
+  const canOut = BANK.savings >= 100;
+  const b1 = (label, act, amt, dis) =>
+    '<button class="fbtn' + (dis ? ' ghost' : '') + '" data-bank="' + act + '" data-amt="' + amt + '"' +
+    (dis ? ' disabled' : '') + '>' + label + '</button>';
+  out.push('<div class="brow">' +
+    b1('存 ¥1,000', 'dep', 1000, !canIn || MONEY < 1000) +
+    b1('存 ¥10,000', 'dep', 10000, !canIn || MONEY < 10000) +
+    b1('全部存入', 'dep', -1, !canIn) +
+    '</div>');
+  out.push('<div class="brow">' +
+    b1('取 ¥1,000', 'wd', 1000, !canOut || BANK.savings < 1000) +
+    b1('取 ¥10,000', 'wd', 10000, !canOut || BANK.savings < 10000) +
+    b1('全部取出', 'wd', -1, !canOut) +
+    '</div>');
+
+  /* 定期 */
+  out.push('<div class="sgroup">定期存款 · 锁定期限，利率更高</div>');
+  for (const t of BANK_FIXED){
+    const days = Math.round(Number(t.days) || 30);
+    const rate = Number(t.dailyRate) || 0;
+    const min = Math.round(Number(t.minAmount) || 1);
+    const sample = Math.max(min, 1000);
+    const gain = Math.round(sample * Math.pow(1 + rate, days)) - sample;
+    const can = BANK.savings >= min;
+    out.push('<div class="fitem"><div class="fb">' +
+      '<div class="fn2">' + days + ' 天定期 · ' + (rate * 100).toFixed(2) + '%/天</div>' +
+      '<div class="fd">最少 ¥' + min + '；存 ¥' + sample + ' 到期拿 ¥' + (sample + gain) + '（+' + gain + '）</div>' +
+      '</div><button class="fbtn" data-fixed="' + t.id + '" data-amt="' + Math.max(min, 1000) + '"' +
+      (can ? '' : ' disabled') + '>' + (can ? '存 ¥' + Math.max(min, 1000) : '活期不够') + '</button></div>');
+  }
+  if (BANK.fixed.length){
+    out.push('<div class="sgroup">我的定期 · ' + BANK.fixed.length + ' 笔</div>');
+    for (const f of BANK.fixed){
+      const term = bankTerm(f.termId);
+      const left = Math.max(0, f.end - DAY);
+      const val = bankFixedValue(f);
+      out.push('<div class="fitem"><div class="fb">' +
+        '<div class="fn2">¥' + f.amount + ' · ' + (term ? term.days + ' 天' : '定期') + '</div>' +
+        '<div class="fd">' + (left > 0 ? '还剩 ' + left + ' 天' : '已到期，明天结算') +
+        ' · 到期拿 ¥' + val + '（+' + (val - f.amount) + '）</div>' +
+        '</div><button class="fbtn ghost" data-break="' + f.uid + '">提前取 ¥' +
+        Math.floor(f.amount * (1 - BANK_PENALTY)) + '</button></div>');
+    }
+  }
+
+  /* 贷款 */
+  out.push('<div class="sgroup">贷款 · 一次到账，每天自动扣一期</div>');
+  for (const t of BANK_LOANS){
+    const amount = Math.round(Number(t.amount) || 0);
+    const days = Math.round(Number(t.days) || 30);
+    const total = Math.round(amount * (1 + (Number(t.rate) || 0)));
+    const per = Math.ceil(total / days);
+    const taken = !!bankLoanOf(t.id);
+    const full = BANK.loans.length >= BANK_MAX_LOANS;
+    out.push('<div class="fitem"><div class="fb">' +
+      '<div class="fn2">借 ¥' + amount + ' · ' + days + ' 天 · 利息 ' + Math.round((Number(t.rate) || 0) * 100) + '%</div>' +
+      '<div class="fd">共还 ¥' + total + '，日供 ¥' + per + '（' + (t.note || '') + '）</div>' +
+      '</div><button class="fbtn" data-loan="' + t.id + '"' +
+      (taken || full ? ' disabled' : '') + '>' +
+      (taken ? '已借' : (full ? '已满 ' + BANK_MAX_LOANS + ' 笔' : '借')) + '</button></div>');
+  }
+  if (BANK.loans.length){
+    out.push('<div class="sgroup">我的贷款 · 欠 ¥' + bankLoanTotal() + '</div>');
+    for (const l of BANK.loans){
+      const owe = Math.max(0, l.total - l.paid);
+      const left = Math.max(0, l.due - DAY);
+      out.push('<div class="fitem' + (l.missed > 0 ? ' bad' : '') + '"><div class="fb">' +
+        '<div class="fn2">借 ¥' + l.principal + ' · 还 ¥' + l.total + '</div>' +
+        '<div class="fd">欠 ¥' + owe + ' · 日供 ¥' + l.perDay + ' · ' +
+        (left > 0 ? '还有 ' + left + ' 天到期' : '已到期') +
+        (l.missed > 0 ? ' · <b style="color:#b8493a">逾期 ' + l.missed + ' 天</b>' : '') + '</div>' +
+        '</div><button class="fbtn" data-repay="' + l.id + '" data-amt="' + owe + '"' +
+        (MONEY < owe ? ' disabled' : '') + '>' +
+        (MONEY < owe ? '差 ¥' + (owe - MONEY) : '结清 ¥' + owe) + '</button></div>');
+    }
+  } else {
+    out.push('<div class="sd" style="padding:4px 2px 8px;color:#9a8a6a">没有贷款。借钱可以提前买房买车，但每天会自动扣钱——记得留够现金。</div>');
+  }
+  list.innerHTML = out.join('');
+}
+
+/* ---------- 股市面板 ---------- */
+function renderStock(){
+  const list = document.getElementById('stockList');
+  if (!list) return;
+  const bal = document.getElementById('stockBal');
+  if (bal) bal.textContent = '¥' + Math.round(MONEY);
+
+  const out = [];
+  const mv = stockMarketValue(), pnl = stockPnl();
+  out.push('<div class="lsum">' +
+    '<div class="lc"><span class="lk">持仓市值</span><b>¥' + mv + '</b></div>' +
+    '<div class="lc"><span class="lk">浮动盈亏</span><b class="' + (pnl < 0 ? 'lvout' : 'lvin') + '">' +
+      (pnl < 0 ? '−¥' + Math.abs(pnl) : '+¥' + pnl) + '</b></div>' +
+    '<div class="lc"><span class="lk">可用现金</span><b>¥' + Math.round(MONEY) + '</b></div>' +
+    '</div>');
+  out.push('<div class="sd" style="padding:0 2px 8px;color:#9a8a6a;line-height:1.7">' +
+    '行情每天跨天更新一次，所有人看到的价格相同。买卖各收 ' +
+    (Math.round(STOCK_FEE * 1000) / 10) + '% 手续费，一手 = ' + STOCK_LOT + ' 股。' +
+    '同一天买进卖出必亏手续费，所以别追涨杀跌。</div>');
+
+  for (const s of STOCKS){
+    const px = stockPrice(s.id);
+    const chg = stockChange(s.id);
+    const up = chg >= 0;
+    const h = stockHoldOf(s.id);
+    const lot = Math.round(px * STOCK_LOT);
+    const lotFee = Math.max(1, Math.round(lot * STOCK_FEE));
+    const cost1 = lot + lotFee;
+    const canBuy = MONEY >= cost1 && (h || STOCK_HOLD.length < STOCK_MAX);
+    const rowCls = 'stk' + (h ? ' held' : '') + (stockSel === s.id ? ' sel' : '');
+    out.push('<div class="' + rowCls + '" data-stock="' + s.id + '">' +
+      '<div class="sh">' +
+        '<span class="sn">' + s.name + '</span>' +
+        '<span class="sc">' + s.code + ' · ' + (s.sector || '') + '</span>' +
+        '<span class="sp ' + (up ? 'up' : 'down') + '">¥' + px.toFixed(2) + '</span>' +
+        '<span class="scg ' + (up ? 'up' : 'down') + '">' + (up ? '+' : '') + (chg * 100).toFixed(2) + '%</span>' +
+      '</div>');
+    if (h){
+      const val = Math.round(px * h.shares);
+      const gain = val - h.cost;
+      out.push('<div class="sd">持 ' + h.shares + ' 股 · 成本 ¥' + h.cost + ' · 市值 ¥' + val +
+        ' · <b style="color:' + (gain < 0 ? '#b8493a' : '#3f8a44') + '">' +
+        (gain < 0 ? '亏 ¥' + Math.abs(gain) : '赚 ¥' + gain) + '</b></div>');
+    } else {
+      out.push('<div class="sd">' + (s.desc || '') + '</div>');
+    }
+    if (stockSel === s.id){
+      out.push('<div class="brow" style="margin-top:6px">' +
+        '<button class="fbtn" data-buy="' + s.id + '" data-n="' + STOCK_LOT + '"' + (canBuy ? '' : ' disabled') + '>' +
+          (MONEY < cost1 ? '差 ¥' + (cost1 - MONEY) : (h || STOCK_HOLD.length < STOCK_MAX ? '买 1 手 ¥' + cost1 : '持仓已满')) +
+        '</button>' +
+        (h ? '<button class="fbtn" data-buy="' + s.id + '" data-n="' + (STOCK_LOT * 5) + '"' +
+          (MONEY >= lot * 5 * (1 + STOCK_FEE) ? '' : ' disabled') + '>买 5 手</button>' : '') +
+        (h ? '<button class="fbtn ghost" data-sell="' + s.id + '" data-n="' + STOCK_LOT + '">卖 1 手</button>' : '') +
+        (h ? '<button class="fbtn ghost" data-sell="' + s.id + '" data-n="' + h.shares + '">全卖</button>' : '') +
+        '</div>');
+    }
+    out.push('</div>');
+  }
+  list.innerHTML = out.join('');
 }
 
 function enterPeer(room){

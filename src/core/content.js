@@ -136,6 +136,12 @@ function buildIndex(packs, meta){
   // 功能点承包：付一个月承包金，期内每天结算净收益
   const business = packs['business/business.json'] || { shops: [], termDays: 30, maxOwned: 3 };
 
+  // 银行：存贷利率（按游戏天算，不是年化）
+  const bank = packs['bank/bank.json'] || null;
+
+  // 股市：可交易标的 + 手续费 + 随机游走参数
+  const stock = packs['stock/stock.json'] || { stocks: [], feeRate: 0.0015 };
+
   // 车款：4S 店卖的车（不在家具目录里，车不是家具）
   let cars = [], carParking = null;
   for (const [id, pack] of Object.entries(packs)){
@@ -169,7 +175,9 @@ function buildIndex(packs, meta){
     cars,
     carParking,
     lottery,
-    business
+    business,
+    bank,
+    stock
   };
 }
 
@@ -322,3 +330,7 @@ export function economy(){ return content.rules.economy || {}; }
 export function bills(){ return content.rules.bills || {}; }
 /** 功能点承包：可承包的店铺、承包金、日收益、承包周期 */
 export function business(){ return content.business || { shops: [], termDays: 30 }; }
+/** 银行：活期利率、定期档位、贷款档位 */
+export function bank(){ return content.bank || {}; }
+/** 股市：可交易标的、手续费、价格模型参数 */
+export function stock(){ return content.stock || { stocks: [], feeRate: 0.0015 }; }

@@ -986,6 +986,70 @@ function validate(){
     }
   }
 
+  /* V4.15 银行与股市：利率、档位、行情参数。
+   * 这几处错了不会报错，只会让玩家"存了钱不生息"或者"股票永远不涨"——
+   * 那种 bug 只能靠玩家截图来发现，所以必须在构建期拦住。 */
+  {
+    const zoneIds = new Set(((packs['maps/street.map.json'] || {}).zones || []).map(z => z.id));
+    const lo = (v, a, b) => Number(v) >= a && Number(v) <= b;
+
+    const bank = packs['bank/bank.json'];
+    if (!bank) problems.push('[银行] 缺少 bank/bank.json');
+    else {
+      if (bank.zone && !zoneIds.has(bank.zone)) problems.push('[银行] 分区在地图上不存在: ' + bank.zone);
+      const sv = bank.savings || {};
+      if (!lo(sv.dailyRate, 0.0001, 0.05)) problems.push('[银行] 活期日息应在 0.01%..5%，实为 ' + sv.dailyRate);
+      if (!(Number(sv.cap) > 0)) problems.push('[银行] 活期上限应 > 0');
+      const terms = (bank.fixed || {}).terms || [];
+      if (!terms.length) problems.push('[银行] 没有定期档位');
+      const tids = new Set();
+      for (const t of terms){
+        if (!t.id || tids.has(t.id)) problems.push('[银行] 定期档位 id 缺失或重复: ' + t.id);
+        tids.add(t.id);
+        if (!lo(t.days, 1, 365)) problems.push('[银行] 定期 ' + t.id + ' days 应在 1..365');
+        if (!lo(t.dailyRate, 0.0001, 0.05)) problems.push('[银行] 定期 ' + t.id + ' 日息应在 0.01%..5%');
+        if (!(Number(t.minAmount) > 0)) problems.push('[银行] 定期 ' + t.id + ' minAmount 应 > 0');
+      }
+      const lns = (bank.loan || {}).tiers || [];
+      if (!lns.length) problems.push('[银行] 没有贷款档位');
+      const lids = new Set();
+      for (const l of lns){
+        if (!l.id || lids.has(l.id)) problems.push('[银行] 贷款档位 id 缺失或重复: ' + l.id);
+        lids.add(l.id);
+        if (!(Number(l.amount) > 0)) problems.push('[银行] 贷款 ' + l.id + ' amount 应 > 0');
+        if (!lo(l.days, 1, 365)) problems.push('[银行] 贷款 ' + l.id + ' days 应在 1..365');
+        if (!lo(l.rate, 0, 1)) problems.push('[银行] 贷款 ' + l.id + ' 利率应在 0..100%');
+      }
+      if (!lo((bank.loan || {}).maxActive, 1, 5)) problems.push('[银行] maxActive 应在 1..5');
+    }
+
+    const st = packs['stock/stock.json'];
+    if (!st) problems.push('[股市] 缺少 stock/stock.json');
+    else {
+      if (st.zone && !zoneIds.has(st.zone)) problems.push('[股市] 分区在地图上不存在: ' + st.zone);
+      if (!lo(st.feeRate, 0, 0.05)) problems.push('[股市] 手续费应在 0..5%');
+      if (!(Number(st.lotSize) >= 1)) problems.push('[股市] lotSize 应 >= 1');
+      const arr = st.stocks || [];
+      if (!arr.length) problems.push('[股市] 没有可交易标的');
+      const ids = new Set(), codes = new Set();
+      for (const s of arr){
+        const who = '股票 ' + (s.name || s.id || '?');
+        if (!s.id || ids.has(s.id)) problems.push('[股市] id 缺失或重复: ' + s.id);
+        ids.add(s.id);
+        if (!/^[0-9]{6}$/.test(String(s.code || ''))) problems.push('[股市] ' + who + ' 代码应是 6 位数字');
+        if (codes.has(String(s.code))) problems.push('[股市] 代码重复: ' + s.code);
+        codes.add(String(s.code));
+        if (!(Number(s.base) > 0)) problems.push('[股市] ' + who + ' 基准价应 > 0');
+        // 日漂移超过 ±2% 时，几十个游戏日就会涨到天上或跌成仙股
+        if (!lo(s.drift, -0.02, 0.02)) problems.push('[股市] ' + who + ' 日漂移应在 ±2%，实为 ' + s.drift);
+        if (!lo(s.vol, 0, 0.2)) problems.push('[股市] ' + who + ' 波动应在 0..20%');
+      }
+      const model = st.model || {};
+      if (model.tailProb != null && !lo(model.tailProb, 0, 0.2)) problems.push('[股市] tailProb 应在 0..20%');
+      if (model.floorRatio != null && !lo(model.floorRatio, 0, 1)) problems.push('[股市] floorRatio 应在 0..1');
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

@@ -2432,6 +2432,272 @@
       LEDGER = JSON.parse(bk.ledger);
     }
 
+    /* ---------- AB 组：银行 ---------- */
+    {
+      const bk = { money: MONEY, day: DAY, bank: JSON.stringify(BANK), ledger: JSON.stringify(LEDGER) };
+
+      // AB1 配置加载：活期有利率、定期有两个档、贷款有三个档
+      P('AB1 bank config loaded',
+        BANK_SAVE_RATE > 0 && BANK_FIXED.length === 2 && BANK_LOANS.length === 3 &&
+        BANK_MAX_LOANS >= 1,
+        'rate=' + BANK_SAVE_RATE + ' fixed=' + BANK_FIXED.length + ' loans=' + BANK_LOANS.length);
+
+      // AB2 存款：现金减少、活期增加、账本记为"存入银行"且算资产转移
+      DAY = 80; MONEY = 20000;
+      BANK = { savings: 0, acc: 0, fixed: [], loans: [], lastDay: DAY, lateTotal: 0 };
+      LEDGER = { day: DAY, today: { in: {}, out: {} }, days: [], log: [] };
+      const dep = bankDeposit(5000);
+      const sum2 = ledgerDaySum();
+      P('AB2 deposit moves cash into savings',
+        dep === 5000 && MONEY === 15000 && BANK.savings === 5000 &&
+        LEDGER.today.out.bank === 5000 && sum2.xo === 5000,
+        JSON.stringify({ dep: dep, money: MONEY, save: BANK.savings, xfer: sum2.xo }));
+
+      // AB3 取款
+      const wd = bankWithdraw(2000);
+      P('AB3 withdraw brings cash back',
+        wd === 2000 && MONEY === 17000 && BANK.savings === 3000,
+        JSON.stringify({ wd: wd, money: MONEY, save: BANK.savings }));
+
+      // AB4 存款上限：超出部分不会被吞掉（只扣到上限为止）
+      BANK.savings = BANK_SAVE_CAP - 100;
+      MONEY = 50000;
+      const m0 = MONEY;
+      const capped = bankDeposit(10000);
+      P('AB4 deposit respects the cap',
+        capped === 100 && BANK.savings === BANK_SAVE_CAP && MONEY === m0 - 100,
+        JSON.stringify({ capped: capped, save: BANK.savings, money: MONEY }));
+
+      // AB5 定期：从活期划走，到期按复利算
+      BANK.savings = 20000; MONEY = 1000; DAY = 80;
+      const term = BANK_FIXED[0];
+      const fAmt = bankOpenFixed(term.id, 10000);
+      P('AB5 fixed deposit takes from savings',
+        fAmt === 10000 && BANK.savings === 10000 && BANK.fixed.length === 1 &&
+        BANK.fixed[0].end === DAY + term.days,
+        JSON.stringify({ fAmt: fAmt, save: BANK.savings, end: BANK.fixed[0] && BANK.fixed[0].end }));
+
+      const expectVal = Math.round(10000 * Math.pow(1 + Number(term.dailyRate), term.days));
+      P('AB5b fixed deposit compounds',
+        bankFixedValue(BANK.fixed[0]) === expectVal && expectVal > 10000,
+        'val=' + bankFixedValue(BANK.fixed[0]) + ' expect=' + expectVal);
+
+      // AB6 提前支取：按 8 折返还，利息全没
+      const uid = BANK.fixed[0].uid;
+      MONEY = 0;
+      const back = bankBreakFixed(uid);
+      P('AB6 breaking a fixed deposit pays a penalty',
+        back === Math.floor(10000 * (1 - BANK_PENALTY)) && BANK.fixed.length === 0 && MONEY === back,
+        JSON.stringify({ back: back, money: MONEY }));
+
+      // AB7 贷款：一次性到账、生成还款计划
+      // 注意顺序：先把 DAY 设好再重置 BANK，否则 lastDay 会记成旧的 DAY，
+      // 后面 financeTick 一补就是十几期（这个坑第一次写用例时踩了）
+      MONEY = 0; DAY = 90;
+      BANK = { savings: 0, acc: 0, fixed: [], loans: [], lastDay: DAY, lateTotal: 0 };
+      const tier = BANK_LOANS[0];
+      const got = bankTakeLoan(tier.id);
+      const loan = BANK.loans[0];
+      const expectTotal = Math.round(Number(tier.amount) * (1 + Number(tier.rate)));
+      P('AB7 loan pays out and schedules repayment',
+        got === Number(tier.amount) && MONEY === Number(tier.amount) &&
+        loan.total === expectTotal && loan.perDay === Math.ceil(expectTotal / Number(tier.days)),
+        JSON.stringify({ got: got, total: loan.total, per: loan.perDay }));
+
+      // AB8 同一档不能重复借
+      const again = bankTakeLoan(tier.id);
+      P('AB8 the same tier cannot be borrowed twice', again === 0 && BANK.loans.length === 1,
+        'again=' + again + ' n=' + BANK.loans.length);
+
+      // AB9 每日扣款：跨 3 天扣 3 期
+      const per = BANK.loans[0].perDay;
+      MONEY = 100000;
+      const cash0 = MONEY;
+      DAY = 93;
+      financeTick();
+      P('AB9 financeTick charges the daily installment',
+        MONEY === cash0 - per * 3 && BANK.loans[0].paid === per * 3,
+        JSON.stringify({ money: MONEY, paid: BANK.loans[0].paid, per: per }));
+
+      // AB10 现金不够 → 逾期：记 missed、加罚息、扣情绪
+      MONEY = 0;
+      const emo0 = STATS.emotion;
+      const owed0 = BANK.loans[0].total - BANK.loans[0].paid;
+      DAY = 94;
+      financeTick();
+      const owed1 = BANK.loans[0].total - BANK.loans[0].paid;
+      P('AB10 missed payment adds a late fee and costs mood',
+        BANK.loans[0].missed === 1 && owed1 > owed0 && STATS.emotion < emo0,
+        JSON.stringify({ missed: BANK.loans[0].missed, owed0: owed0, owed1: owed1 }));
+
+      // AB11 提前还清
+      MONEY = 200000;
+      const owe = BANK.loans[0].total - BANK.loans[0].paid;
+      const paidNow = bankRepay(BANK.loans[0].id, owe);
+      P('AB11 repay in full clears the loan',
+        paidNow === owe && BANK.loans.length === 0, 'paid=' + paidNow);
+
+      // AB12 活期利息按天结：跨 10 天，零头不丢
+      BANK = { savings: 10000, acc: 0, fixed: [], loans: [], lastDay: 100, lateTotal: 0 };
+      MONEY = 0; DAY = 110;
+      const gain = financeTick();
+      const expectGain = Math.floor(10000 * (Math.pow(1 + BANK_SAVE_RATE, 10) - 1));
+      P('AB12 savings accrue daily interest',
+        gain > 0 && Math.abs(gain - expectGain) <= 3 && BANK.savings === 10000 + gain,
+        JSON.stringify({ gain: gain, expect: expectGain, save: BANK.savings }));
+
+      MONEY = bk.money; DAY = bk.day;
+      BANK = JSON.parse(bk.bank); LEDGER = JSON.parse(bk.ledger);
+    }
+
+    /* ---------- AC 组：股市 ---------- */
+    {
+      const bk = { money: MONEY, day: DAY, hold: JSON.stringify(STOCK_HOLD), bank: JSON.stringify(BANK), ledger: JSON.stringify(LEDGER) };
+
+      // AC1 配置加载
+      P('AC1 stock market config loaded',
+        STOCKS.length === 6 && STOCK_FEE > 0 && STOCK_LOT > 0 && STOCK_MAX >= 1,
+        'stocks=' + STOCKS.length + ' fee=' + STOCK_FEE + ' lot=' + STOCK_LOT);
+
+      // AC2 每支股票都有编号、基准价、漂移与波动
+      const badStock = STOCKS.filter(s => !s.id || !s.code || !(Number(s.base) > 0) ||
+        !(Number(s.vol) >= 0) || Number(s.drift) == null).map(s => s.id);
+      P('AC2 every stock has code/base/drift/vol', badStock.length === 0,
+        badStock.join(',') || 'ok');
+
+      // AC3 价格是确定性的：同一天反复算，结果完全一样
+      DAY = 30;
+      _stockDay = 0; _stockPx = {};
+      const p1 = STOCKS.map(s => stockPrice(s.id));
+      _stockDay = 0; _stockPx = {};
+      const p2 = STOCKS.map(s => stockPrice(s.id));
+      P('AC3 prices are deterministic for the same day',
+        p1.length === p2.length && p1.every((v, i) => v === p2[i]),
+        JSON.stringify(p1));
+
+      // AC4 价格有下限，永远跌不成 0
+      let minP = Infinity;
+      for (let d = 1; d <= 400; d++){
+        const px = stockSeriesAt(d);
+        for (const s of STOCKS) minP = Math.min(minP, Number(px[s.id]) || 0);
+      }
+      const floorMin = Math.min.apply(null, STOCKS.map(s => Number(s.base) * 0.15)) * 0.99;
+      P('AC4 prices never fall below the floor', minP >= floorMin && minP > 0,
+        'min=' + minP.toFixed(3) + ' floor=' + floorMin.toFixed(3));
+
+      // AC5 价格确实在动（400 天里出现过涨也出现过跌）
+      let sawUp = false, sawDown = false;
+      DAY = 60;
+      for (let d = 2; d <= 60; d++){
+        _stockDay = 0; _stockPx = {};
+        const px = stockSeriesAt(d);
+        _stockDay = 0; _stockPx = {};
+        const pv = stockSeriesAt(d - 1);
+        const s = STOCKS[0];
+        if (px[s.id] > pv[s.id]) sawUp = true;
+        if (px[s.id] < pv[s.id]) sawDown = true;
+      }
+      P('AC5 prices move both ways', sawUp && sawDown,
+        JSON.stringify({ up: sawUp, down: sawDown }));
+
+      // AC6 买入：扣钱含手续费、持仓增加
+      DAY = 40; MONEY = 100000; STOCK_HOLD = []; _stockDay = 0; _stockPx = {};
+      LEDGER = { day: DAY, today: { in: {}, out: {} }, days: [], log: [] };
+      const sid = STOCKS[0].id;
+      const pxNow = stockPrice(sid);
+      const gross = Math.round(pxNow * STOCK_LOT);
+      const fee = Math.max(1, Math.round(gross * STOCK_FEE));
+      const spent = stockBuy(sid, STOCK_LOT);
+      const h0 = stockHoldOf(sid);
+      P('AC6 buying charges price plus fee',
+        spent === gross + fee && MONEY === 100000 - spent &&
+        h0 && h0.shares === STOCK_LOT && h0.cost === spent,
+        JSON.stringify({ spent: spent, gross: gross, fee: fee, hold: h0 }));
+
+      // AC7 买 5 手时手续费只收一次，但股数是 5 倍
+      const spent2 = stockBuy(sid, STOCK_LOT * 4);
+      P('AC7 adding to a position accumulates shares',
+        spent2 > 0 && stockHoldOf(sid).shares === STOCK_LOT * 5,
+        'shares=' + stockHoldOf(sid).shares);
+
+      // AC8 卖出：按比例结转成本，剩余持仓成本同步缩
+      const beforeCost = stockHoldOf(sid).cost;
+      const beforeShares = stockHoldOf(sid).shares;
+      const cashBefore = MONEY;
+      const got2 = stockSell(sid, STOCK_LOT);
+      const h1 = stockHoldOf(sid);
+      const costOut = Math.round(beforeCost * (STOCK_LOT / beforeShares));
+      P('AC8 selling releases cost proportionally',
+        got2 > 0 && MONEY === cashBefore + got2 && h1.shares === beforeShares - STOCK_LOT &&
+        Math.abs(h1.cost - (beforeCost - costOut)) <= 1,
+        JSON.stringify({ got: got2, shares: h1.shares, cost: h1.cost }));
+
+      // AC9 全部卖出后持仓消失
+      stockSell(sid, stockHoldOf(sid).shares);
+      P('AC9 selling everything clears the position', stockHoldOf(sid) === null,
+        'hold=' + JSON.stringify(STOCK_HOLD));
+
+      // AC10 钱不够买不了
+      MONEY = 10;
+      const noMoney = stockBuy(sid, STOCK_LOT);
+      P('AC10 cannot buy without enough cash', noMoney === 0 && STOCK_HOLD.length === 0);
+
+      // AC11 持仓支数上限
+      MONEY = 10000000;
+      for (const s of STOCKS) stockBuy(s.id, STOCK_LOT);
+      const overflow = STOCKS.length > STOCK_MAX ? 2 : 0;
+      P('AC11 holdings are capped', STOCK_HOLD.length === Math.min(STOCKS.length, STOCK_MAX),
+        'hold=' + STOCK_HOLD.length + ' max=' + STOCK_MAX + ' unused=' + overflow);
+
+      // AC12 盈亏 = 市值 - 成本
+      const mv = stockMarketValue();
+      let costAll = 0;
+      for (const h of STOCK_HOLD) costAll += h.cost;
+      P('AC12 pnl is market value minus cost',
+        stockPnl() === mv - costAll && mv > 0, JSON.stringify({ mv: mv, cost: costAll }));
+
+      // AC13 买进当天卖出必亏（手续费）
+      MONEY = 100000; STOCK_HOLD = []; _stockDay = 0; _stockPx = {};
+      DAY = 55;
+      const c0 = MONEY;
+      stockBuy(sid, STOCK_LOT);
+      stockSell(sid, STOCK_LOT);
+      P('AC13 round-trip on the same day loses the fee', MONEY < c0,
+        'before=' + c0 + ' after=' + MONEY + ' lost=' + (c0 - MONEY));
+
+      // AC14 存档往返：持股与成本都带上
+      DAY = 60; MONEY = 5000; STOCK_HOLD = [{ id: sid, shares: 300, cost: 4000 }];
+      const saved = collectSave();
+      P('AC14 save carries stock holdings',
+        saved.stock && Array.isArray(saved.stock.hold) && saved.stock.hold.length === 1 &&
+        saved.stock.hold[0].shares === 300 && saved.stock.hold[0].cost === 4000 &&
+        saved.bank && saved.bank.savings != null,
+        JSON.stringify(saved.stock));
+
+      // AC15 读档清洗：未知股票剔除、重复合并、负数归零、超量截断
+      const dirty = {
+        schema: 14, money: 1000, day: 60, minute: 480,
+        bank: { savings: -500, acc: 5, fixed: [{ termId: 'nope', amount: 100 }], loans: [], lastDay: 0, lateTotal: 99 },
+        stock: {
+          hold: [
+            { id: 'st.nope', shares: 100, cost: 100 },
+            { id: sid, shares: 250, cost: 0 },
+            { id: sid, shares: 100, cost: 100 },
+            { id: STOCKS[1].id, shares: -50, cost: -10 }
+          ]
+        }
+      };
+      applySave(dirty);
+      P('AB15 dirty bank and stock save is sanitised',
+        BANK.savings === 0 && BANK.acc <= 0.999 && BANK.fixed.length === 0 &&
+        BANK.lateTotal <= 0 && STOCK_HOLD.length === 1 && STOCK_HOLD[0].id === sid &&
+        STOCK_HOLD[0].shares % STOCK_LOT === 0 && STOCK_HOLD[0].cost >= 1,
+        JSON.stringify({ bank: BANK, hold: STOCK_HOLD }));
+
+      MONEY = bk.money; DAY = bk.day;
+      STOCK_HOLD = JSON.parse(bk.hold); BANK = JSON.parse(bk.bank); LEDGER = JSON.parse(bk.ledger);
+    }
+
     flush();
   } catch (e){
     out.push('FATAL | ' + (e && e.message) + ' | ' + (e && e.stack ? e.stack.split('\n')[1] : ''));

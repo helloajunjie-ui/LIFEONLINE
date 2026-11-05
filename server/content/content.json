@@ -1,12 +1,17 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-05T20:40:24.814Z",
+  "generatedAt": "2026-11-05T21:02:40.355Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
       "version": 2,
       "hash": "f32f8e5825ce",
       "updatedAt": "2026-11-05T14:48:31.850Z"
+    },
+    "bank/bank.json": {
+      "version": 2,
+      "hash": "fe2d1cad7a50",
+      "updatedAt": "2026-11-05T20:55:37.853Z"
     },
     "business/business.json": {
       "version": 3,
@@ -34,9 +39,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "characters/npcs.neighbors.json": {
-      "version": 6,
-      "hash": "69ec7d614a13",
-      "updatedAt": "2026-11-05T18:22:16.105Z"
+      "version": 7,
+      "hash": "640df6ad4be5",
+      "updatedAt": "2026-11-05T20:53:32.570Z"
     },
     "characters/palettes.json": {
       "version": 1,
@@ -94,9 +99,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "maps/street.map.json": {
-      "version": 16,
-      "hash": "2e8a3102604b",
-      "updatedAt": "2026-11-05T19:17:35.958Z"
+      "version": 17,
+      "hash": "71566753080b",
+      "updatedAt": "2026-11-05T20:51:01.188Z"
     },
     "rules/bills.json": {
       "version": 1,
@@ -112,6 +117,11 @@
       "version": 5,
       "hash": "1d0d3ccce7d0",
       "updatedAt": "2026-11-05T19:42:27.307Z"
+    },
+    "stock/stock.json": {
+      "version": 1,
+      "hash": "42ffa7d31d60",
+      "updatedAt": "2026-11-05T20:51:01.189Z"
     },
     "ui/strings.zh-CN.json": {
       "version": 2,

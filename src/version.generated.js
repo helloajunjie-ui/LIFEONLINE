@@ -1,15 +1,19 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.27.0",
+  "appVersion": "1.28.0",
   "minAppVersion": "1.6.0",
-  "saveSchema": 13,
+  "saveSchema": 14,
   "contentVersion": 1,
-  "contentHash": "714b48491543",
-  "builtAt": "2026-11-05T20:48:58.698Z",
+  "contentHash": "1a9ed3ddb92b",
+  "builtAt": "2026-11-05T21:03:36.309Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
       "hash": "f32f8e5825ce"
+    },
+    "content/bank/bank.json": {
+      "version": 2,
+      "hash": "fe2d1cad7a50"
     },
     "content/business/business.json": {
       "version": 3,
@@ -32,8 +36,8 @@ export const BUILD = {
       "hash": "f4800b19fb18"
     },
     "content/characters/npcs.neighbors.json": {
-      "version": 6,
-      "hash": "69ec7d614a13"
+      "version": 7,
+      "hash": "640df6ad4be5"
     },
     "content/characters/palettes.json": {
       "version": 1,
@@ -80,8 +84,8 @@ export const BUILD = {
       "hash": "fa7263c09f78"
     },
     "content/maps/street.map.json": {
-      "version": 16,
-      "hash": "2e8a3102604b"
+      "version": 17,
+      "hash": "71566753080b"
     },
     "content/rules/bills.json": {
       "version": 1,
@@ -95,6 +99,10 @@ export const BUILD = {
       "version": 5,
       "hash": "1d0d3ccce7d0"
     },
+    "content/stock/stock.json": {
+      "version": 1,
+      "hash": "42ffa7d31d60"
+    },
     "content/ui/strings.zh-CN.json": {
       "version": 2,
       "hash": "9afa3735c2fe"
@@ -105,7 +113,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "714b48491543"
+      "hash": "1a9ed3ddb92b"
     },
     "src/core/clock.js": {
       "version": null,
@@ -113,7 +121,7 @@ export const BUILD = {
     },
     "src/core/content.js": {
       "version": null,
-      "hash": "74acc440e2d2"
+      "hash": "d11aa1829cf2"
     },
     "src/core/environment.js": {
       "version": null,
