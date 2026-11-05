@@ -575,7 +575,7 @@
           'low=' + r1.ok + ':' + (r1.reason || '') + ' high=' + r2.ok);
       }
 
-      // X4 单动作物品：直接执行，不弹菜单
+      // X4 单动作物品：也弹菜单（v1.29 起一律弹菜单，避免"点下去不知道会发生什么"）
       {
         closeActMenu();
         interacting = null;
@@ -583,9 +583,12 @@
         houseLevel = 0; applyHouseLevel();
         placed = [{ catalogId: 'bed', gx: 6, gy: 6 }];
         interactTarget({ kind: 'furniture', furn: placed[0], gx: 6, gy: 6, name: '床' });
-        P('X4 single action runs directly',
-          !!interacting && !actMenuEl.classList.contains('open'),
-          'interacting=' + !!interacting + ' menu=' + actMenuEl.classList.contains('open'));
+        const opened = actMenuEl.classList.contains('open');
+        const rows = actMenuEl.querySelectorAll('.list .item').length;
+        P('X4 single action opens the menu too',
+          opened && rows >= 1 && !interacting,
+          'menu=' + opened + ' rows=' + rows + ' interacting=' + !!interacting);
+        closeActMenu();
         interacting = null;
       }
 

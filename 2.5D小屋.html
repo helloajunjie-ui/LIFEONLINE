@@ -3855,6 +3855,11 @@ function shade(hex, f){
 
 /* ---------- 渲染 ---------- */
 function render(){
+  renderWorld();
+  drawHoverHighlight();
+}
+
+function renderWorld(){
   ctx.clearRect(0, 0, viewW, viewH);
   // 背景
   ctx.fillStyle = scene==='street' ? '#cbd8c4' : '#e8dcc2';
@@ -5830,7 +5835,9 @@ function clickHandler(e){
       if (!moveBlocked(gx, gy)) walkTo(gx, gy);
       return;
     }
-    return;   // 衣柜等无动作家具：点了不做事
+    // 衣柜这类没有动作的家具：给一句反馈，别让玩家以为"点了坏了"
+    if (fd) showFloat(fd.name + ' · 没什么可做的', gx, gy);
+    return;
   }
 
   if (moveBlocked(gx, gy)){
@@ -5851,11 +5858,150 @@ canvas.addEventListener('click', clickHandler);
 canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); clickHandler(e.touches[0]); }, {passive:false});
 // 悬停格（放置/编辑模式高亮用）
 let hoverTile = null;
+/* 悬停目标：鼠标下"能点的东西"。没有它的话，玩家只能靠试错去发现
+ * 哪件家具能坐、哪块地能进——这就是"操作不清晰"的来源。 */
+let hoverTarget = null;
 let lastBlockedTip = 0;   // 点击不可走格的提示节流
+
+/** 找出这一格上最该被选中的交互目标（家具 > 车 > NPC > 建筑） */
+function pickTargetAt(gx, gy){
+  if (scene === 'home'){
+    const f = placedAt(gx, gy);
+    if (f){
+      const d = FURNITURE_CATALOG.find(c => c.id === f.catalogId) || {};
+      return {
+        key: 'f|' + f.catalogId + '|' + f.gx + ',' + f.gy,
+        gx: f.gx, gy: f.gy, w: d.w || 1, h: d.h || 1,
+        name: d.name || furnName(f.catalogId),
+        hasAct: !!d.action,
+        hint: d.walk ? '可踩上去' : (d.action ? '点击交互' : '装饰 · 无操作'),
+        target: { kind: 'furniture', furn: f, gx: f.gx, gy: f.gy, name: d.name || '家具' }
+      };
+    }
+    return null;
+  }
+  if (scene === 'street'){
+    if (MY_CAR && !IN_CAR && Math.round(MY_CAR.gx) === gx && Math.round(MY_CAR.gy) === gy){
+      return { key: 'car', gx: gx, gy: gy, w: 1, h: 1, name: '我的车',
+               hasAct: true, hint: '点击上车', target: { kind: 'car', gx: gx, gy: gy } };
+    }
+    const n = NEIGHBORS.find(nn => Math.round(nn.fx) === gx && Math.round(nn.fy) === gy);
+    if (n){
+      return { key: 'npc|' + n.id, gx: gx, gy: gy, w: 1, h: 1, name: n.name,
+               hasAct: true, hint: '点击交谈', target: { kind: 'actor', npc: n, gx: gx, gy: gy, name: n.name } };
+    }
+    const prop = STREET_PROPS.find(pp => (pp.kind === 'shop' || pp.kind === 'civic') &&
+      gx >= pp.x && gx < pp.x + pp.w && gy >= pp.y && gy < pp.y + pp.h);
+    if (prop){
+      return { key: 'prop|' + prop.zoneId, gx: prop.x, gy: prop.y, w: prop.w, h: prop.h,
+               name: prop.label, hasAct: true, hint: '点击进入', target: null };
+    }
+    return null;
+  }
+  if (scene === 'peer'){
+    const pf = placedAt(gx, gy);
+    if (pf){
+      const d = FURNITURE_CATALOG.find(c => c.id === pf.catalogId) || {};
+      return { key: 'fp|' + pf.catalogId + '|' + pf.gx + ',' + pf.gy,
+               gx: pf.gx, gy: pf.gy, w: d.w || 1, h: d.h || 1,
+               name: d.name || '家具', hasAct: false, hint: '别人的家当',
+               target: { kind: 'furniture', furn: pf, gx: pf.gx, gy: pf.gy, name: d.name || '家具' } };
+    }
+    return null;
+  }
+  return null;
+}
+
+/** 悬停高亮：目标占据的地面画一圈暖色菱形，头顶挂个名字 */
+function drawHoverHighlight(){
+  const t = hoverTarget;
+  if (!t) return;
+  // buildMode 的"空闲"值是字符串 'normal'，它也是 truthy——
+  // 写成 `if (buildMode)` 会把高亮永远挡掉（第一次就踩了这个）。
+  if (typeof buildMode !== 'undefined' && buildMode && buildMode !== 'normal') return;
+  if (typeof actMenuEl !== 'undefined' && actMenuEl && actMenuEl.classList.contains('open')) return;
+
+  const pt = (gx, gy) => {
+    const q = worldToScreen(gx, gy);
+    return { x: q.x + cam.x, y: q.y + cam.y };
+  };
+  let a = pt(t.gx - 0.5, t.gy - 0.5);              // 北
+  let b = pt(t.gx + t.w - 0.5, t.gy - 0.5);        // 东
+  let c = pt(t.gx + t.w - 0.5, t.gy + t.h - 0.5);  // 南
+  let d = pt(t.gx - 0.5, t.gy + t.h - 0.5);        // 西
+  /* 向外扩 8%：家具底面和格子菱形是严丝合缝的，
+   * 不扩的话高亮边会被家具自己盖住，看起来只剩下半圈。 */
+  {
+    const ox = (a.x + c.x) / 2, oy = (a.y + c.y) / 2;
+    const grow = (p) => ({ x: ox + (p.x - ox) * 1.16, y: oy + (p.y - oy) * 1.16 });
+    a = grow(a); b = grow(b); c = grow(c); d = grow(d);
+  }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+  ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+  ctx.closePath();
+  ctx.fillStyle = t.hasAct ? 'rgba(255,196,86,.26)' : 'rgba(190,190,190,.16)';
+  ctx.fill();
+  // 虚线比实线更容易从家具的深色底边里"透"出来
+  ctx.setLineDash([7, 5]);
+  ctx.lineDashOffset = 0;
+  ctx.strokeStyle = t.hasAct ? 'rgba(240,152,26,1)' : 'rgba(150,150,150,.8)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 四个角点：让"这块地"的范围更明确（等距菱形单靠描边容易看成贴图）
+  ctx.fillStyle = t.hasAct ? '#e29e36' : '#9a9a9a';
+  for (const q of [a, b, c, d]){
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 2.6, 0, 6.2832);
+    ctx.fill();
+  }
+
+  // 名字标签：挂在菱形最上方
+  const label = t.name + (t.hint ? ' · ' + t.hint : '');
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  const tw = ctx.measureText(label).width;
+  const bx = a.x + (b.x - a.x) / 2 - tw / 2 - 8;
+  const by = a.y - 32;
+  const bw = tw + 16, bh = 20;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 6);
+  else ctx.rect(bx, by, bw, bh);
+  ctx.fillStyle = t.hasAct ? 'rgba(48,36,20,.88)' : 'rgba(60,60,60,.8)';
+  ctx.fill();
+  // 小尖角指向目标
+  ctx.beginPath();
+  ctx.moveTo(bx + bw / 2 - 5, by + bh);
+  ctx.lineTo(bx + bw / 2, by + bh + 6);
+  ctx.lineTo(bx + bw / 2 + 5, by + bh);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = t.hasAct ? '#ffe3ab' : '#e2e2e2';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, bx + bw / 2, by + bh / 2 + 0.5);
+  ctx.restore();
+}
 canvas.addEventListener('mousemove', (e)=>{
   const rect = canvas.getBoundingClientRect();
   const w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
-  hoverTile = {gx: Math.round(w.gx), gy: Math.round(w.gy)};
+  const gx = Math.round(w.gx), gy = Math.round(w.gy);
+  hoverTile = {gx: gx, gy: gy};
+  /* 只在"目标变了"时标脏：mousemove 每秒几十次，每次都重绘会把按需渲染废掉。
+   * key 里带了坐标，所以在家具内部移动也会正确更新。 */
+  const t = pickTargetAt(gx, gy);
+  const k = t ? t.key : '';
+  const prev = hoverTarget ? hoverTarget.key : '';
+  if (k !== prev){
+    hoverTarget = t;
+    markDirty();
+  }
+});
+canvas.addEventListener('mouseleave', ()=>{
+  if (hoverTarget){ hoverTarget = null; markDirty(); }
 });
 
 /* ---------- 键盘移动（WASD / 方向键） ----------
@@ -7466,12 +7612,8 @@ function interactTarget(t){
     showFloat(t.kind === 'actor' ? '对方现在不想说话' : '纯装饰，没有可交互功能', t.gx, t.gy);
     return;
   }
-  if (acts.length === 1){
-    const chk = checkAction(acts[0], t);
-    if (!chk.ok){ showFloat(chk.reason, t.gx, t.gy); SND.err(); return; }
-    beginAction(t, acts[0]);
-    return;
-  }
+  /* 一律弹菜单。原来"只有一个动作就直接执行"看着快，实际很坑：
+   * 玩家不知道点下去会发生什么，也看不出这件东西还能做别的事。 */
   const cx = canvas.getBoundingClientRect();
   const p = tileCenter(t.gx, t.gy);
   openActMenu(t, acts, cx.left + p.x, cx.top + p.y);
@@ -7509,11 +7651,14 @@ function openActMenu(t, acts, sx, sy){
     }
     list.appendChild(row);
   }
-  // 定位：默认在目标右上方，超出视口就翻向另一侧
+  /* 定位：优先浮在目标"右上方"，让菜单和物件不重叠。
+   * 原来用 sy - h/2（垂直居中），菜单正好压住目标本身，
+   * 点完就看不见自己点的是什么了。 */
   actMenuEl.classList.add('open');
   const w = actMenuEl.offsetWidth, h = actMenuEl.offsetHeight;
-  let x = sx + 30, y = sy - h * 0.5;
-  if (x + w > innerWidth - 8)  x = sx - w - 30;
+  let x = sx + 26, y = sy - h - 34;
+  if (y < 8) y = sy + 30;                       // 上方放不下 → 翻到下方
+  if (x + w > innerWidth - 8) x = sx - w - 26;  // 右方放不下 → 翻到左侧
   if (x < 8) x = 8;
   if (y + h > innerHeight - 8) y = innerHeight - h - 8;
   if (y < 8) y = 8;
