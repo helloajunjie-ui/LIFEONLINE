@@ -1347,9 +1347,10 @@
         toggleHudMore(true);
         const opened = !!(more && more.classList.contains('open') && menuBtn.textContent === '收起');
         toggleHudMore(false);
+        const hasGuideBtn = !!document.getElementById('moreGuideBtn');
         P('T1 hud groups secondary actions',
-          count === 5 && opened && menuBtn.textContent === '更多',
-          'buttons=' + count + ' opened=' + opened);
+          count === 6 && hasGuideBtn && opened && menuBtn.textContent === '更多',
+          'buttons=' + count + ' guide=' + hasGuideBtn + ' opened=' + opened);
 
         const bakS = { active: STICK.active, dx: STICK.dx, dy: STICK.dy };
         STICK.active = true; STICK.dx = 0.9; STICK.dy = 0.1;
@@ -2872,6 +2873,113 @@
         P('AD5 shopfront offers the contract entry', has, 'has=' + has);
         toggleWork(false);
         scene = bk.scene;
+      }
+
+      // AE 组：商店搜索/排序/角标 + Esc 只退一层 + 新手说明
+      {
+        const bk2 = { money: MONEY, cat: shopCat, q: shopQuery, s: shopSort, mode: buildMode };
+        MONEY = 500; shopCat = 'all'; shopQuery = ''; shopSort = 'def';
+
+        // AE1 按名字搜索能把列表收窄
+        {
+          const bedName = FURNITURE_CATALOG.find(d => d.id === 'bed').name;
+          const all = shopListFiltered().length;
+          shopQuery = bedName.slice(0, 2);
+          const hit = shopListFiltered();
+          const names = hit.map(d => d.name).join('/');
+          P('AE1 shop search narrows the list',
+            all === FURNITURE_CATALOG.length && hit.length > 0 && hit.length < all &&
+            hit.some(d => d.name.indexOf(shopQuery) >= 0),
+            'all=' + all + ' hit=' + hit.length + ' [' + names + ']');
+        }
+
+        // AE2 排序生效且不能就地改乱目录顺序
+        {
+          shopQuery = '';
+          const before = FURNITURE_CATALOG.map(d => d.id).join(',');
+          shopSort = 'price-asc';
+          const asc = shopListFiltered().map(d => d.price);
+          const monoAsc = asc.every((v, i) => i === 0 || v >= asc[i - 1]);
+          shopSort = 'price-desc';
+          const desc = shopListFiltered().map(d => d.price);
+          const monoDesc = desc.every((v, i) => i === 0 || v <= desc[i - 1]);
+          const after = FURNITURE_CATALOG.map(d => d.id).join(',');
+          P('AE2 sort works and leaves catalog order intact',
+            monoAsc && monoDesc && before === after && asc[0] <= asc[asc.length - 1] && desc[0] >= desc[desc.length - 1],
+            'asc=' + asc[0] + '..' + asc[asc.length - 1] + ' desc=' + desc[0] + '..' + desc[desc.length - 1] + ' intact=' + (before === after));
+        }
+
+        // AE3 分类按钮上的数量角标要对，且分类之和 = 总数
+        {
+          shopSort = 'def'; shopCat = 'all'; shopQuery = '';
+          shopRender();
+          const cnt = shopCatCounts();
+          const btns = Array.from(shopCats.querySelectorAll('button'));
+          const allBtn = btns.find(b => b.dataset.cat === 'all');
+          const tagEl = allBtn && allBtn.querySelector('.cn');
+          const total = FURNITURE_CATALOG.length;
+          const sum = btns.filter(b => b.dataset.cat !== 'all')
+            .reduce((a, b) => a + (cnt[b.dataset.cat] || 0), 0);
+          P('AE3 category counters match catalog',
+            !!tagEl && String(tagEl.textContent) === String(total) && sum === total,
+            'all=' + (tagEl ? tagEl.textContent : '-') + ' sum=' + sum + ' total=' + total);
+        }
+
+        // AE4 搜不到时给提示，买不起时直接告诉你差多少
+        {
+          shopQuery = 'zzz没这个';
+          shopRender();
+          const emptyOk = !!shopList.querySelector('.empty') && shopList.innerHTML.indexOf('没找到') >= 0;
+
+          shopQuery = '';
+          MONEY = 1;
+          shopSort = 'price-desc';
+          shopRender();
+          const poorBtns = Array.from(shopList.querySelectorAll('button'));
+          const allPoor = poorBtns.length > 0 && poorBtns.every(b => b.disabled && /^差 ¥\d+$/.test(b.textContent.trim()));
+          MONEY = 500;
+          P('AE4 empty state + shortfall label', emptyOk && allPoor,
+            'empty=' + emptyOk + ' poor=' + allPoor + ' n=' + poorBtns.length +
+            ' first=' + (poorBtns[0] ? poorBtns[0].textContent : '-'));
+        }
+
+        // AE5 一次 Esc 只退一层：摆放中按 Esc 只取消摆放，侧栏留着
+        {
+          shopSort = 'def';
+          toggleShop(true);
+          const shopOn = shopOpen;
+          enterPlace('lamp');
+          const inBuild = buildMode !== 'normal';
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          const modeAfter = buildMode;
+          const shopAfter = shopOpen;
+          P('AE5 one Escape only leaves build mode',
+            shopOn && inBuild && modeAfter === 'normal' && shopAfter === true,
+            'shopOn=' + shopOn + ' inBuild=' + inBuild + ' modeAfter=' + modeAfter + ' shopAfter=' + shopAfter);
+          toggleShop(false);
+        }
+
+        // AE6 新手说明能开能关，关后记住状态
+        {
+          let prev = null;
+          try { prev = localStorage.getItem('life.guide.v1'); } catch(e){}
+          toggleGuide(true);
+          const opened = guideEl.classList.contains('open');
+          toggleGuide(false);
+          const closed = !guideEl.classList.contains('open');
+          let flag = false;
+          try { flag = localStorage.getItem('life.guide.v1') === '1'; } catch(e){}
+          try {
+            if (prev === null) localStorage.removeItem('life.guide.v1');
+            else localStorage.setItem('life.guide.v1', prev);
+          } catch(e){}
+          P('AE6 guide opens, closes and remembers', opened && closed && flag,
+            'open=' + opened + ' closed=' + closed + ' flag=' + flag);
+        }
+
+        MONEY = bk2.money; shopCat = bk2.cat; shopQuery = bk2.q; shopSort = bk2.s;
+        if (buildMode !== 'normal' && typeof cancelBuild === 'function') cancelBuild();
+        try { shopRender(); } catch(e){}
       }
 
       // 还原

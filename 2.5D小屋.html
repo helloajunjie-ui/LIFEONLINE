@@ -497,12 +497,29 @@
   #shop .shead .st{font-size:16px; font-weight:800; color:var(--accent2); margin-right:auto;}
   #shop .shead .sbal{font-size:12px; color:#fff; background:var(--accent); border-radius:999px; padding:4px 10px; font-weight:700;}
   #shop .closeX{width:28px; height:28px;}
-  #shop .cats{display:flex; gap:6px; padding:10px 16px 2px; flex-wrap:wrap;}
+  #shop .sbar{display:flex; gap:6px; padding:10px 16px 0;}
+  #shop .ssearch{
+    flex:1; min-width:0; border:1px solid rgba(122,82,48,.25); background:#fff; color:var(--ink);
+    border-radius:9px; padding:7px 10px; font-size:12.5px; font-family:inherit;
+  }
+  #shop .ssearch:focus{outline:2px solid rgba(210,105,30,.35); outline-offset:0; border-color:transparent;}
+  #shop .ssort{
+    border:1px solid rgba(122,82,48,.25); background:#fff; color:var(--accent2);
+    border-radius:9px; padding:7px 6px; font-size:12.5px; font-family:inherit; cursor:pointer;
+  }
+  #shop .cats{display:flex; gap:6px; padding:8px 16px 2px; flex-wrap:wrap;}
   #shop .cats button{
     border:1px solid rgba(122,82,48,.25); background:#fff; color:var(--accent2);
     border-radius:999px; padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer;
   }
   #shop .cats button.on{background:var(--accent); color:#fff; border-color:transparent;}
+  #shop .cats .cn{font-size:10px; font-weight:700; opacity:.62; margin-left:3px;}
+  #shop .cats button.on .cn{opacity:.85;}
+  #shop .empty{
+    padding:34px 10px; text-align:center; font-size:13px; color:#9a8a6a; line-height:1.9;
+  }
+  #shop .empty b{color:var(--accent2);}
+  #shop .empty span{font-size:11.5px; color:#b3a488;}
   #shop .list{flex:1; overflow-y:auto; padding:10px 16px 20px;}
   .item{
     display:flex; gap:10px; padding:10px; border:1px solid rgba(122,82,48,.18);
@@ -510,18 +527,64 @@
   }
   .item .swatch{width:46px; height:46px; flex:none; border-radius:9px; background:#f3e8d2; display:flex; align-items:center; justify-content:center; font-size:22px;}
   .item .ib{flex:1; min-width:0;}
-  .item .in{font-weight:700; font-size:14px; color:var(--accent2);}
-  .item .id{font-size:11px; color:#9a8a6a; margin-top:1px;}
-  .item .price{font-size:13px; font-weight:700; color:var(--accent);}
+  .item .in{font-weight:700; font-size:14px; color:var(--accent2); display:flex; align-items:center; gap:5px;}
+  .item .in .cb{
+    font-style:normal; font-size:9.5px; font-weight:700; color:#4b7a4b;
+    background:rgba(110,170,110,.16); border-radius:5px; padding:1px 4px; flex:none;
+  }
+  .item .id{font-size:11px; color:#9a8a6a; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .item .id.meta{font-size:10.5px; color:#b3a488;}
+  .item .pr{flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:5px;}
+  .item .price{font-size:13px; font-weight:700; color:var(--accent); white-space:nowrap;}
+  .item .price.poor{color:#b9ab92;}
   .item button{
-    border:none; border-radius:9px; padding:7px 12px; font-size:12.5px; font-weight:700; cursor:pointer;
+    border:none; border-radius:9px; padding:6px 10px; font-size:12px; font-weight:700; cursor:pointer;
     background:var(--accent); color:#fff; transition:background .12s ease;
+    min-width:62px; white-space:nowrap;
   }
   .item button:disabled{background:#d9cdb8; color:#fff; cursor:not-allowed;}
   .item button.ghost{background:rgba(122,82,48,.14); color:var(--ink);}
   .item button.ghost:hover{background:rgba(122,82,48,.22);}
   .item button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   .item:hover{background:#fdf7ec;}
+
+  /* ===== 新手说明（首次进入自弹，之后从「更多 → 说明」再看） ===== */
+  #guide{
+    position:fixed; inset:0; z-index:60; display:none;
+    align-items:center; justify-content:center; padding:20px;
+    background:rgba(30,25,20,.52);
+  }
+  #guide.open{display:flex;}
+  #guide .gcard{
+    width:min(470px, 92vw); max-height:88vh; overflow-y:auto;
+    background:var(--panel); color:var(--ink); border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+    display:flex; flex-direction:column;
+  }
+  #guide .ghead{
+    display:flex; align-items:center; gap:10px; padding:16px 18px 11px;
+    border-bottom:1px solid rgba(122,82,48,.14);
+  }
+  #guide .gt{font-size:17px; font-weight:800; color:var(--accent2); margin-right:auto;}
+  #guide .gbody{padding:13px 18px 5px; display:flex; flex-direction:column; gap:11px;}
+  #guide .grow{display:flex; gap:10px; font-size:13px; line-height:1.72; color:#5d5142;}
+  #guide .grow b{
+    flex:none; width:46px; height:22px; line-height:22px; margin-top:3px;
+    text-align:center; font-size:11.5px; font-weight:700; color:#fff;
+    background:var(--accent); border-radius:7px;
+  }
+  #guide .grow span{flex:1; min-width:0;}
+  #guide .gfoot{display:flex; align-items:center; gap:10px; padding:15px 18px 18px;}
+  #guide .hint{font-size:11px; color:#b3a488; margin-right:auto; line-height:1.5;}
+  #guide #guideOk{
+    border:none; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:700;
+    cursor:pointer; background:var(--accent); color:#fff; flex:none;
+  }
+  #guide #guideOk:hover{background:#c05c15;}
+  @media (max-width:520px){
+    #guide .grow{font-size:12.5px;}
+    #guide .grow b{width:40px;}
+  }
 
   /* 宠物需求条 */
   .pnb{display:flex; align-items:center; gap:6px; margin-top:4px;}
@@ -704,12 +767,33 @@
     <!-- 低频操作收进「更多」：桌面与手机同一套，点开直接排进 HUD，stats 自动下移 -->
     <span id="hudMore">
       <button class="chip" id="moreLedgerBtn" title="收支账本：今天钱从哪来、花到哪去">账本</button>
+      <button class="chip" id="moreGuideBtn" title="怎么走、怎么赚钱、怎么摆家具">说明</button>
       <button class="chip" id="expandBtn">房型</button>
       <button class="chip" id="homeBtn">回原位</button>
       <button class="chip" id="speedBtn">速度 1×</button>
       <button class="chip" id="sndBtn" title="音效开关">🔊</button>
     </span>
     <button class="chip" id="hudMenuBtn" aria-label="更多操作">更多</button>
+  </div>
+
+  <!-- 新手说明 -->
+  <div id="guide" role="dialog" aria-modal="true" aria-label="操作说明">
+    <div class="gcard">
+      <div class="ghead">
+        <span class="gt">欢迎回家</span>
+        <button class="closeX" id="guideClose" aria-label="关闭">×</button>
+      </div>
+      <div class="gbody">
+        <div class="grow"><b>走动</b><span>点地面就走过去，WASD / 方向键也行。院子右下角是出口，出去就是小区。</span></div>
+        <div class="grow"><b>赚钱</b><span>便利店、咖啡店、医院、学校都能上班，一天一次，下班日结。攒够钱还能承包店铺，不用盯着也有净收益。</span></div>
+        <div class="grow"><b>安家</b><span>右上「商店」买家具，买完直接进摆放——点空地放下。装修度越高，睡觉回的心情越多。</span></div>
+        <div class="grow"><b>别饿着</b><span>饿了去便利店买饭，或到菜市场买食材回家做。冰箱空了 HUD 会提醒你。</span></div>
+      </div>
+      <div class="gfoot">
+        <span class="hint">以后想看：右上「更多」→ 说明</span>
+        <button id="guideOk">知道了，开始</button>
+      </div>
+    </div>
   </div>
 
   <!-- 触屏摇杆：只在指针为 coarse（手机/平板）时显示 -->
@@ -753,11 +837,20 @@
       <span class="sbal" id="shopBal">¥500</span>
       <button class="closeX" id="shopClose" aria-label="关闭">×</button>
     </div>
+    <div class="sbar">
+      <input id="shopSearch" class="ssearch" type="search" placeholder="搜家具名，如 床 / 沙发" autocomplete="off" aria-label="搜家具">
+      <select id="shopSort" class="ssort" aria-label="排序方式">
+        <option value="def">默认</option>
+        <option value="price-asc">价格↑</option>
+        <option value="price-desc">价格↓</option>
+        <option value="cozy">装修度↓</option>
+      </select>
+    </div>
     <div class="cats" id="shopCats">
-      <button data-cat="all" class="on">全部</button>
-      <button data-cat="家具">家具</button>
-      <button data-cat="电器">电器</button>
-      <button data-cat="装饰">装饰</button>
+      <button data-cat="all" class="on">全部<b class="cn"></b></button>
+      <button data-cat="家具">家具<b class="cn"></b></button>
+      <button data-cat="电器">电器<b class="cn"></b></button>
+      <button data-cat="装饰">装饰<b class="cn"></b></button>
     </div>
     <div class="list" id="shopList"></div>
   </aside>
@@ -6557,17 +6650,11 @@ function updateKeyboardMove(){
 
 document.addEventListener('keydown', (e)=>{
   if (isTypingTarget(e.target)) return;
-  if (e.key === 'Escape'){
-    // 面板按"最上层"依次关：整理 → 侧栏
-    if (buildMode !== 'normal'){ cancelBuild(); return; }
-    if (achOpen){ toggleAch(false); return; }
-    if (workOpen){ toggleWork(false); return; }
-    if (typeof socialOpen !== 'undefined' && socialOpen){ toggleSocial(false); return; }
-    if (typeof buildingOpen !== 'undefined' && buildingOpen){ toggleBuilding(false); return; }
-    if (invOpen){ closeInventory(); return; }
-    if (shopOpen){ toggleShop(false); return; }
-    return;
-  }
+  /* ESC_UNIFIED_HERE
+   * Esc 只由下面那个统一处理器关面板。这里早期还写过一份"整理→侧栏"的清单，
+   * 两份监听同时存在，按一次 Esc 会连关两层（还漏了银行/股市/彩票等后加的面板）。
+   * 现在这里直接放行，只负责方向键。 */
+  if (e.key === 'Escape') return;
   if (!KEY_DIRS[e.code]) return;
   e.preventDefault();
   keysHeld.add(e.code);
@@ -7714,6 +7801,14 @@ function closeOtherPanels(keep){
 
 let shopOpen = false;
 let shopCat = 'all';
+/* 商店筛选：搜索 + 排序，状态记在本地，下次打开还是你上次的排法 */
+let shopQuery = '';
+let shopSort = 'def';
+try {
+  const sp = JSON.parse(localStorage.getItem('life.shopPrefs') || '{}');
+  if (sp && typeof sp.sort === 'string') shopSort = sp.sort;
+} catch(e){}
+function saveShopPrefs(){ try{ localStorage.setItem('life.shopPrefs', JSON.stringify({ sort: shopSort })); }catch(e){} }
 
 // 家具图标（内联 SVG，等距风格）
 function catIcon(id, size){
@@ -7751,25 +7846,104 @@ function catIcon(id, size){
     }
   }
 }
+function shopCatCounts(){
+  const c = { all: FURNITURE_CATALOG.length };
+  for (const d of FURNITURE_CATALOG) c[d.cat] = (c[d.cat] || 0) + 1;
+  return c;
+}
+function shopListFiltered(){
+  const q = shopQuery.trim().toLowerCase();
+  /* filter 先返回新数组，再排序，绝不就地动 FURNITURE_CATALOG 的顺序 */
+  const list = FURNITURE_CATALOG.filter(d=>{
+    if (shopCat !== 'all' && d.cat !== shopCat) return false;
+    if (!q) return true;
+    return (d.name + ' ' + (d.desc || '') + ' ' + d.cat).toLowerCase().indexOf(q) >= 0;
+  });
+  if (shopSort === 'price-asc')       list.sort((a,b)=> a.price - b.price || a.name.localeCompare(b.name, 'zh'));
+  else if (shopSort === 'price-desc') list.sort((a,b)=> b.price - a.price || a.name.localeCompare(b.name, 'zh'));
+  else if (shopSort === 'cozy')       list.sort((a,b)=> (b.cozy||0) - (a.cozy||0) || a.price - b.price);
+  return list;
+}
 function shopRender(){
   shopBal.textContent = '¥' + Math.round(MONEY);
-  const list = FURNITURE_CATALOG.filter(d => shopCat==='all' || d.cat===shopCat);
+  const cnt = shopCatCounts();
+  shopCats.querySelectorAll('button').forEach(b=>{
+    const k = b.dataset.cat;
+    b.classList.toggle('on', k === shopCat);
+    const tag = b.querySelector('.cn');
+    if (tag) tag.textContent = cnt[k] || 0;
+  });
+  const list = shopListFiltered();
   shopList.innerHTML = '';
+  if (!list.length){
+    const box = document.createElement('div');
+    box.className = 'empty';
+    const q = shopQuery.trim();
+    if (q){
+      const t = document.createElement('div');
+      t.textContent = '没找到「' + q + '」';
+      box.appendChild(t);
+    } else {
+      const t = document.createElement('div');
+      t.textContent = '这一类还没有货';
+      box.appendChild(t);
+    }
+    const tip = document.createElement('span');
+    tip.textContent = q ? '换个词试试，或点上面的「全部」' : '点上面的「全部」看看';
+    box.appendChild(tip);
+    shopList.appendChild(box);
+    return;
+  }
+  const FXN = {hunger:'饥饿', thirst:'口渴', emotion:'情绪'};
   for (const d of list){
+    const afford = MONEY >= d.price;
+    const fx = Object.keys(d.fx || {}).map(k=> FXN[k]+'+'+d.fx[k]).join(' ');
+
     const row = document.createElement('div');
     row.className = 'item';
-    const FXN = {hunger:'饥饿', thirst:'口渴', emotion:'情绪'};
-    const fx = Object.keys(d.fx).map(k=> FXN[k]+'+'+d.fx[k]).join(' ');
-    row.innerHTML = `
-      <div class="swatch">${catIcon(d.id)}</div>
-      <div class="ib">
-        <div class="in">${d.name}</div>
-        <div class="id">${d.desc}${fx?' · '+fx:''}</div>
-        <div class="id">占地 ${d.w}×${d.h} · ${d.cat}${d.cozy?' · 装修度+'+d.cozy:''}${d.walk?' · 可踩':''}</div>
-      </div>
-      <div class="price">¥${d.price}</div>
-      <button ${MONEY<d.price?'disabled':''} data-buy="${d.id}" title="${MONEY<d.price?('还差 ¥'+(d.price-MONEY)):'买下后直接摆到地上'}">购买</button>`;
-    row.querySelector('button').addEventListener('click', ()=> buyFurniture(d));
+
+    const sw = document.createElement('div');
+    sw.className = 'swatch';
+    sw.innerHTML = catIcon(d.id);
+
+    const ib = document.createElement('div');
+    ib.className = 'ib';
+    const inEl = document.createElement('div');
+    inEl.className = 'in';
+    inEl.textContent = d.name;
+    if (d.cozy){
+      const cb = document.createElement('i');
+      cb.className = 'cb';
+      cb.textContent = '装修+' + d.cozy;
+      inEl.appendChild(cb);
+    }
+    const desc = document.createElement('div');
+    desc.className = 'id';
+    desc.textContent = d.desc || '';
+    desc.title = d.desc || '';
+    const meta = document.createElement('div');
+    meta.className = 'id meta';
+    meta.textContent = '占地 ' + d.w + '×' + d.h + ' · ' + d.cat + (fx ? ' · ' + fx : '');
+    ib.appendChild(inEl); ib.appendChild(desc); ib.appendChild(meta);
+
+    const pr = document.createElement('div');
+    pr.className = 'pr';
+    const pe = document.createElement('div');
+    pe.className = 'price' + (afford ? '' : ' poor');
+    pe.textContent = '¥' + d.price;
+    const btn = document.createElement('button');
+    if (afford){
+      btn.textContent = '购买';
+      btn.title = '买下后直接进入摆放，点地面放下';
+    } else {
+      btn.textContent = '差 ¥' + Math.ceil(d.price - MONEY);
+      btn.disabled = true;
+      btn.title = '还差 ¥' + Math.ceil(d.price - MONEY) + ' · 去上一天班就有了';
+    }
+    btn.addEventListener('click', ()=> buyFurniture(d));
+    pr.appendChild(pe); pr.appendChild(btn);
+
+    row.appendChild(sw); row.appendChild(ib); row.appendChild(pr);
     shopList.appendChild(row);
   }
 }
@@ -7868,6 +8042,23 @@ shopCats.addEventListener('click', (e)=>{
   shopCats.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
   shopRender();
 });
+{
+  const searchEl = document.getElementById('shopSearch');
+  const sortEl = document.getElementById('shopSort');
+  if (sortEl){
+    sortEl.value = shopSort;
+    sortEl.addEventListener('change', ()=>{
+      shopSort = sortEl.value || 'def';
+      saveShopPrefs();
+      shopRender();
+    });
+  }
+  if (searchEl){
+    searchEl.addEventListener('input', ()=>{ shopQuery = searchEl.value || ''; shopRender(); });
+    /* 搜索框有内容时，点 × 清空要能立刻恢复到全量 */
+    searchEl.addEventListener('search', ()=>{ shopQuery = searchEl.value || ''; shopRender(); });
+  }
+}
 
 // ===== 仓库面板 =====
 const invEl = document.getElementById('inventory');
@@ -9242,6 +9433,14 @@ window.closeSocialPanel = () => toggleSocial(false);
  * 之前 Esc 完全没响应，玩家按了会以为卡住了。 */
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
+  /* 光标在搜索框/下拉里时，Esc 先负责"清空输入"，不要顺手把面板也关了 */
+  const tg = e.target;
+  if (tg && isTypingTarget(tg) && typeof tg.value === 'string' && tg.value !== ''){
+    tg.value = '';
+    try { tg.dispatchEvent(new Event('input', { bubbles: true })); } catch (err) {}
+    e.preventDefault();
+    return;
+  }
   if (typeof actMenuEl !== 'undefined' && actMenuEl && actMenuEl.classList.contains('open')){
     if (typeof closeActMenu === 'function') closeActMenu();
     e.preventDefault();
@@ -12195,6 +12394,41 @@ if (TIME_SOURCE === 'world'){
   setTimeout(() => { if (!WORLD.ok) worldSeed(RULE.START_MINUTE || 480, 60); }, 2500);
 }
 requestAnimationFrame(loop);
+
+/* ---------- 新手说明 ---------- */
+const guideEl = document.getElementById('guide');
+const GUIDE_KEY = 'life.guide.v1';
+function markGuideSeen(){ try{ localStorage.setItem(GUIDE_KEY, '1'); }catch(e){} }
+function guideSeen(){ try{ return localStorage.getItem(GUIDE_KEY) === '1'; }catch(e){ return false; } }
+function toggleGuide(force){
+  if (!guideEl) return;
+  const open = (force === undefined) ? !guideEl.classList.contains('open') : !!force;
+  guideEl.classList.toggle('open', open);
+  if (open){
+    /* 说明卡片要盖在最上面，先把侧栏收了，别叠成一堆 */
+    try { closeOtherPanels(''); } catch(e){}
+    if (typeof closeActMenu === 'function'){ try { closeActMenu(); } catch(e){} }
+  } else {
+    markGuideSeen();
+  }
+}
+{
+  const gc = document.getElementById('guideClose');
+  const go = document.getElementById('guideOk');
+  const mb = document.getElementById('moreGuideBtn');
+  if (gc) gc.addEventListener('click', ()=> toggleGuide(false));
+  if (go) go.addEventListener('click', ()=> toggleGuide(false));
+  if (mb) mb.addEventListener('click', ()=> toggleGuide(true));
+  if (guideEl) guideEl.addEventListener('click', (e)=>{ if (e.target === guideEl) toggleGuide(false); });
+}
+/* 老玩家（本地已有存档）不弹窗打扰，只留「更多 → 说明」入口 */
+setTimeout(function(){
+  try {
+    if (guideSeen()) return;
+    if (localStorage.getItem(SAVE_KEY)) return;
+  } catch(e){}
+  toggleGuide(true);
+}, 800);
 
 /* 云端启动：本地存档先让玩家立刻开玩，再与服务端对齐。
  * 服务端更新（比如另一台机器玩过）→ 接管并重绘；本地更新 → 推上去。 */
