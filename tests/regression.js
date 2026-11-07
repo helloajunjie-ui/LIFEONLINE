@@ -2982,6 +2982,72 @@
         try { shopRender(); } catch(e){}
       }
 
+      // AF 组：进行中动作的小进度条
+      {
+        const bakI = interacting;
+        const bakT = PLAYER.target;
+        const bakS = { active: SHIFT.active, job: SHIFT.job, timer: SHIFT.timer,
+                       label: SHIFT.taskLabel, done: SHIFT.done, auto: SHIFT.auto };
+
+        // AF1 家具动作（睡觉/洗澡/做饭）要能算出百分比
+        {
+          PLAYER.target = null;
+          interacting = { furn: null, act: { label: '睡觉' }, timer: 1, total: 4, wait: 10 };
+          const p = actionProgress();
+          const okA = !!p && p.label === '睡觉' && Math.abs(p.pct - 0.75) < 1e-6;
+          interacting.timer = 4;
+          const p0 = actionProgress();
+          const okB = !!p0 && Math.abs(p0.pct) < 1e-9;
+          // 还在走过去的路上不画条：那时还没开始计时
+          PLAYER.target = { gx: 1, gy: 1 };
+          const pWalk = actionProgress();
+          P('AF1 action progress from interacting', okA && okB && pWalk === null,
+            'pct=' + (p ? p.pct : '-') + ' zero=' + (p0 ? p0.pct : '-') + ' walking=' + (pWalk === null));
+          PLAYER.target = bakT;
+          interacting = bakI;
+        }
+
+        // AF2 上班的单子走同一个进度源，面板关着也能看到
+        {
+          const job = CAREERS[0];
+          PLAYER.target = null;
+          interacting = null;
+          SHIFT.active = true; SHIFT.job = job; SHIFT.timer = job.taskSeconds / 4;
+          SHIFT.taskLabel = '补货'; SHIFT.done = 0; SHIFT.auto = false;
+          const p = actionProgress();
+          const ok = !!p && p.label === '补货' && Math.abs(p.pct - 0.75) < 1e-6;
+          P('AF2 shift task shares the same progress source', ok,
+            'pct=' + (p ? p.pct : '-') + ' label=' + (p ? p.label : '-'));
+        }
+
+        // AF3 工作面板里要真的渲染出进度条节点，并且每帧能更新宽度
+        {
+          renderWork();
+          const barEl = document.getElementById('workTaskBar');
+          const secEl = document.getElementById('workTaskSec');
+          const w0 = barEl ? barEl.style.width : '';
+          SHIFT.timer = SHIFT.job.taskSeconds;
+          updateWorkProgress();
+          const w1 = barEl ? barEl.style.width : '';
+          P('AF3 work panel renders a task bar that ticks', !!barEl && !!secEl && w0 === '75%' && w1 === '0%',
+            'w0=' + w0 + ' w1=' + w1 + ' sec=' + (secEl ? secEl.textContent : '-'));
+        }
+
+        // AF4 没有进行中的事就不画空条
+        {
+          SHIFT.active = false; SHIFT.timer = 0; SHIFT.job = null;
+          interacting = null;
+          PLAYER.target = null;
+          P('AF4 no progress bar when idle', actionProgress() === null);
+          renderWork();
+        }
+
+        SHIFT.active = bakS.active; SHIFT.job = bakS.job; SHIFT.timer = bakS.timer;
+        SHIFT.taskLabel = bakS.label; SHIFT.done = bakS.done; SHIFT.auto = bakS.auto;
+        interacting = bakI; PLAYER.target = bakT;
+        try { renderWork(); } catch(e){}
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;

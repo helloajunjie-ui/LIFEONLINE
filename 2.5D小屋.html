@@ -474,6 +474,9 @@
   #work .wbar{height:10px; border-radius:6px; background:rgba(122,82,48,.14); overflow:hidden; margin:8px 0 4px;}
   #work .wbar i{display:block; height:100%; width:0; background:linear-gradient(90deg,#e0a94f,#d2833c); transition:width .2s;}
   #work .wtask{font-size:13px; color:#6b5a3a; min-height:20px; margin-bottom:10px;}
+  #work .wtask .wsec{float:right; font-weight:700; color:#b3a488; font-size:12px;}
+  #work .wtbar{height:4px; border-radius:3px; background:rgba(122,82,48,.14); overflow:hidden; margin:-7px 0 12px;}
+  #work .wtbar i{display:block; height:100%; width:0; background:linear-gradient(90deg,#9ccbe4,#6aa6c8); transition:width .1s linear;}
   #work .wrow{display:flex; gap:8px; margin-top:8px;}
   #work .wbtn{
     flex:1; border:none; border-radius:10px; padding:11px 10px; font-size:13px; font-weight:800;
@@ -767,7 +770,7 @@
     <!-- 低频操作收进「更多」：桌面与手机同一套，点开直接排进 HUD，stats 自动下移 -->
     <span id="hudMore">
       <button class="chip" id="moreLedgerBtn" title="收支账本：今天钱从哪来、花到哪去">账本</button>
-      <button class="chip" id="moreGuideBtn" title="怎么走、怎么赚钱、怎么摆家具">说明</button>
+      <button class="chip" id="moreGuideBtn" title="操作说明（按 ? 键也能开）">?</button>
       <button class="chip" id="expandBtn">房型</button>
       <button class="chip" id="homeBtn">回原位</button>
       <button class="chip" id="speedBtn">速度 1×</button>
@@ -4428,6 +4431,66 @@ function shade(hex, f){
 function render(){
   renderWorld();
   drawHoverHighlight();
+  drawActionProgress();      // 进行中动作的小进度条要盖在一切之上
+}
+
+/* ---------- 进行中的动作：角色头顶一条细进度条 ----------
+ * 睡觉/洗澡/做饭要等 2~8 秒、打卡做的单子要等 3 秒，以前只有「工作」面板里
+ * 才看得到秒数——人在屋里点完床，屏幕上什么都不动，像卡住了。
+ * 这里统一在角色头顶画 44px 的小条，带一个动作名。 */
+function actionProgress(){
+  if (typeof interacting !== 'undefined' && interacting && interacting.total > 0 && !PLAYER.target){
+    const act = interacting.act || {};
+    return {
+      label: act.label || act.name || '',
+      pct: 1 - interacting.timer / interacting.total
+    };
+  }
+  if (typeof SHIFT !== 'undefined' && SHIFT.active && SHIFT.timer > 0 && SHIFT.job){
+    return {
+      label: SHIFT.taskLabel || SHIFT.job.name,
+      pct: 1 - SHIFT.timer / (SHIFT.job.taskSeconds || 1)
+    };
+  }
+  return null;
+}
+function drawActionProgress(){
+  if (scene === 'visit' || scene === 'peer') return;
+  const p = actionProgress();
+  if (!p) return;
+  const pct = Math.max(0, Math.min(1, p.pct || 0));
+  const c = tileCenter(PLAYER.fx, PLAYER.fy);
+  const w = 50, h = 5;
+  const x = Math.round(c.x - w / 2), y = Math.round(c.y - 43);
+
+  ctx.save();
+  if (p.label){
+    ctx.font = '600 11px "PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(253,248,238,.92)';
+    ctx.strokeText(p.label, c.x, y - 4);
+    ctx.fillStyle = 'rgba(58,44,28,.94)';
+    ctx.fillText(p.label, c.x, y - 4);
+  }
+  // 底槽
+  ctx.fillStyle = 'rgba(40,32,22,.34)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - 1, y - 1, w + 2, h + 2, 4); else ctx.rect(x - 1, y - 1, w + 2, h + 2);
+  ctx.fill();
+  // 已完成的量
+  if (pct > 0.002){
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0, '#f2c96b');
+    g.addColorStop(1, '#d2833c');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, Math.max(2.5, w * pct), h, 2.5);
+    else ctx.rect(x, y, Math.max(2.5, w * pct), h);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function renderWorld(){
@@ -4504,8 +4567,6 @@ function renderWorld(){
 
   drawables.sort((a,b)=>a.depth-b.depth);
   for (const d of drawables) d.fn();
-
-  drawDrips();         // 屋檐滴水与落地涟漪
 
   drawDrips();         // 屋檐滴水与落地涟漪
 
@@ -5129,8 +5190,6 @@ function renderVisit(){
 
   drawables.sort((a,b)=>a.depth-b.depth);
   for (const d of drawables) d.fn();
-
-  drawDrips();         // 屋檐滴水与落地涟漪
 
   drawDrips();         // 屋檐滴水与落地涟漪
   ambientTint();
@@ -7203,10 +7262,15 @@ function renderWork(){
     html.push('<div class="wjob">' + job.name + '<span class="wtag">上班中</span></div>');
     html.push('<div class="wmeta">' + jobZoneLabel(job) + ' · 班次 ' + shiftText(job) + ' · 熟练 Lv.' + careerLevel(job) + '</div>');
     html.push('<div class="wbar"><i id="workBar" style="width:' + pct + '%"></i></div>');
-    html.push('<div class="wtask" id="workTaskLine">' +
-      (running ? ('正在进行：' + SHIFT.taskLabel + '（' + SHIFT.timer.toFixed(1) + 's）')
-               : ('已完成 ' + SHIFT.done + '/' + job.tasks + ' 单' +
-                  (SHIFT.done >= job.tasks ? '，可以下班了' : '，点下面开工'))) + '</div>');
+    if (running){
+      const tp = Math.round((1 - SHIFT.timer / (job.taskSeconds || 1)) * 100);
+      html.push('<div class="wtask" id="workTaskLine">正在进行：' + SHIFT.taskLabel +
+        '<b class="wsec" id="workTaskSec">' + SHIFT.timer.toFixed(1) + 's</b></div>');
+      html.push('<div class="wtbar"><i id="workTaskBar" style="width:' + tp + '%"></i></div>');
+    } else {
+      html.push('<div class="wtask" id="workTaskLine">已完成 ' + SHIFT.done + '/' + job.tasks + ' 单' +
+        (SHIFT.done >= job.tasks ? '，可以下班了' : '，点下面开工') + '</div>');
+    }
     html.push('<div class="wrow"><button class="wbtn" id="workTaskBtn"' + (running ? ' disabled' : '') + '>' +
       (running ? '进行中…' : (SHIFT.done >= job.tasks ? '再做一单' : '做下一单')) + '</button></div>');
     html.push('<div class="wrow"><button class="wbtn ghost" id="workAutoBtn">连续做单：' + (SHIFT.auto ? '开' : '关') + '</button></div>');
@@ -7325,8 +7389,12 @@ function updateWorkProgress(){
   const line = document.getElementById('workTaskLine');
   if (!SHIFT.job) return;
   if (bar) bar.style.width = Math.round(SHIFT.done / SHIFT.job.tasks * 100) + '%';
-  if (line && SHIFT.timer > 0){
-    line.textContent = '正在进行：' + SHIFT.taskLabel + '（' + SHIFT.timer.toFixed(1) + 's）';
+  if (SHIFT.timer > 0){
+    const sec = document.getElementById('workTaskSec');
+    if (sec) sec.textContent = SHIFT.timer.toFixed(1) + 's';
+    const tb = document.getElementById('workTaskBar');
+    if (tb) tb.style.width = Math.round((1 - SHIFT.timer / (SHIFT.job.taskSeconds || 1)) * 100) + '%';
+    else if (line) line.textContent = '正在进行：' + SHIFT.taskLabel + '（' + SHIFT.timer.toFixed(1) + 's）';
   }
 }
 
@@ -8428,7 +8496,9 @@ function beginAction(t, act){
     const spot = bestAdjacentFree(t.furn);
     if (!spot){ showFloat('周围被挡住了', t.gx, t.gy); return false; }
     if (!walkTo(spot.gx, spot.gy)) return false;
-    interacting = { furn: t.furn, act, timer: act.durationSec || 2, wait: 10 };
+    const dur = act.durationSec || 2;
+    /* total 只用于头顶那条进度条：timer 会一路减到 0，没 total 就算不出百分比 */
+    interacting = { furn: t.furn, act, timer: dur, total: dur, wait: 10 };
     return true;
   }
   if (t.kind === 'actor'){
@@ -12394,6 +12464,14 @@ if (TIME_SOURCE === 'world'){
   setTimeout(() => { if (!WORLD.ok) worldSeed(RULE.START_MINUTE || 480, 60); }, 2500);
 }
 requestAnimationFrame(loop);
+
+/* HELP_HOTKEY_HERE ? / F1 随时叫出说明（在输入框里不拦） */
+document.addEventListener('keydown', (e)=>{
+  if (e.key !== '?' && e.key !== 'F1') return;
+  if (typeof isTypingTarget === 'function' && isTypingTarget(e.target)) return;
+  e.preventDefault();
+  toggleGuide();
+});
 
 /* ---------- 新手说明 ---------- */
 const guideEl = document.getElementById('guide');
