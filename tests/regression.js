@@ -3412,6 +3412,89 @@
         applyHouseLevel(false);
       }
 
+      // AK 组：别墅精装交付（拎包入住）
+      {
+        const bak = {
+          placed: placed.slice(), inv: inventory.slice(), estates: ESTATES.slice(),
+          res: RESIDENCE, addr: ADDRESS, lvl: houseLevel, money: MONEY,
+          wall: wallStyle, floor: floorStyle
+        };
+
+        // AK1 三栋别墅都带着整套家具和墙色
+        {
+          const villas = houseLevelsOfType('villa').map(i => HOUSE_LEVELS[i]);
+          const ok = villas.length === 3 && villas.every(v =>
+            v.furnish && Array.isArray(v.furnish.items) && v.furnish.items.length >= 25 &&
+            typeof v.furnish.wallStyle === 'number');
+          P('AK1 villas ship furnished', ok,
+            villas.map(v => (v.furnish ? v.furnish.items.length : 0)).join('/'));
+        }
+
+        // AK2 精装清单必须全部能摆下去（越界/重叠就是内容写错了）
+        {
+          const bad = [];
+          for (const i of houseLevelsOfType('villa')){
+            const lv = HOUSE_LEVELS[i];
+            placed = []; houseLevel = i; applyHouseLevel(false);
+            for (const it of lv.furnish.items){
+              /* 内容坐标是相对室内左上角的，摆放判定要绝对坐标 */
+              const ax = it[1] + HOUSE_X + 1, ay = it[2] + HOUSE_Y + 1;
+              if (!canPlace(it[0], ax, ay, 0)) bad.push(lv.name + ':' + it[0] + '@' + it[1] + ',' + it[2]);
+              else placed.push({ catalogId: it[0], gx: ax, gy: ay, rot: 0 });
+            }
+          }
+          P('AK2 every furnished item fits its floor plan', bad.length === 0, bad.slice(0, 5).join(' | ') || 'ok');
+        }
+
+        // AK3 买下别墅 = 旧家具全部回仓库 + 精装家具全部摆好
+        {
+          houseLevel = 0; placed = [                                 // 假装住在一居
+            { catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
+            { catalogId: 'lamp', gx: 7, gy: 5, rot: 0 }
+          ];
+          inventory = []; ESTATES = [];
+          RESIDENCE = { buildingId: 'house.公寓楼', floor: 8, room: 3 };
+          MONEY = 200000; wallStyle = 0; floorStyle = 1;
+          const bid = villaBuildings()[0].id;
+          const planIdx = villaPlanOf(bid);
+          const plan = HOUSE_LEVELS[planIdx];
+          const okBuy = buyVilla(bid) === true;
+          const laidRight = placed.length === plan.furnish.items.length;
+          const invGot = inventory.reduce((a, x) => a + (x.count || 0), 0) === 2;
+          const wallRight = wallStyle === plan.furnish.wallStyle;
+          const floorZone = floorStyle === 0;
+          const moved = RESIDENCE.buildingId === bid;
+          P('AK3 moving in packs up the old flat and lays the new furniture',
+            okBuy && laidRight && invGot && wallRight && floorZone && moved,
+            'buy=' + okBuy + ' laid=' + placed.length + '/' + plan.furnish.items.length +
+            ' inv=' + invGot + ' wall=' + wallRight + ' floor=' + floorZone + ' moved=' + moved);
+        }
+
+        // AK4 买不起就不能搬进去（不能把旧家具打包了却没买成）
+        {
+          placed = [{ catalogId: 'bed', gx: 5, gy: 5, rot: 0 }];
+          inventory = []; ESTATES = []; MONEY = 1;
+          RESIDENCE = { buildingId: 'house.公寓楼', floor: 8, room: 3 };
+          const bid = villaBuildings()[1].id;
+          const ok = buyVilla(bid) === false && placed.length === 1 && inventory.length === 0;
+          P('AK4 cannot move in without the money', ok,
+            'placed=' + placed.length + ' inv=' + inventory.length);
+        }
+
+        // AK5 别墅总价要比公寓顶配贵（含精装）
+        {
+          const aptMax = Math.max.apply(null, houseLevelsOfType('apartment').map(i => HOUSE_LEVELS[i].price));
+          const vilMin = Math.min.apply(null, houseLevelsOfType('villa').map(i => HOUSE_LEVELS[i].price));
+          P('AK5 furnished villas cost more than the top flat', vilMin > aptMax,
+            'villaMin=' + vilMin + ' aptMax=' + aptMax);
+        }
+
+        placed = bak.placed; inventory = bak.inv; ESTATES = bak.estates;
+        RESIDENCE = bak.res; ADDRESS = bak.addr; houseLevel = bak.lvl; MONEY = bak.money;
+        wallStyle = bak.wall; floorStyle = bak.floor;
+        applyHouseLevel(false);
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;

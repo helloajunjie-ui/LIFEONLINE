@@ -280,6 +280,9 @@ export function toLegacyHouseLevels(){
     /* apartment = 公寓楼里的一套；villa = 楼外独栋。两类户型互不升级 */
     type: lv.type || 'apartment',
     id: lv.id,
+    /* 精装交付：买下就带着整套家具与墙面配色（别墅专用，公寓没有这个字段） */
+    furnish: lv.furnish || null,
+    furnished: !!lv.furnished,
     w: lv.footprint.w,
     h: lv.footprint.h,
     price: lv.price,

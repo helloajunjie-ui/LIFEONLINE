@@ -1280,7 +1280,10 @@ const curFloor = ()=> FLOOR_STYLES[floorStyle] || FLOOR_STYLES[0];
 const curWall  = ()=> WALL_STYLES[wallStyle]  || WALL_STYLES[0];
 /* 返回该格所属功能区对象（含 id/name/floor），坐标相对 footprint 左上角需减去外墙起点；非室内返回 null。 */
 function zoneOf(gx, gy){
-  const lx = gx - HOUSE_X, ly = gy - HOUSE_Y;
+  /* 室内可走范围是 [HOUSE_X+1, HOUSE_X+HOUSE_W]，所以分区局部坐标要再减 1。
+   * 以前只减了 HOUSE_X，整张分区图往右下偏了一格：第一行/列永远是空的，
+   * 家具有一半摆不进 zone(0,0) 那一格。 */
+  const lx = gx - HOUSE_X - 1, ly = gy - HOUSE_Y - 1;
   const lv = HOUSE_LEVELS[houseLevel];
   if (lv && Array.isArray(lv.zones)){
     for (const z of lv.zones){
@@ -7817,6 +7820,40 @@ function villaPriceOf(bid){
   return lv ? (Number(lv.price) || 0) : 0;
 }
 function villaOwned(bid){ return !!estateOf(bid, 0, 0); }
+/* MOVE_IN_HERE 拎包入住。
+ * 别墅是精装交付：买下来就带着整套家具家电，不用再一件件买、一件件摆。
+ * 原来那套公寓里的家具不吞掉——全部收回仓库，想用随时拿出来。 */
+function furnishHouse(planIdx){
+  const lv = HOUSE_LEVELS[planIdx];
+  const fu = lv && lv.furnish;
+  if (!fu) return { laid: 0, skipped: 0 };
+  /* 分区地板刚修好，别墅也保留（floorStyle=0 才看得到房间） */
+  floorStyle = 0;
+  if (typeof fu.wallStyle === 'number' && fu.wallStyle >= 0 && fu.wallStyle < WALL_STYLES.length){
+    wallStyle = fu.wallStyle;
+  }
+  let laid = 0, skipped = 0;
+  for (const it of (fu.items || [])){
+    const cid = it[0];
+    /* 内容里的坐标是相对房子内部的（0,0 = 室内左上角），摆放判定用的是家网格的
+     * 绝对坐标，这里必须加上 HOUSE_X / HOUSE_Y——忘了加就一件都摆不下。 */
+    const gx = it[1] + HOUSE_X + 1, gy = it[2] + HOUSE_Y + 1;
+    if (!FURN_BY_ID[cid]){ skipped++; continue; }
+    if (canPlace(cid, gx, gy, 0)){
+      placed.push({ catalogId: cid, gx, gy, rot: 0 });
+      laid++;
+    } else skipped++;
+  }
+  return { laid: laid, skipped: skipped };
+}
+/** 把现在摆着的家具全部收回仓库，返回件数 */
+function packUpFurniture(){
+  let n = 0;
+  for (const f of placed){ invAdd(f.catalogId); n++; }
+  placed = [];
+  return n;
+}
+
 /** 买下一整栋。返回是否成功 */
 function buyVilla(bid){
   const b = resBuilding(bid);
@@ -7835,12 +7872,17 @@ function buyVilla(bid){
   ESTATES.push({ buildingId: bid, floor: 0, room: 0, mode: 'owned', paid: price });
   RESIDENCE = { buildingId: bid, floor: 0, room: 0 };
   ADDRESS = residenceAddress();
-  /* 搬进别墅就换成这栋对应的户型；原来公寓的家具能放的留下，放不下的回仓库 */
+  /* 拎包入住：先把原来那套里的东西全部打包收回仓库，再换户型、铺精装 */
+  const packed = packUpFurniture();
   houseLevel = plan;
-  const moved = applyHouseLevel(false);
+  applyHouseLevel(false);
+  const got = furnishHouse(plan);
+  dirtyPlaced = true; markDirty();
   SND.build();
-  showFloat('搬进 ' + (b.label || bid) + ' · ' + HOUSE_LEVELS[plan].name, px, py);
-  if (moved > 0) showFloat('有 ' + moved + ' 件家具因新隔墙收回了仓库', px, py - 1);
+  showFloat('搬进 ' + (b.label || bid) + ' · ' + HOUSE_LEVELS[plan].name + '（精装交付）', px, py);
+  if (got.laid) showFloat('已配齐 ' + got.laid + ' 件家具家电，拎包入住', px, py - 1);
+  if (packed) showFloat('原来的 ' + packed + ' 件家具收进了仓库', px, py - 2);
+  if (got.skipped) showFloat('有 ' + got.skipped + ' 件没摆下，留在仓库', px, py - 3);
   spawnParticles(PLAYER.fx, PLAYER.fy, '#f4d35e', 14);
   updateHUD(); saveGame();
   if (typeof renderBuilding === 'function') renderBuilding();
@@ -10306,7 +10348,11 @@ function paintBuilding(){
         out.push('<div class="fitem" style="margin:0 2px 7px">' +
           '<div class="fb"><div class="fn2">' + (v.label || v.id) + (here ? ' · 现居' : '') + '</div>' +
           '<div class="fd">独栋 · ' + (plan ? plan.name + ' · 室内 ' + plan.w + '×' + plan.h +
-            ' · ' + (plan.zones ? plan.zones.length : 0) + ' 个分区' : '暂无户型') + '</div></div>' +
+            ' · ' + (plan.zones ? plan.zones.length : 0) + ' 个分区' : '暂无户型') +
+            (plan && plan.furnish ? '<br><b style="color:#3f8a44">精装交付</b> · ' +
+              plan.furnish.items.length + ' 件家具家电 · ' +
+              (plan.furnish.wallName || '高档墙面') + ' · 拎包入住' : '') +
+            '</div></div>' +
           '<button class="fbtn' + (can ? '' : ' ghost') + '" data-vbuy="' + v.id + '"' + (can ? '' : ' disabled') + '>' +
             btnTxt + '</button>' +
           '</div>');
