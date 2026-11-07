@@ -47,10 +47,10 @@ for (const [name, file] of Object.entries(TARGETS)){
       '--headless', '--disable-gpu',
       '--user-data-dir=' + profile,
       '--window-size=1280,800',
-      '--virtual-time-budget=6000',
+      '--virtual-time-budget=15000',
       '--dump-dom',
       'file:///' + work.replace(/\\/g, '/')
-    ], { encoding: 'utf8', timeout: 120000, stdio: ['ignore', 'pipe', 'ignore'] });
+    ], { encoding: 'utf8', timeout: 120000, maxBuffer: 32*1024*1024, stdio: ['ignore', 'pipe', 'ignore'] });
   } catch (e){
     // Edge 退出时的段错误是已知噪音，产物仍可能是完整的
     dom = (e.stdout || '') + '';

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-05T21:02:40.355Z",
+  "generatedAt": "2026-11-07T03:22:57.923Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -32,6 +32,11 @@
       "version": 3,
       "hash": "634f86f85e9e",
       "updatedAt": "2026-11-05T12:58:38.488Z"
+    },
+    "catalog/home.goods.json": {
+      "version": 1,
+      "hash": "67bec37ae834",
+      "updatedAt": "2026-11-07T01:36:49.247Z"
     },
     "catalog/items.decor.json": {
       "version": 1,
@@ -69,9 +74,9 @@
       "updatedAt": "2026-11-05T13:42:24.753Z"
     },
     "house/levels.json": {
-      "version": 1,
-      "hash": "0b30ce05d329",
-      "updatedAt": "2026-11-05T09:56:34.049Z"
+      "version": 2,
+      "hash": "817eada84d88",
+      "updatedAt": "2026-11-07T01:36:49.250Z"
     },
     "house/residence.json": {
       "version": 4,
@@ -99,9 +104,14 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "maps/street.map.json": {
-      "version": 17,
-      "hash": "71566753080b",
-      "updatedAt": "2026-11-05T20:51:01.188Z"
+      "version": 18,
+      "hash": "c287e2ed22af",
+      "updatedAt": "2026-11-07T01:36:49.254Z"
+    },
+    "pets/pets.json": {
+      "version": 1,
+      "hash": "07c5b1133cb7",
+      "updatedAt": "2026-11-07T01:36:49.254Z"
     },
     "rules/bills.json": {
       "version": 1,
@@ -301,6 +311,270 @@
       "action": "net"
     },
     {
+      "id": "washer",
+      "name": "洗衣机",
+      "cat": "appliance",
+      "price": 380,
+      "w": 1,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": "laundry"
+    },
+    {
+      "id": "microwave",
+      "name": "微波炉",
+      "cat": "appliance",
+      "price": 220,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "snack"
+    },
+    {
+      "id": "oven",
+      "name": "烤箱",
+      "cat": "appliance",
+      "price": 420,
+      "w": 2,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": "cook"
+    },
+    {
+      "id": "dishwasher",
+      "name": "洗碗机",
+      "cat": "appliance",
+      "price": 300,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "rest"
+    },
+    {
+      "id": "coffee",
+      "name": "咖啡机",
+      "cat": "appliance",
+      "price": 240,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "brew"
+    },
+    {
+      "id": "waterdisp",
+      "name": "饮水机",
+      "cat": "appliance",
+      "price": 200,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "drink"
+    },
+    {
+      "id": "ricecooker",
+      "name": "电饭煲",
+      "cat": "appliance",
+      "price": 180,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "eat"
+    },
+    {
+      "id": "aircon",
+      "name": "立式空调",
+      "cat": "appliance",
+      "price": 520,
+      "w": 1,
+      "h": 1,
+      "cozy": 4,
+      "walk": false,
+      "action": "rest"
+    },
+    {
+      "id": "robotvac",
+      "name": "扫地机器人",
+      "cat": "appliance",
+      "price": 280,
+      "w": 1,
+      "h": 1,
+      "cozy": 1,
+      "walk": false,
+      "action": "rest"
+    },
+    {
+      "id": "kettle",
+      "name": "电热水壶",
+      "cat": "appliance",
+      "price": 120,
+      "w": 1,
+      "h": 1,
+      "cozy": 1,
+      "walk": false,
+      "action": "drink"
+    },
+    {
+      "id": "toaster",
+      "name": "烤面包机",
+      "cat": "appliance",
+      "price": 150,
+      "w": 1,
+      "h": 1,
+      "cozy": 1,
+      "walk": false,
+      "action": "snack"
+    },
+    {
+      "id": "desk",
+      "name": "书桌",
+      "cat": "furniture",
+      "price": 240,
+      "w": 2,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": "read"
+    },
+    {
+      "id": "chair",
+      "name": "办公椅",
+      "cat": "furniture",
+      "price": 120,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "rest"
+    },
+    {
+      "id": "coffeetable",
+      "name": "茶几",
+      "cat": "furniture",
+      "price": 140,
+      "w": 2,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "rest"
+    },
+    {
+      "id": "tvstand",
+      "name": "电视柜",
+      "cat": "furniture",
+      "price": 180,
+      "w": 2,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "nightstand",
+      "name": "床头柜",
+      "cat": "furniture",
+      "price": 100,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "rest"
+    },
+    {
+      "id": "vanity",
+      "name": "梳妆台",
+      "cat": "furniture",
+      "price": 260,
+      "w": 2,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "shower",
+      "name": "淋浴间",
+      "cat": "furniture",
+      "price": 360,
+      "w": 2,
+      "h": 1,
+      "cozy": 4,
+      "walk": false,
+      "action": "shower"
+    },
+    {
+      "id": "washbasin",
+      "name": "洗手台",
+      "cat": "furniture",
+      "price": 160,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": "drink"
+    },
+    {
+      "id": "shoecab",
+      "name": "鞋柜",
+      "cat": "furniture",
+      "price": 140,
+      "w": 1,
+      "h": 1,
+      "cozy": 1,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "kitcab",
+      "name": "橱柜",
+      "cat": "furniture",
+      "price": 200,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "mirror",
+      "name": "落地穿衣镜",
+      "cat": "decor",
+      "price": 120,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "floorlamp",
+      "name": "落地灯",
+      "cat": "decor",
+      "price": 150,
+      "w": 1,
+      "h": 1,
+      "cozy": 2,
+      "walk": false,
+      "action": null
+    },
+    {
+      "id": "gfclock",
+      "name": "落地座钟",
+      "cat": "decor",
+      "price": 220,
+      "w": 1,
+      "h": 1,
+      "cozy": 3,
+      "walk": false,
+      "action": null
+    },
+    {
       "id": "rug_warm",
       "name": "暖阳地毯",
       "cat": "decor",
@@ -348,21 +622,33 @@
   "houseLevels": [
     {
       "name": "温馨一居",
-      "w": 12,
-      "h": 8,
+      "w": 14,
+      "h": 10,
       "price": 0
     },
     {
       "name": "两室一厅",
-      "w": 14,
-      "h": 10,
+      "w": 17,
+      "h": 12,
       "price": 2000
     },
     {
-      "name": "豪华别墅",
-      "w": 18,
-      "h": 12,
-      "price": 8000
+      "name": "三室两厅",
+      "w": 20,
+      "h": 14,
+      "price": 6000
+    },
+    {
+      "name": "四室两厅",
+      "w": 23,
+      "h": 16,
+      "price": 15000
+    },
+    {
+      "name": "大平层",
+      "w": 27,
+      "h": 18,
+      "price": 32000
     }
   ],
   "floorStyles": [

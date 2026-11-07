@@ -3,7 +3,7 @@
 一款单文件的等距视角生活模拟小游戏：**经营自己的小屋，在小区里上班、买菜、交房租、串门装修**。
 客户端是一个可以双击打开的 HTML，服务端是可选的 Go + SQLite 存档服务。
 
-> 当前版本 **1.28.0** · 存档结构 **schema 14** · 门禁：客户端回归 286 项 / 服务端自测 67 项 / 内容校验 26 包全绿
+> 当前版本 **1.28.2** · 存档结构 **schema 14** · 门禁：客户端回归 300 项 / 服务端自测 67 项 / 内容校验 26 包全绿
 
 ## 直接玩
 
@@ -37,7 +37,9 @@ content/                 内容层（唯一真相）：26 个 JSON 包
 assets/                   SVG 素材（家具）
 tools/                    内容校验与打包、构建、无头回归、性能基准
   gen-furniture.py        家具 SVG 参数化生成器（统一等距几何，改家具走这里）
-tests/regression.js       浏览器内回归（286 项）
+  sync-furniture-assets.py  把生成结果同步到 assets/furniture/
+  sync-furniture-assets.py  把生成结果同步到 assets/furniture/
+tests/regression.js       浏览器内回归（300 项）
 server/                   Go + SQLite 服务端
 dist/                     构建产物（单文件 HTML + 引擎 bundle）
 ```
@@ -55,7 +57,7 @@ node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 **跑回归**：
 
 ```bash
-node tools/test.mjs               # dist 与 src 各跑一遍（286 项），用无头 Edge
+node tools/test.mjs               # dist 与 src 各跑一遍（300 项），用无头 Edge
 node tools/test.mjs dist          # 只跑构建产物
 cd server && ./home-server.exe -selftest   # 服务端接口自测（进程内 httptest）
 ```

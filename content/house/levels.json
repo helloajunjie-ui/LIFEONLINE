@@ -1,6 +1,6 @@
 {
   "schema": "house/1",
-  "note": "房型等级：升级只扩大室内区块，左上角固定不动；walls 为室内隔断（留门洞）",
+  "note": "房型等级：升级只扩大室内区块，左上角固定；地面分区（无实墙），每区内联地板配色，空间完全可走",
   "origin": {
     "x": 3,
     "y": 3
@@ -8,369 +8,788 @@
   "yardMargin": 3,
   "levels": [
     {
-      "id": "house.lv0",
       "level": 0,
+      "id": "house.lv0",
       "name": "温馨一居",
       "price": 0,
-      "footprint": {
-        "w": 12,
-        "h": 8
-      },
-      "walls": [],
-      "zones": [
-        {
-          "name": "main",
-          "rect": {
-            "x": 0,
-            "y": 0,
-            "w": 12,
-            "h": 8
-          }
-        }
-      ],
-      "door": {
-        "edge": "bottom",
-        "offset": "center"
-      }
-    },
-    {
-      "id": "house.lv1",
-      "level": 1,
-      "name": "两室一厅",
-      "price": 2000,
       "footprint": {
         "w": 14,
         "h": 10
       },
-      "walls": [
-        {
-          "x": 14,
-          "y": 4
-        },
-        {
-          "x": 14,
-          "y": 5
-        },
-        {
-          "x": 14,
-          "y": 6
-        },
-        {
-          "x": 14,
-          "y": 7
-        },
-        {
-          "x": 14,
-          "y": 9
-        },
-        {
-          "x": 14,
-          "y": 10
-        },
-        {
-          "x": 14,
-          "y": 11
-        },
-        {
-          "x": 14,
-          "y": 12
-        },
-        {
-          "x": 14,
-          "y": 13
-        },
-        {
-          "x": 4,
-          "y": 9
-        },
-        {
-          "x": 5,
-          "y": 9
-        },
-        {
-          "x": 7,
-          "y": 9
-        },
-        {
-          "x": 8,
-          "y": 9
-        },
-        {
-          "x": 9,
-          "y": 9
-        },
-        {
-          "x": 10,
-          "y": 9
-        },
-        {
-          "x": 11,
-          "y": 9
-        },
-        {
-          "x": 12,
-          "y": 9
-        }
-      ],
       "zones": [
         {
-          "name": "zone.w0",
+          "id": "bedroom",
+          "name": "卧室",
           "rect": {
             "x": 0,
             "y": 0,
             "w": 14,
-            "h": 10
+            "h": 4
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
           }
         },
         {
-          "name": "zone.w1",
+          "id": "living",
+          "name": "客厅",
           "rect": {
-            "x": 5,
-            "y": 0,
-            "w": 14,
-            "h": 10
+            "x": 0,
+            "y": 4,
+            "w": 9,
+            "h": 6
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
           }
         },
         {
-          "name": "zone.w2",
-          "rect": {
-            "x": 7,
-            "y": 0,
-            "w": 14,
-            "h": 10
-          }
-        },
-        {
-          "name": "zone.w3",
-          "rect": {
-            "x": 8,
-            "y": 0,
-            "w": 14,
-            "h": 10
-          }
-        },
-        {
-          "name": "zone.w4",
+          "id": "bath",
+          "name": "卫生间",
           "rect": {
             "x": 9,
-            "y": 0,
-            "w": 14,
-            "h": 10
+            "y": 4,
+            "w": 5,
+            "h": 3
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#dde9f2",
+              "b": "#c8d8e6",
+              "line": "rgba(90,115,140,.24)",
+              "grout": "rgba(120,140,165,.34)"
+            }
           }
         },
         {
-          "name": "zone.w5",
+          "id": "kitchen",
+          "name": "厨房",
           "rect": {
-            "x": 10,
-            "y": 0,
-            "w": 14,
-            "h": 10
-          }
-        },
-        {
-          "name": "zone.w6",
-          "rect": {
-            "x": 11,
-            "y": 0,
-            "w": 14,
-            "h": 10
-          }
-        },
-        {
-          "name": "zone.w7",
-          "rect": {
-            "x": 12,
-            "y": 0,
-            "w": 14,
-            "h": 10
-          }
-        },
-        {
-          "name": "zone.w8",
-          "rect": {
-            "x": 14,
-            "y": 0,
-            "w": 14,
-            "h": 10
+            "x": 9,
+            "y": 7,
+            "w": 5,
+            "h": 3
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
           }
         }
       ],
+      "walls": [],
       "door": {
         "edge": "bottom",
         "offset": "center"
       }
     },
     {
-      "id": "house.lv2",
-      "level": 2,
-      "name": "豪华别墅",
-      "price": 8000,
+      "level": 1,
+      "id": "house.lv1",
+      "name": "两室一厅",
+      "price": 2000,
       "footprint": {
-        "w": 18,
+        "w": 17,
         "h": 12
       },
-      "walls": [
-        {
-          "x": 8,
-          "y": 4
-        },
-        {
-          "x": 8,
-          "y": 5
-        },
-        {
-          "x": 8,
-          "y": 6
-        },
-        {
-          "x": 8,
-          "y": 7
-        },
-        {
-          "x": 8,
-          "y": 9
-        },
-        {
-          "x": 8,
-          "y": 10
-        },
-        {
-          "x": 8,
-          "y": 11
-        },
-        {
-          "x": 8,
-          "y": 12
-        },
-        {
-          "x": 8,
-          "y": 13
-        },
-        {
-          "x": 8,
-          "y": 14
-        },
-        {
-          "x": 8,
-          "y": 15
-        },
-        {
-          "x": 17,
-          "y": 4
-        },
-        {
-          "x": 17,
-          "y": 5
-        },
-        {
-          "x": 17,
-          "y": 6
-        },
-        {
-          "x": 17,
-          "y": 7
-        },
-        {
-          "x": 17,
-          "y": 9
-        },
-        {
-          "x": 17,
-          "y": 10
-        },
-        {
-          "x": 17,
-          "y": 11
-        },
-        {
-          "x": 17,
-          "y": 12
-        },
-        {
-          "x": 17,
-          "y": 13
-        },
-        {
-          "x": 17,
-          "y": 14
-        },
-        {
-          "x": 17,
-          "y": 15
-        },
-        {
-          "x": 10,
-          "y": 10
-        },
-        {
-          "x": 11,
-          "y": 10
-        },
-        {
-          "x": 14,
-          "y": 10
-        },
-        {
-          "x": 15,
-          "y": 10
-        }
-      ],
       "zones": [
         {
-          "name": "zone.w0",
+          "id": "master",
+          "name": "主卧",
           "rect": {
             "x": 0,
             "y": 0,
-            "w": 18,
-            "h": 12
+            "w": 9,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
           }
         },
         {
-          "name": "zone.w1",
+          "id": "bed2",
+          "name": "次卧",
           "rect": {
-            "x": 10,
+            "x": 9,
             "y": 0,
-            "w": 18,
-            "h": 12
+            "w": 8,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
           }
         },
         {
-          "name": "zone.w2",
+          "id": "living",
+          "name": "客厅",
           "rect": {
-            "x": 11,
-            "y": 0,
-            "w": 18,
-            "h": 12
+            "x": 0,
+            "y": 5,
+            "w": 8,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
           }
         },
         {
-          "name": "zone.w3",
+          "id": "dining",
+          "name": "餐厅",
           "rect": {
-            "x": 14,
-            "y": 0,
-            "w": 18,
-            "h": 12
+            "x": 8,
+            "y": 5,
+            "w": 4,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#e3c896",
+              "b": "#d6b880",
+              "line": "rgba(140,105,60,.16)",
+              "grout": "rgba(255,250,230,.16)"
+            }
           }
         },
         {
-          "name": "zone.w4",
+          "id": "bath",
+          "name": "卫生间",
           "rect": {
-            "x": 15,
-            "y": 0,
-            "w": 18,
-            "h": 12
+            "x": 12,
+            "y": 5,
+            "w": 5,
+            "h": 3
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#dde9f2",
+              "b": "#c8d8e6",
+              "line": "rgba(90,115,140,.24)",
+              "grout": "rgba(120,140,165,.34)"
+            }
           }
         },
         {
-          "name": "zone.w5",
+          "id": "kitchen",
+          "name": "厨房",
           "rect": {
-            "x": 17,
-            "y": 0,
-            "w": 18,
-            "h": 12
+            "x": 12,
+            "y": 8,
+            "w": 5,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
           }
         }
       ],
+      "walls": [],
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      }
+    },
+    {
+      "level": 2,
+      "id": "house.lv2",
+      "name": "三室两厅",
+      "price": 6000,
+      "footprint": {
+        "w": 20,
+        "h": 14
+      },
+      "zones": [
+        {
+          "id": "master",
+          "name": "主卧",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 9,
+            "h": 6
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "bed2",
+          "name": "次卧",
+          "rect": {
+            "x": 9,
+            "y": 0,
+            "w": 5,
+            "h": 6
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "bed3",
+          "name": "次卧",
+          "rect": {
+            "x": 14,
+            "y": 0,
+            "w": 6,
+            "h": 6
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "living",
+          "name": "客厅",
+          "rect": {
+            "x": 0,
+            "y": 6,
+            "w": 9,
+            "h": 8
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
+          }
+        },
+        {
+          "id": "dining",
+          "name": "餐厅",
+          "rect": {
+            "x": 9,
+            "y": 6,
+            "w": 5,
+            "h": 8
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#e3c896",
+              "b": "#d6b880",
+              "line": "rgba(140,105,60,.16)",
+              "grout": "rgba(255,250,230,.16)"
+            }
+          }
+        },
+        {
+          "id": "bath",
+          "name": "卫生间",
+          "rect": {
+            "x": 14,
+            "y": 6,
+            "w": 6,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#dde9f2",
+              "b": "#c8d8e6",
+              "line": "rgba(90,115,140,.24)",
+              "grout": "rgba(120,140,165,.34)"
+            }
+          }
+        },
+        {
+          "id": "kitchen",
+          "name": "厨房",
+          "rect": {
+            "x": 14,
+            "y": 10,
+            "w": 6,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
+          }
+        }
+      ],
+      "walls": [],
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      }
+    },
+    {
+      "level": 3,
+      "id": "house.lv3",
+      "name": "四室两厅",
+      "price": 15000,
+      "footprint": {
+        "w": 23,
+        "h": 16
+      },
+      "zones": [
+        {
+          "id": "master",
+          "name": "主卧",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 8,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "bed2",
+          "name": "次卧",
+          "rect": {
+            "x": 8,
+            "y": 0,
+            "w": 5,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "bed3",
+          "name": "次卧",
+          "rect": {
+            "x": 13,
+            "y": 0,
+            "w": 5,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "study",
+          "name": "书房",
+          "rect": {
+            "x": 18,
+            "y": 0,
+            "w": 5,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#b88a54",
+              "b": "#a87a46",
+              "line": "rgba(80,52,24,.26)",
+              "grout": "rgba(255,235,200,.14)"
+            }
+          }
+        },
+        {
+          "id": "living",
+          "name": "客厅",
+          "rect": {
+            "x": 0,
+            "y": 7,
+            "w": 9,
+            "h": 9
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
+          }
+        },
+        {
+          "id": "dining",
+          "name": "餐厅",
+          "rect": {
+            "x": 9,
+            "y": 7,
+            "w": 5,
+            "h": 9
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#e3c896",
+              "b": "#d6b880",
+              "line": "rgba(140,105,60,.16)",
+              "grout": "rgba(255,250,230,.16)"
+            }
+          }
+        },
+        {
+          "id": "bath1",
+          "name": "卫生间",
+          "rect": {
+            "x": 14,
+            "y": 7,
+            "w": 4,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#dde9f2",
+              "b": "#c8d8e6",
+              "line": "rgba(90,115,140,.24)",
+              "grout": "rgba(120,140,165,.34)"
+            }
+          }
+        },
+        {
+          "id": "bath2",
+          "name": "卫生间",
+          "rect": {
+            "x": 18,
+            "y": 7,
+            "w": 5,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#d6e8e0",
+              "b": "#c2d8ce",
+              "line": "rgba(90,125,110,.24)",
+              "grout": "rgba(120,155,140,.32)"
+            }
+          }
+        },
+        {
+          "id": "kitchen",
+          "name": "厨房",
+          "rect": {
+            "x": 14,
+            "y": 12,
+            "w": 9,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
+          }
+        }
+      ],
+      "walls": [],
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      }
+    },
+    {
+      "level": 4,
+      "id": "house.lv4",
+      "name": "大平层",
+      "price": 32000,
+      "footprint": {
+        "w": 27,
+        "h": 18
+      },
+      "zones": [
+        {
+          "id": "master",
+          "name": "主卧",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 10,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "mbath",
+          "name": "主卫",
+          "rect": {
+            "x": 10,
+            "y": 0,
+            "w": 5,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#d6e8e0",
+              "b": "#c2d8ce",
+              "line": "rgba(90,125,110,.24)",
+              "grout": "rgba(120,155,140,.32)"
+            }
+          }
+        },
+        {
+          "id": "closet",
+          "name": "衣帽间",
+          "rect": {
+            "x": 15,
+            "y": 0,
+            "w": 4,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d9bd90",
+              "b": "#cab084",
+              "line": "rgba(130,105,70,.16)",
+              "grout": "rgba(255,245,225,.15)"
+            }
+          }
+        },
+        {
+          "id": "bed2",
+          "name": "次卧",
+          "rect": {
+            "x": 19,
+            "y": 0,
+            "w": 8,
+            "h": 7
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "bed3",
+          "name": "次卧",
+          "rect": {
+            "x": 0,
+            "y": 7,
+            "w": 8,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "study",
+          "name": "书房",
+          "rect": {
+            "x": 8,
+            "y": 7,
+            "w": 7,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#b88a54",
+              "b": "#a87a46",
+              "line": "rgba(80,52,24,.26)",
+              "grout": "rgba(255,235,200,.14)"
+            }
+          }
+        },
+        {
+          "id": "guestbath",
+          "name": "客卫",
+          "rect": {
+            "x": 15,
+            "y": 7,
+            "w": 5,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#dde9f2",
+              "b": "#c8d8e6",
+              "line": "rgba(90,115,140,.24)",
+              "grout": "rgba(120,140,165,.34)"
+            }
+          }
+        },
+        {
+          "id": "kitchen",
+          "name": "厨房",
+          "rect": {
+            "x": 20,
+            "y": 7,
+            "w": 7,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
+          }
+        },
+        {
+          "id": "living",
+          "name": "客厅",
+          "rect": {
+            "x": 0,
+            "y": 12,
+            "w": 13,
+            "h": 6
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
+          }
+        },
+        {
+          "id": "dining",
+          "name": "餐厅",
+          "rect": {
+            "x": 13,
+            "y": 12,
+            "w": 7,
+            "h": 6
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#e3c896",
+              "b": "#d6b880",
+              "line": "rgba(140,105,60,.16)",
+              "grout": "rgba(255,250,230,.16)"
+            }
+          }
+        },
+        {
+          "id": "storage",
+          "name": "储物间",
+          "rect": {
+            "x": 20,
+            "y": 12,
+            "w": 7,
+            "h": 6
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d9bd90",
+              "b": "#cab084",
+              "line": "rgba(130,105,70,.16)",
+              "grout": "rgba(255,245,225,.15)"
+            }
+          }
+        }
+      ],
+      "walls": [],
       "door": {
         "edge": "bottom",
         "offset": "center"

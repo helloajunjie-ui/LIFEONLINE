@@ -29,6 +29,11 @@
     "hash": "634f86f85e9e",
     "updatedAt": "2026-11-05T12:58:38.488Z"
   },
+  "catalog/home.goods.json": {
+    "version": 1,
+    "hash": "67bec37ae834",
+    "updatedAt": "2026-11-07T01:36:49.247Z"
+  },
   "catalog/items.decor.json": {
     "version": 1,
     "hash": "f4800b19fb18",
@@ -65,9 +70,9 @@
     "updatedAt": "2026-11-05T13:42:24.753Z"
   },
   "house/levels.json": {
-    "version": 1,
-    "hash": "0b30ce05d329",
-    "updatedAt": "2026-11-05T09:56:34.049Z"
+    "version": 2,
+    "hash": "817eada84d88",
+    "updatedAt": "2026-11-07T01:36:49.250Z"
   },
   "house/residence.json": {
     "version": 4,
@@ -95,9 +100,14 @@
     "updatedAt": "2026-11-05T09:56:34.049Z"
   },
   "maps/street.map.json": {
-    "version": 17,
-    "hash": "71566753080b",
-    "updatedAt": "2026-11-05T20:51:01.188Z"
+    "version": 18,
+    "hash": "c287e2ed22af",
+    "updatedAt": "2026-11-07T01:36:49.254Z"
+  },
+  "pets/pets.json": {
+    "version": 1,
+    "hash": "07c5b1133cb7",
+    "updatedAt": "2026-11-07T01:36:49.254Z"
   },
   "rules/bills.json": {
     "version": 1,

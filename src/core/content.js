@@ -142,6 +142,9 @@ function buildIndex(packs, meta){
   // 股市：可交易标的 + 手续费 + 随机游走参数
   const stock = packs['stock/stock.json'] || { stocks: [], feeRate: 0.0015 };
 
+  // 宠物：可领养猫狗 + 需求衰减 + 互动动作 + 宠物粮
+  const pets = packs['pets/pets.json'] || null;
+
   // 车款：4S 店卖的车（不在家具目录里，车不是家具）
   let cars = [], carParking = null;
   for (const [id, pack] of Object.entries(packs)){
@@ -177,7 +180,8 @@ function buildIndex(packs, meta){
     lottery,
     business,
     bank,
-    stock
+    stock,
+    pets
   };
 }
 
@@ -269,14 +273,19 @@ export function carParking(){ return content.carParking; }
 /** 彩票规则（号码/奖级/票价） */
 export function lottery(){ return content.lottery; }
 
-/** → [{name,w,h,price,walls:[[x,y],...]}]（引擎里 walls 用绝对坐标数组形式） */
+/** → [{name,w,h,price,walls:[[x,y],...],zones:[{id,name,x,y,w,h,floor}]}]（引擎里 walls 用绝对坐标数组形式；zones 为地面分区，坐标相对 footprint 左上角） */
 export function toLegacyHouseLevels(){
   return content.levels.map(lv => ({
     name: lv.name,
     w: lv.footprint.w,
     h: lv.footprint.h,
     price: lv.price,
-    walls: (lv.walls || []).map(w => [w.x, w.y])
+    walls: (lv.walls || []).map(w => [w.x, w.y]),
+    zones: (lv.zones || []).map(z => ({
+      id: z.id, name: z.name,
+      x: z.rect.x, y: z.rect.y, w: z.rect.w, h: z.rect.h,
+      floor: z.floor
+    }))
   }));
 }
 
@@ -334,3 +343,5 @@ export function business(){ return content.business || { shops: [], termDays: 30
 export function bank(){ return content.bank || {}; }
 /** 股市：可交易标的、手续费、价格模型参数 */
 export function stock(){ return content.stock || { stocks: [], feeRate: 0.0015 }; }
+/** 宠物：可领养猫狗、需求衰减、互动动作、宠物粮配置 */
+export function pets(){ return content.pets; }

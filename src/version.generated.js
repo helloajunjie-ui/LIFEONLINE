@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.28.0",
+  "appVersion": "1.28.2",
   "minAppVersion": "1.6.0",
-  "saveSchema": 14,
+  "saveSchema": 15,
   "contentVersion": 1,
-  "contentHash": "1a9ed3ddb92b",
-  "builtAt": "2026-11-05T21:28:26.740Z",
+  "contentHash": "6706c004c6c3",
+  "builtAt": "2026-11-07T03:22:58.041Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
@@ -30,6 +30,10 @@ export const BUILD = {
     "content/catalog/furniture.core.json": {
       "version": 3,
       "hash": "634f86f85e9e"
+    },
+    "content/catalog/home.goods.json": {
+      "version": 1,
+      "hash": "67bec37ae834"
     },
     "content/catalog/items.decor.json": {
       "version": 1,
@@ -60,8 +64,8 @@ export const BUILD = {
       "hash": "0611393d2e77"
     },
     "content/house/levels.json": {
-      "version": 1,
-      "hash": "0b30ce05d329"
+      "version": 2,
+      "hash": "817eada84d88"
     },
     "content/house/residence.json": {
       "version": 4,
@@ -84,8 +88,12 @@ export const BUILD = {
       "hash": "fa7263c09f78"
     },
     "content/maps/street.map.json": {
-      "version": 17,
-      "hash": "71566753080b"
+      "version": 18,
+      "hash": "c287e2ed22af"
+    },
+    "content/pets/pets.json": {
+      "version": 1,
+      "hash": "07c5b1133cb7"
     },
     "content/rules/bills.json": {
       "version": 1,
@@ -113,7 +121,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "1a9ed3ddb92b"
+      "hash": "6706c004c6c3"
     },
     "src/core/clock.js": {
       "version": null,
@@ -121,7 +129,7 @@ export const BUILD = {
     },
     "src/core/content.js": {
       "version": null,
-      "hash": "d11aa1829cf2"
+      "hash": "88a116fb526b"
     },
     "src/core/environment.js": {
       "version": null,

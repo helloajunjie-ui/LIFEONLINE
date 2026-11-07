@@ -792,6 +792,16 @@
       "h": 3,
       "label": "证券营业部",
       "tint": "#8a6aa6"
+    },
+    {
+      "id": "shop_pet",
+      "kind": "shop",
+      "x": 18,
+      "y": 36,
+      "w": 5,
+      "h": 4,
+      "label": "宠物之家",
+      "tint": "#cf7d5e"
     }
   ],
   "zoneKinds": {

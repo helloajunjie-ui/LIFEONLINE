@@ -17,6 +17,12 @@ server/home-server.exe~
 # ---- 工作草稿与截图（体积大、可重建）----
 .work/
 _shots/
+# 临时验证脚本跑出来的目录树（5406 个文件 / 261MB），可重建
+_petverify/
+
+# ---- 调试中间产物：tools 下划线开头的临时文件 / headless 浏览器 profile ----
+tools/_*
+server/_*
 
 # ---- 编辑器 / 系统 ----
 .vscode/

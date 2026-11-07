@@ -14,12 +14,12 @@
 
     /* ---------- 内容层接线 ---------- */
     P('C1 engine bundle loaded', typeof HomeCore === 'object' && !!HomeCore.content);
-    P('C2 catalog from content', FURNITURE_CATALOG.length === 19, 'len=' + FURNITURE_CATALOG.length);
+    P('C2 catalog from content', FURNITURE_CATALOG.length === 43, 'len=' + FURNITURE_CATALOG.length);
     const bed = FURNITURE_CATALOG.find(d => d.id === 'bed');
     P('C3 bed mapped', !!bed && bed.w === 2 && bed.cozy === 6 && bed.action === 'sleep', JSON.stringify(bed));
     const rug = FURNITURE_CATALOG.find(d => d.id === 'rug_warm');
     P('C4 rug walkable flag', !!rug && rug.walk === true && rug.w === 2 && rug.h === 2);
-    P('C5 house levels from content', HOUSE_LEVELS.length === 3 && HOUSE_LEVELS[1].walls.length === 17, 'lv1 walls=' + HOUSE_LEVELS[1].walls.length);
+    P('C5 house levels from content', HOUSE_LEVELS.length === 5 && HOUSE_LEVELS[1].walls.length === 0 && HOUSE_LEVELS[1].w === 17, 'lv1 walls=' + HOUSE_LEVELS[1].walls.length);
     P('C6 styles from content', FLOOR_STYLES.length === 4 && WALL_STYLES.length === 4 && FLOOR_STYLES[1].pattern === 'tile');
     P('C7 rules from content', Math.abs(DECAY.hunger - 0.05) < 1e-9 && Math.abs(EMOTION_DECAY - 0.06) < 1e-9 && WORK_PAY === 60,
       JSON.stringify({ hunger: DECAY.hunger, emo: EMOTION_DECAY, pay: WORK_PAY }));
@@ -230,7 +230,7 @@
       applyHouseLevel();
       const beforeW = HOUSE_W;
       enterPeer(feed[0]);
-      const inPeer = scene === 'peer' && HOUSE_W === 14 && floorStyle === 1 && wallStyle === 2 && placed.length === 1;
+      const inPeer = scene === 'peer' && HOUSE_W === 17 && floorStyle === 1 && wallStyle === 2 && placed.length === 1;
       render();
       P('P3 enter peer swaps state', inPeer, 'scene=' + scene + ' HOUSE_W=' + HOUSE_W + ' placed=' + placed.length);
 
@@ -337,10 +337,10 @@
       applyHouseLevel();
       enterPeer({ userId: 'u3', name: '丙', cozyScore: 15, houseLevel: 2, floorStyle: 1, wallStyle: 1,
                   placed: [{ catalogId: 'bed', gx: 8, gy: 5 }] });
-      const enteredPeer = scene === 'peer' && HOUSE_W === 18;
+      const enteredPeer = scene === 'peer' && HOUSE_W === 20;
       switchScene('home');
       P('N5 switchScene while visiting restores own home',
-        enteredPeer && scene === 'home' && houseLevel === 0 && HOUSE_W === 12 &&
+        enteredPeer && scene === 'home' && houseLevel === 0 && HOUSE_W === 14 &&
         placed.length === 1 && placed[0].catalogId === 'sofa',
         'entered=' + enteredPeer + ' scene=' + scene + ' HOUSE_W=' + HOUSE_W + ' placed=' + placed.length);
 
@@ -2699,6 +2699,84 @@
 
       MONEY = bk.money; DAY = bk.day;
       STOCK_HOLD = JSON.parse(bk.hold); BANK = JSON.parse(bk.bank); LEDGER = JSON.parse(bk.ledger);
+    }
+
+    /* ---------- PT 组：宠物系统 ---------- */
+    {
+      const bk = {
+        money: MONEY, scene: scene, food: PETFOOD,
+        pets: MY_PETS, emo: STATS.emotion, uid: petUidSeq
+      };
+      scene = 'home';
+      MONEY = 6000; PETFOOD = 20; MY_PETS = [];
+
+      P('PT1 pet definitions loaded',
+        !!PETS_DEF && PETS_DEF.pets.length === 6 &&
+        !!PET_DEF_BY_ID['pet.cat.orange'] && PETS_DEF.maxPets === 3,
+        'count=' + (PETS_DEF ? PETS_DEF.pets.length : 0));
+
+      const petProp = STREET_PROPS.find(q => q.zoneId === 'shop_pet');
+      P('PT2 pet shop prop exists',
+        !!petProp && petProp.kind === 'shop' && petProp.label === '宠物之家');
+
+      const p = adoptPet('pet.cat.orange');
+      P('PT3 adopt adds pet with initial needs',
+        !!p && MY_PETS.length === 1 && p.species === 'cat' &&
+        p.hunger === 85 && p.mood === 80 && p.clean === 90,
+        JSON.stringify({ h: p.hunger, m: p.mood, c: p.clean }));
+
+      p.hunger = 50; p.mood = 50; p.clean = 50; STATS.emotion = 70;
+      executePetAction(p, { petAct: 'feed' });
+      P('PT4 feed: hunger+38 mood+4 consumes food',
+        p.hunger === 88 && p.mood === 54 && PETFOOD === 19,
+        'h=' + p.hunger + ' food=' + PETFOOD);
+      executePetAction(p, { petAct: 'pet' });
+      P('PT5 pet: mood+16 player emotion+6',
+        p.mood === 70 && STATS.emotion === 76,
+        'mood=' + p.mood + ' emo=' + STATS.emotion);
+      executePetAction(p, { petAct: 'play' });
+      P('PT6 play: mood+30 hunger-6 emotion+9',
+        p.mood === 100 && p.hunger === 82 && STATS.emotion === 85);
+      executePetAction(p, { petAct: 'wash' });
+      P('PT7 wash: clean+45 mood-6 emotion+2',
+        p.clean === 95 && p.mood === 94 && STATS.emotion === 87);
+
+      executePetAction(p, { petAct: 'follow' });
+      P('PT8 follow toggles on', p.following === true, 'following=' + p.following);
+
+      p.hunger = 80; p.mood = 80; p.clean = 80;
+      SIM_MIN_LAST = 100;
+      updatePets(0.016);
+      P('PT9 decay matches formula',
+        Math.abs(p.hunger - 75.5) < 1e-9 && Math.abs(p.mood - 76.5) < 1e-9 &&
+        Math.abs(p.clean - 77.8) < 1e-9,
+        p.hunger.toFixed(2) + '/' + p.mood.toFixed(2) + '/' + p.clean.toFixed(2));
+
+      adoptPet('pet.dog.shiba'); adoptPet('pet.dog.corgi');
+      const fourth = adoptPet('pet.dog.golden');
+      P('PT10 max pets enforced at 3',
+        MY_PETS.length === 3 && fourth === false, 'count=' + MY_PETS.length);
+
+      const saved = collectSave();
+      P('PT11 save carries pets',
+        saved.pets && saved.pets.food === PETFOOD && saved.pets.list.length === 3,
+        'food=' + saved.pets.food);
+      MY_PETS = []; PETFOOD = 0;
+      applySave(saved);
+      P('PT12 apply restores pets',
+        MY_PETS.length === 3 && !!PET_DEF_BY_ID[MY_PETS[0].defId] && PETFOOD === 19,
+        'restored=' + MY_PETS.length);
+
+      const old = migrateSave({ schema: 14 });
+      P('PT13 migration fills pets for schema14',
+        old.schema === 15 && old.pets.food === 0 && old.pets.list.length === 0);
+
+      let panelOk = false;
+      try { renderPetShop(); panelOk = petshopList.innerHTML.length > 0; } catch (e) {}
+      P('PT14 pet shop panel renders', panelOk, 'len=' + petshopList.innerHTML.length);
+
+      scene = bk.scene; MONEY = bk.money; PETFOOD = bk.food;
+      MY_PETS = bk.pets; STATS.emotion = bk.emo; petUidSeq = bk.uid;
     }
 
     flush();

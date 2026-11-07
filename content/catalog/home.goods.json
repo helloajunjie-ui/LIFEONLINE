@@ -1,0 +1,1063 @@
+{
+  "schema": "catalog/1",
+  "note": "室内家电/家具扩展包（24 件，落地式）",
+  "items": [
+    {
+      "id": "washer",
+      "name": "洗衣机",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "water"
+      ],
+      "price": 380,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/washer.svg",
+        "size": {
+          "w": 64,
+          "h": 97
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 72
+        }
+      },
+      "ui": {
+        "icon": "washer",
+        "desc": "洗衣服，焕然一新",
+        "order": 200
+      },
+      "interaction": {
+        "verb": "laundry",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 5
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "microwave",
+      "name": "微波炉",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "food"
+      ],
+      "price": 220,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/microwave.svg",
+        "size": {
+          "w": 64,
+          "h": 83
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 58
+        }
+      },
+      "ui": {
+        "icon": "microwave",
+        "desc": "快速加热，补充饥饿",
+        "order": 201
+      },
+      "interaction": {
+        "verb": "snack",
+        "durationSec": 2,
+        "effects": {
+          "hunger": 16
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "oven",
+      "name": "烤箱",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "food"
+      ],
+      "price": 420,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/oven.svg",
+        "size": {
+          "w": 128,
+          "h": 125
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 84
+        }
+      },
+      "ui": {
+        "icon": "oven",
+        "desc": "烘焙烹饪，大幅补饥饿",
+        "order": 202
+      },
+      "interaction": {
+        "verb": "cook",
+        "durationSec": 2,
+        "effects": {
+          "hunger": 26
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "dishwasher",
+      "name": "洗碗机",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "water"
+      ],
+      "price": 300,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/dishwasher.svg",
+        "size": {
+          "w": 64,
+          "h": 93
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 68
+        }
+      },
+      "ui": {
+        "icon": "dishwasher",
+        "desc": "自动洗碗，省心",
+        "order": 203
+      },
+      "interaction": {
+        "verb": "rest",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 3
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "coffee",
+      "name": "咖啡机",
+      "category": "appliance",
+      "tags": [
+        "electric"
+      ],
+      "price": 240,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/coffee.svg",
+        "size": {
+          "w": 64,
+          "h": 87
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 62
+        }
+      },
+      "ui": {
+        "icon": "coffee",
+        "desc": "冲一杯咖啡，提神",
+        "order": 204
+      },
+      "interaction": {
+        "verb": "brew",
+        "durationSec": 2,
+        "effects": {
+          "thirst": 14,
+          "emotion": 3
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "waterdisp",
+      "name": "饮水机",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "water"
+      ],
+      "price": 200,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/waterdisp.svg",
+        "size": {
+          "w": 64,
+          "h": 103
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 78
+        }
+      },
+      "ui": {
+        "icon": "waterdisp",
+        "desc": "冷热饮水，快速解渴",
+        "order": 205
+      },
+      "interaction": {
+        "verb": "drink",
+        "durationSec": 2,
+        "effects": {
+          "thirst": 30
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "ricecooker",
+      "name": "电饭煲",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "food"
+      ],
+      "price": 180,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/ricecooker.svg",
+        "size": {
+          "w": 64,
+          "h": 79
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 54
+        }
+      },
+      "ui": {
+        "icon": "ricecooker",
+        "desc": "焖饭煮粥，补充饥饿",
+        "order": 206
+      },
+      "interaction": {
+        "verb": "eat",
+        "durationSec": 2,
+        "effects": {
+          "hunger": 22
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "aircon",
+      "name": "立式空调",
+      "category": "appliance",
+      "tags": [
+        "electric"
+      ],
+      "price": 520,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/aircon.svg",
+        "size": {
+          "w": 64,
+          "h": 111
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 86
+        }
+      },
+      "ui": {
+        "icon": "aircon",
+        "desc": "调节室温，舒适自在",
+        "order": 207
+      },
+      "interaction": {
+        "verb": "rest",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 4
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "robotvac",
+      "name": "扫地机器人",
+      "category": "appliance",
+      "tags": [
+        "electric"
+      ],
+      "price": 280,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 1,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/robotvac.svg",
+        "size": {
+          "w": 64,
+          "h": 63
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 38
+        }
+      },
+      "ui": {
+        "icon": "robotvac",
+        "desc": "自动清扫，解放双手",
+        "order": 208
+      },
+      "interaction": {
+        "verb": "rest",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 2
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "kettle",
+      "name": "电热水壶",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "water"
+      ],
+      "price": 120,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 1,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/kettle.svg",
+        "size": {
+          "w": 64,
+          "h": 81
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 56
+        }
+      },
+      "ui": {
+        "icon": "kettle",
+        "desc": "烧水煮茶，补充口渴",
+        "order": 209
+      },
+      "interaction": {
+        "verb": "drink",
+        "durationSec": 2,
+        "effects": {
+          "thirst": 18
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "toaster",
+      "name": "烤面包机",
+      "category": "appliance",
+      "tags": [
+        "electric",
+        "food"
+      ],
+      "price": 150,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 1,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/toaster.svg",
+        "size": {
+          "w": 64,
+          "h": 77
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 52
+        }
+      },
+      "ui": {
+        "icon": "toaster",
+        "desc": "烤出香脆面包",
+        "order": 210
+      },
+      "interaction": {
+        "verb": "snack",
+        "durationSec": 2,
+        "effects": {
+          "hunger": 14
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "desk",
+      "name": "书桌",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 240,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/desk.svg",
+        "size": {
+          "w": 128,
+          "h": 123
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 82
+        }
+      },
+      "ui": {
+        "icon": "desk",
+        "desc": "看书工作，配电脑",
+        "order": 211
+      },
+      "interaction": {
+        "verb": "read",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 5
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "chair",
+      "name": "办公椅",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 120,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/chair.svg",
+        "size": {
+          "w": 64,
+          "h": 85
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 60
+        }
+      },
+      "ui": {
+        "icon": "chair",
+        "desc": "坐下休息，配书桌",
+        "order": 212
+      },
+      "interaction": {
+        "verb": "rest",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 3
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "coffeetable",
+      "name": "茶几",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 140,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/coffeetable.svg",
+        "size": {
+          "w": 128,
+          "h": 111
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 70
+        }
+      },
+      "ui": {
+        "icon": "coffeetable",
+        "desc": "沙发区小桌",
+        "order": 213
+      },
+      "interaction": {
+        "verb": "rest",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 2
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "tvstand",
+      "name": "电视柜",
+      "category": "furniture",
+      "tags": [],
+      "price": 180,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/tvstand.svg",
+        "size": {
+          "w": 128,
+          "h": 107
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 66
+        }
+      },
+      "ui": {
+        "icon": "tvstand",
+        "desc": "摆放电视，收纳杂物",
+        "order": 214
+      },
+      "interaction": null
+    },
+    {
+      "id": "nightstand",
+      "name": "床头柜",
+      "category": "furniture",
+      "tags": [
+        "comfort"
+      ],
+      "price": 100,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/nightstand.svg",
+        "size": {
+          "w": 64,
+          "h": 81
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 56
+        }
+      },
+      "ui": {
+        "icon": "nightstand",
+        "desc": "床边小柜，随手置物",
+        "order": 215
+      },
+      "interaction": {
+        "verb": "rest",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 2
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "vanity",
+      "name": "梳妆台",
+      "category": "furniture",
+      "tags": [],
+      "price": 260,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/vanity.svg",
+        "size": {
+          "w": 128,
+          "h": 111
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 70
+        }
+      },
+      "ui": {
+        "icon": "vanity",
+        "desc": "对镜梳妆，精致一天",
+        "order": 216
+      },
+      "interaction": null
+    },
+    {
+      "id": "shower",
+      "name": "淋浴间",
+      "category": "furniture",
+      "tags": [
+        "water",
+        "comfort"
+      ],
+      "price": 360,
+      "footprint": {
+        "w": 2,
+        "h": 1
+      },
+      "cozy": 4,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/shower.svg",
+        "size": {
+          "w": 128,
+          "h": 115
+        },
+        "anchor": {
+          "ax": 64,
+          "ay": 74
+        }
+      },
+      "ui": {
+        "icon": "shower",
+        "desc": "快速淋浴，清爽提神",
+        "order": 217
+      },
+      "interaction": {
+        "verb": "shower",
+        "durationSec": 2,
+        "effects": {
+          "emotion": 7
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "washbasin",
+      "name": "洗手台",
+      "category": "furniture",
+      "tags": [
+        "water"
+      ],
+      "price": 160,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/washbasin.svg",
+        "size": {
+          "w": 64,
+          "h": 91
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 66
+        }
+      },
+      "ui": {
+        "icon": "washbasin",
+        "desc": "洗漱洗手，整理仪容",
+        "order": 218
+      },
+      "interaction": {
+        "verb": "drink",
+        "durationSec": 2,
+        "effects": {
+          "thirst": 12
+        },
+        "special": null
+      }
+    },
+    {
+      "id": "shoecab",
+      "name": "鞋柜",
+      "category": "furniture",
+      "tags": [],
+      "price": 140,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 1,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/shoecab.svg",
+        "size": {
+          "w": 64,
+          "h": 95
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 70
+        }
+      },
+      "ui": {
+        "icon": "shoecab",
+        "desc": "收纳鞋子，玄关整洁",
+        "order": 219
+      },
+      "interaction": null
+    },
+    {
+      "id": "kitcab",
+      "name": "橱柜",
+      "category": "furniture",
+      "tags": [],
+      "price": 200,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/kitcab.svg",
+        "size": {
+          "w": 64,
+          "h": 109
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 84
+        }
+      },
+      "ui": {
+        "icon": "kitcab",
+        "desc": "厨房收纳，碗碟归位",
+        "order": 220
+      },
+      "interaction": null
+    },
+    {
+      "id": "mirror",
+      "name": "落地穿衣镜",
+      "category": "decor",
+      "tags": [
+        "decor"
+      ],
+      "price": 120,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/mirror.svg",
+        "size": {
+          "w": 64,
+          "h": 93
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 68
+        }
+      },
+      "ui": {
+        "icon": "mirror",
+        "desc": "整理穿搭，点亮房间",
+        "order": 221
+      },
+      "interaction": null
+    },
+    {
+      "id": "floorlamp",
+      "name": "落地灯",
+      "category": "decor",
+      "tags": [
+        "decor"
+      ],
+      "price": 150,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 2,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/floorlamp.svg",
+        "size": {
+          "w": 64,
+          "h": 111
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 86
+        }
+      },
+      "ui": {
+        "icon": "floorlamp",
+        "desc": "柔和照明，温馨氛围",
+        "order": 222
+      },
+      "interaction": null
+    },
+    {
+      "id": "gfclock",
+      "name": "落地座钟",
+      "category": "decor",
+      "tags": [
+        "decor"
+      ],
+      "price": 220,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "cozy": 3,
+      "placement": {
+        "indoor": true,
+        "walkable": false,
+        "wallMounted": false,
+        "blocksPath": true,
+        "unique": false
+      },
+      "asset": {
+        "kind": "svg",
+        "ref": "assets/furniture/gfclock.svg",
+        "size": {
+          "w": 64,
+          "h": 111
+        },
+        "anchor": {
+          "ax": 32,
+          "ay": 86
+        }
+      },
+      "ui": {
+        "icon": "gfclock",
+        "desc": "滴答作响，典雅摆设",
+        "order": 223
+      },
+      "interaction": null
+    }
+  ]
+}

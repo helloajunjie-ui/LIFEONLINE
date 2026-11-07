@@ -1,0 +1,126 @@
+{
+  "schema": "pets/1",
+  "id": "pets.default",
+  "note": "宠物系统：在宠物之家领养，回家后在室内自由活动。宠物有饱腹/心情/清洁三项需求，随游戏时间衰减；喂食、撸、玩、洗澡可恢复。宠物粮在宠物之家按包购买。",
+  "needs": {
+    "note": "三项需求均为 0-100，越低越需要照顾；decayPerGameMinute 为每游戏分钟衰减量（对齐玩家数值按游戏分钟衰减的铁律）",
+    "hunger": { "label": "饱腹", "initial": 85, "decayPerGameMinute": 0.045 },
+    "mood":   { "label": "心情", "initial": 80, "decayPerGameMinute": 0.035 },
+    "clean":  { "label": "清洁", "initial": 90, "decayPerGameMinute": 0.022 }
+  },
+  "petfood": {
+    "name": "宠物粮",
+    "unit": "份",
+    "pack": 5,
+    "price": 30,
+    "note": "一包 5 份，喂食一次消耗 1 份",
+    "feedHunger": 38,
+    "feedMood": 4
+  },
+  "actions": {
+    "feed": { "label": "喂食", "durationSec": 2, "sfx": "ok", "desc": "喂一份宠物粮，恢复饱腹" },
+    "pet":  { "label": "撸一撸", "durationSec": 2, "sfx": "ok", "mood": 16, "playerEmotion": 6, "desc": "摸摸它，它和你都开心" },
+    "play": { "label": "玩一会", "durationSec": 3, "sfx": "ok", "mood": 30, "hunger": -6, "playerEmotion": 9, "desc": "用逗猫棒/球玩一局，更开心但会饿" },
+    "wash": { "label": "洗澡", "durationSec": 3, "sfx": "ok", "clean": 45, "mood": -6, "playerEmotion": 2, "desc": "洗干净，多数宠物不太喜欢" }
+  },
+  "moodFeedback": {
+    "note": "宠物整体状态会反过来影响玩家情绪：低需求宠物让人心疼，健康宠物让人治愈",
+    "happyThreshold": 70,
+    "happyPlayerEmotionPerPet": 1,
+    "sadThreshold": 30,
+    "sadFloat": "看起来蔫蔫的，多陪陪它吧"
+  },
+  "maxPets": 3,
+  "pets": [
+    {
+      "id": "pet.cat.orange",
+      "name": "橘猫",
+      "species": "cat",
+      "price": 600,
+      "desc": "十个橘猫九个胖，贪吃又黏人",
+      "colors": {
+        "body": "#e89a4a",
+        "belly": "#f6dcb8",
+        "stripe": "#c4762c",
+        "earInner": "#f0b48a",
+        "eye": "#5aa04a",
+        "nose": "#d96a5a"
+      }
+    },
+    {
+      "id": "pet.cat.black",
+      "name": "黑猫",
+      "species": "cat",
+      "price": 550,
+      "desc": "镇宅辟邪，夜里只剩一双眼睛",
+      "colors": {
+        "body": "#3c3c44",
+        "belly": "#5a5a64",
+        "stripe": "#26262c",
+        "earInner": "#6a5a64",
+        "eye": "#e0b84a",
+        "nose": "#8a5a6a"
+      }
+    },
+    {
+      "id": "pet.cat.ragdoll",
+      "name": "布偶猫",
+      "species": "cat",
+      "price": 1500,
+      "desc": "蓝眼睛长毛公主，脾气好得像布偶",
+      "colors": {
+        "body": "#e8ddce",
+        "belly": "#f7f1e8",
+        "stripe": "#b89a82",
+        "earInner": "#eec9c0",
+        "eye": "#5a96c9",
+        "nose": "#e08a8a"
+      }
+    },
+    {
+      "id": "pet.dog.shiba",
+      "name": "柴犬",
+      "species": "dog",
+      "price": 900,
+      "desc": "笑脸表情包，倔强又忠诚",
+      "colors": {
+        "body": "#d98a3c",
+        "belly": "#f3e2cc",
+        "stripe": "#b56a26",
+        "earInner": "#e8a86a",
+        "eye": "#3a2a20",
+        "nose": "#2b221c"
+      }
+    },
+    {
+      "id": "pet.dog.corgi",
+      "name": "柯基",
+      "species": "dog",
+      "price": 1100,
+      "desc": "小短腿大屁股，走起路来一扭一扭",
+      "colors": {
+        "body": "#e09a4a",
+        "belly": "#f5ede0",
+        "stripe": "#f2ede2",
+        "earInner": "#d98a5a",
+        "eye": "#3a2a20",
+        "nose": "#2b221c"
+      }
+    },
+    {
+      "id": "pet.dog.golden",
+      "name": "金毛",
+      "species": "dog",
+      "price": 1300,
+      "desc": "暖男大哥哥，热情又温顺",
+      "colors": {
+        "body": "#e8c06a",
+        "belly": "#f4e4bc",
+        "stripe": "#c99a44",
+        "earInner": "#d4a05a",
+        "eye": "#5a4026",
+        "nose": "#3a2a1c"
+      }
+    }
+  ]
+}

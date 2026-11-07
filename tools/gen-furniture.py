@@ -125,6 +125,125 @@ def svg(inner, w, h):
             + inner + '</svg>')
 
 
+# ---------------------------------------------------------------- 补充工具
+
+def group(inner, dx, dy):
+    """把一段绝对坐标的内容整体平移。子部件（显示器、镜子）用它定位，
+    比在每个坐标上手算偏移可靠得多。"""
+    return f'<g transform="translate({dx:.1f},{dy:.1f})">{inner}</g>'
+
+
+def leg_table(W, thick, leg_h, base, leg_inset=0.14, top_y=12, leg_w=3.6):
+    """一块桌面 + 四条腿。
+
+    锚点必须落在**腿底**而不是桌面底：等距里 ay 是"脚踩的那一点"，
+    放在桌面底的话桌子会连着腿一起插进地板（desk / coffeetable 就是这么错的）。
+    阴影同理，必须在 ay 定好之后才算。
+    """
+    b = Box(W, thick, top_y=top_y)
+    # 先把锚点推到腿底，之后 b.shadow() 才落在正确位置
+    b.ay = top_y + b.half + thick + leg_h
+    b.total_h = b.ay + 12
+    top, right, left = mul(base, 1.1), mul(base, 0.9), mul(base, 0.74)
+    leg = mul(base, 0.56)
+    parts = [b.shadow()]
+    # 四条腿先画，桌面后画盖住腿根
+    for (uu, side) in ((leg_inset, 'r'), (1 - leg_inset, 'r'),
+                       (leg_inset, 'l'), (1 - leg_inset, 'l')):
+        p0 = b.r_point(uu, b.H - 1) if side == 'r' else b.l_point(uu, b.H - 1)
+        parts.append(f'<line x1="{p0[0]:.1f}" y1="{p0[1]:.1f}" x2="{p0[0]:.1f}" y2="{p0[1] + leg_h:.1f}" '
+                     f'stroke="{leg}" stroke-width="{leg_w}" stroke-linecap="round"/>')
+    parts.append(f'<polygon points="{b.left_face()}" fill="{left}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.right_face()}" fill="{right}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.top_pts()}" fill="{top}" stroke="{EDGE}" stroke-width="1"/>')
+    p = b.top_pts().split()
+    parts.append(f'<polyline points="{p[3]} {p[0]} {p[1]}" fill="none" '
+                 f'stroke="rgba(255,246,224,.5)" stroke-width="1.4"/>')
+    return parts, b
+
+
+def vertical_panel(b, edge, height, color, stroke=EDGE, thickness=3.2):
+    """在顶面某条边上立一块竖直薄板（显示器 / 镜子 / 床头板）。
+
+    edge: 'back' 沿"左角→后角"，'right' 沿"后角→右角"。
+    板面本身就是等距侧面，所以竖起来才像"插在桌上"，而不是贴一张图。
+    """
+    cx, ty, h, W = b.cx, b.ty, b.half, b.W
+    if edge == 'back':
+        p0 = (cx - W // 2, ty + h)          # 左角
+        p1 = (cx, ty)                        # 后角
+    else:
+        p0 = (cx, ty)                        # 后角
+        p1 = (cx + W // 2, ty + h)           # 右角
+    light = mul(color, 1.12)
+    dark = mul(color, 0.88)
+    # 顶面（薄板的上沿，露出厚度）
+    tx, ty2 = (p1[0] - p0[0]) * 0.06, (p1[1] - p0[1]) * 0.06
+    out = []
+    out.append(f'<polygon points="{p0[0]:.1f},{p0[1] - height:.1f} {p1[0]:.1f},{p1[1] - height:.1f} '
+               f'{p1[0] + tx:.1f},{p1[1] - height - thickness:.1f} {p0[0] + tx:.1f},{p0[1] - height - thickness:.1f}" '
+               f'fill="{light}" stroke="{stroke}" stroke-width="0.8"/>')
+    # 板面
+    out.append(f'<polygon points="{p0[0]:.1f},{p0[1] - height:.1f} {p1[0]:.1f},{p1[1] - height:.1f} '
+               f'{p1[0]:.1f},{p1[1]:.1f} {p0[0]:.1f},{p0[1]:.1f}" '
+               f'fill="{dark}" stroke="{stroke}" stroke-width="1"/>')
+    return ''.join(out)
+
+
+def panel_rect(b, edge, height, u0, u1, d0, d1, fill, stroke='none', sw=0.8):
+    """在 vertical_panel 那块板上再画一个矩形区域（屏幕 / 镜面）。
+    u 沿板的横向 0..1，d 是从板顶往下（0 = 顶, height = 板底）。"""
+    cx, ty, h, W = b.cx, b.ty, b.half, b.W
+    if edge == 'back':
+        p0 = (cx - W // 2, ty + h); p1 = (cx, ty)
+    else:
+        p0 = (cx, ty); p1 = (cx + W // 2, ty + h)
+    def pt(u, d):
+        x = p0[0] + (p1[0] - p0[0]) * u
+        y = p0[1] + (p1[1] - p0[1]) * u - height + d
+        return x, y
+    a = pt(u0, d0); bb = pt(u1, d0); c = pt(u1, d1); dd = pt(u0, d1)
+    return (f'<polygon points="{a[0]:.1f},{a[1]:.1f} {bb[0]:.1f},{bb[1]:.1f} '
+            f'{c[0]:.1f},{c[1]:.1f} {dd[0]:.1f},{dd[1]:.1f}" '
+            f'fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>')
+
+
+def panel_on_top(b, u0, u1, v, height, color, thickness=3.6):
+    """在顶面上立一块竖直面板，底边沿 +x 方向、落在顶面**中部**（不贴任何一条边）。
+
+    为什么不用贴边的 vertical_panel：底边压在菱形边上时，板子的左端正好是
+    整个家具最左的点，投出来就是"柜子背后斜插着一块板"。
+    落在中间，面板的轮廓完全在顶面菱形之内，才读得出"站在台面上"。
+    """
+    p0 = b.t_point(u0, v)
+    p1 = b.t_point(u1, v)
+    light = mul(color, 1.15)
+    # 顶边厚度：**纯竖直**的窄带。
+    # 之前按 (p1-p0)*0.05 往右偏，左端就比面板本体多出一截，顶上切出一个尖角。
+    out = []
+    out.append(f'<polygon points="{p0[0]:.1f},{p0[1] - height:.1f} {p1[0]:.1f},{p1[1] - height:.1f} '
+               f'{p1[0]:.1f},{p1[1] - height - thickness:.1f} {p0[0]:.1f},{p0[1] - height - thickness:.1f}" '
+               f'fill="{light}" stroke="{EDGE}" stroke-width="0.9"/>')
+    # 正面
+    out.append(f'<polygon points="{p0[0]:.1f},{p0[1] - height:.1f} {p1[0]:.1f},{p1[1] - height:.1f} '
+               f'{p1[0]:.1f},{p1[1]:.1f} {p0[0]:.1f},{p0[1]:.1f}" '
+               f'fill="{color}" stroke="{EDGE}" stroke-width="1"/>')
+    return ''.join(out)
+
+
+def panel_on_top_rect(b, u0, u1, v, height, au0, au1, d0, d1, fill, stroke='none', sw=0.8):
+    """在上面那块面板上再画一个矩形（屏幕 / 镜面）。
+    au 是横向 0..1（相对 u0..u1），d 是从面板顶往下。"""
+    p0 = b.t_point(u0, v)
+    p1 = b.t_point(u1, v)
+    def pt(t, d):
+        return (p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t - height + d)
+    a = pt(au0, d0); bb = pt(au1, d0); c = pt(au1, d1); dd = pt(au0, d1)
+    return (f'<polygon points="{a[0]:.1f},{a[1]:.1f} {bb[0]:.1f},{bb[1]:.1f} '
+            f'{c[0]:.1f},{c[1]:.1f} {dd[0]:.1f},{dd[1]:.1f}" '
+            f'fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>')
+
+
 # ---------- 各件家具 ----------
 def wardrobe():
     b = Box(64, 64)
@@ -230,8 +349,10 @@ def dining():
     top, right, left = mul(base, 1.1), mul(base, 0.9), mul(base, 0.74)
     leg_h = 34
     leg = mul(base, 0.56)
+    # 锚点先推到腿底，再算阴影——顺序反了的话影子会落在桌面高度、而桌子插进地板
+    b.ay += leg_h
+    b.total_h += leg_h
     parts = [b.shadow()]
-    desk_bottom = b.ty + b.W // 2 + b.H      # 桌面底面（前角）y
     # 四条腿：从桌面内侧往下垂，先画（不遮桌面）
     for (uu, side) in ((0.14, 'r'), (0.86, 'r'), (0.14, 'l'), (0.86, 'l')):
         p0 = b.r_point(uu, b.H - 1) if side == 'r' else b.l_point(uu, b.H - 1)
@@ -255,9 +376,6 @@ def dining():
     parts.append(f'<rect x="{cx2 - 4:.1f}" y="{cy2 - 3:.1f}" width="8" height="4" fill="#7d5fa8"/>')
     p2 = b.top_pts().split()
     parts.append(f'<polyline points="{p2[3]} {p2[0]} {p2[1]}" fill="none" stroke="rgba(255,246,224,.5)" stroke-width="1.4"/>')
-    # 锚点要落在腿底而不是桌面底——否则桌子会连着桌腿一起插进地板
-    b.ay += leg_h
-    b.total_h += leg_h
     return svg(''.join(parts), b.W, b.total_h), b
 
 
@@ -451,27 +569,47 @@ def painting():
 
 
 def tv():
-    b = Box(128, 22, top_y=48)
-    wood = '#a98a5f'
+    """电视柜：柜体 + 一块立在柜顶**中部**的屏幕。
+
+    三个版本的经验：
+      ① 屏幕先画、底边穿进柜顶 → 柜顶盖掉下半截，像"柜子背后立着相框"
+      ② 沿柜顶后边按等距立起来 → 底边压在菱形边上，板子左端就是全图最左点，
+         投出来还是"背后斜插一块板"
+      ③ 轴对齐矩形 → 和等距透视打架，读成"平躺在柜面上"
+    最终：底边沿等距 +x 方向、落在顶面中部（u 0.12..0.86, v 0.30），
+    轮廓完全收在菱形里，才看得出是"站在柜面上的电视"。
+    """
+    b = Box(128, 26, top_y=52)
+    wood = '#b08a5a'
     cx, ty, h = b.cx, b.ty, b.half
-    sw, sh = 62, 34
     parts = [b.shadow()]
-    # 屏幕先画、底边扎进柜面里：后画的柜子顶面会盖住屏幕底部，
-    # 看起来就是"插在柜子上"，而不是悬浮在柜顶之上
-    sy = ty + 20
-    parts.append(f'<polygon points="{cx-sw/2},{sy} {cx+sw/2},{sy} {cx+sw/2},{sy-sh} {cx-sw/2},{sy-sh}" '
-                 f'fill="#3a3f45" stroke="rgba(25,28,32,.75)" stroke-width="1.4"/>')
-    parts.append(f'<rect x="{cx-sw/2+3}" y="{sy-sh+3}" width="{sw-6}" height="{sh-6}" fill="#6f93ad"/>')
-    parts.append(f'<rect x="{cx-sw/2+3}" y="{sy-sh+3}" width="{sw-6}" height="8" fill="rgba(200,225,240,.4)"/>')
-    parts.append(f'<rect x="{cx-9}" y="{sy-6}" width="18" height="6" fill="#2f3439"/>')
-    # 柜体
-    parts.append(f'<polygon points="{b.left_face()}" fill="{mul(wood,0.72)}" stroke="{EDGE}" stroke-width="1"/>')
-    parts.append(f'<polygon points="{b.right_face()}" fill="{mul(wood,0.9)}" stroke="{EDGE}" stroke-width="1"/>')
-    parts.append(f'<polygon points="{b.top_pts()}" fill="{mul(wood,1.02)}" stroke="{EDGE}" stroke-width="1"/>')
-    # 柜门缝
-    parts.append(f'<polygon points="{b.r_quad(0.04,0.96,5,7)}" fill="{mul(wood,0.55)}"/>')
-    p2 = b.top_pts().split()
-    parts.append(f'<polyline points="{p2[3]} {p2[0]} {p2[1]}" fill="none" stroke="rgba(255,246,224,.5)" stroke-width="1.4"/>')
+    parts.append(f'<polygon points="{b.left_face()}" fill="{mul(wood, 0.72)}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.right_face()}" fill="{mul(wood, 0.9)}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.top_pts()}" fill="{mul(wood, 1.04)}" stroke="{EDGE}" stroke-width="1"/>')
+    # 两扇柜门
+    for (u0, u1) in ((0.05, 0.47), (0.53, 0.95)):
+        parts.append(f'<polygon points="{b.r_quad(u0, u1, 5, b.H - 5)}" fill="{mul(wood, 0.95)}" '
+                     f'stroke="rgba(58,40,22,.3)" stroke-width="1"/>')
+        px, py = b.r_point((u0 + u1) / 2, b.H * 0.5)
+        parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="1.6" fill="#6b5636"/>')
+    parts.append(f'<polygon points="{b.l_quad(0.46, 0.54, 4, b.H - 4)}" fill="{mul(wood, 0.62)}" opacity=".5"/>')
+
+    # 屏幕：底边落在顶面中部
+    sh = 40
+    u0, u1, v = 0.14, 0.86, 0.30
+    # 先压一层接触阴影，把屏幕"焊"在柜面上
+    bx, by = b.t_point((u0 + u1) / 2, v)
+    parts.append(f'<ellipse cx="{bx:.1f}" cy="{by + 2:.1f}" rx="30" ry="7" fill="rgba(58,40,22,.16)"/>')
+    parts.append(panel_on_top(b, u0, u1, v, sh, '#2f353a', thickness=4))
+    # 屏面
+    parts.append(panel_on_top_rect(b, u0, u1, v, sh, 0.05, 0.95, 4, sh - 4, '#6f93ad', 'rgba(20,26,32,.6)', 1))
+    # 画面：上方天光 + 下方山影
+    parts.append(panel_on_top_rect(b, u0, u1, v, sh, 0.05, 0.95, 4, 15, 'rgba(198,226,240,.6)'))
+    parts.append(panel_on_top_rect(b, u0, u1, v, sh, 0.18, 0.60, 18, sh - 5, 'rgba(108,142,166,.45)'))
+    # 底座横条
+    parts.append(panel_on_top_rect(b, u0, u1, v, sh, 0.40, 0.60, sh - 5, sh, '#23282c'))
+    p = b.top_pts().split()
+    parts.append(f'<polyline points="{p[3]} {p[0]} {p[1]}" fill="none" stroke="rgba(255,246,224,.5)" stroke-width="1.4"/>')
     return svg(''.join(parts), b.W, b.total_h), b
 
 
@@ -495,12 +633,360 @@ def sink():
     return svg(''.join(parts), b.W, b.total_h), b
 
 
+def bathtub():
+    """浴缸：缸壁要有厚度，不然读成一个白托盘。
+    做法是顶面画成"环"——外圈是缸沿，内圈压深色当内壁，水面再内缩一点、略微下沉。"""
+    W, H = 128, 30
+    b = Box(W, H)
+    rim = '#f2f4f4'
+    cx, ty, h = b.cx, b.ty, b.half     # 早绑定：下面几处都要用，别留到函数末尾才赋值
+    parts = [b.shadow()]
+    parts.append(f'<polygon points="{b.left_face()}" fill="{mul(rim, 0.8)}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.right_face()}" fill="{mul(rim, 0.91)}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.top_pts()}" fill="{rim}" stroke="{EDGE}" stroke-width="1"/>')
+
+    def inset_pts(k, dy=0):
+        # 顶面菱形按比例 k 向中心收，dy 是整体下移（模拟"往下看"的深度）
+        cx, ty, h = b.cx, b.ty, b.half
+        pts = [(cx, ty), (cx + W // 2, ty + h), (cx, ty + h * 2), (cx - W // 2, ty + h)]
+        out = []
+        for (x, y) in pts:
+            out.append((cx + (x - cx) * k, (ty + h) + (y - (ty + h)) * k + dy))
+        return ' '.join(f'{x:.1f},{y:.1f}' for x, y in out)
+
+    # 内壁：只收 8%，缸沿别太宽（太宽就成了"托盘"）
+    parts.append(f'<polygon points="{inset_pts(0.90, 5)}" fill="#c9d4d8" stroke="rgba(90,105,110,.45)" stroke-width="1"/>')
+    # 水面用**椭圆**而不是菱形：浴缸是圆底的，菱形会读成"水槽"
+    wcx, wcy = b.cx, b.ty + h + 6
+    parts.append(f'<ellipse cx="{wcx}" cy="{wcy}" rx="48" ry="21" fill="#b3d6e4" '
+                 f'stroke="rgba(120,160,178,.45)" stroke-width="1.2"/>')
+    parts.append(f'<ellipse cx="{wcx}" cy="{wcy + 1}" rx="44" ry="18.5" fill="#9ccadd"/>')
+    # 远侧（上沿）压一点暗，读成"水面比缸沿低"
+    parts.append(f'<path d="M{wcx - 40},{wcy - 12} Q{wcx},{wcy - 24} {wcx + 40},{wcy - 12}" fill="none" '
+                 f'stroke="rgba(90,130,150,.28)" stroke-width="5"/>')
+    # 水面反光：两道短弧（直线会像"水面裂了"）
+    for (dx, dy, r) in ((-18, 2, 12), (6, 6, 9)):
+        parts.append(f'<path d="M{cx + dx - r},{ty + h + dy} Q{cx + dx},{ty + h + dy - 5} {cx + dx + r},{ty + h + dy}" '
+                     f'fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round"/>')
+    # 排水口
+    parts.append(f'<ellipse cx="{cx + 26}" cy="{ty + h + 10}" rx="4.4" ry="2.4" fill="rgba(120,140,150,.55)"/>')
+    # 缸沿高光
+    p = b.top_pts().split()
+    parts.append(f'<polyline points="{p[3]} {p[0]} {p[1]}" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.8"/>')
+    # 水龙头（靠后沿）
+    fx, fy = b.t_point(0.16, 0.16)
+    parts.append(f'<rect x="{fx - 2:.1f}" y="{fy - 15:.1f}" width="4" height="16" fill="#9aa6b0" '
+                 f'stroke="rgba(80,90,100,.55)" stroke-width="0.9"/>')
+    parts.append(f'<rect x="{fx - 2:.1f}" y="{fy - 17:.1f}" width="12" height="4" rx="1.6" fill="#b3bfc7" '
+                 f'stroke="rgba(80,90,100,.55)" stroke-width="0.9"/>')
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def toilet():
+    """马桶：后水箱 + 咬合在一起的盆沿和盖板 + 窄柱底座。
+
+    前三版的失败点：
+      ① 把 64×30 的整块立方体当底座，上面贴两张白纸 → "方块上放着卡片"
+      ② 盖板立起来 → 读成"一台老式显示器"
+      ③ 水箱 26×26 几乎和便盆一样大、两者只贴边不重叠 → "一个盒子搁在盘子上"
+    核心是**咬合**：水箱的下沿要压进盆沿里 6~8px，两者才是同一件东西。
+    """
+    W = 64
+    cx = W // 2
+    cer = '#f4f6f6'
+
+    # 纵向锚点（屏幕 y，从远到近）：水箱 20..42，便盆中心 48，落地 68
+    tank_top = 20
+    tank_h = 22
+    tank_bot = tank_top + tank_h
+    bowl_cy = 48
+    ground = 68
+    parts = []
+
+    # ① 窄柱底座：先画，柱顶藏在盆沿下面
+    parts.append(f'<path d="M{cx - 8},{ground} L{cx - 6},{bowl_cy + 5} L{cx + 6},{bowl_cy + 5} L{cx + 8},{ground}" '
+                 f'fill="{mul(cer, 0.84)}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<ellipse cx="{cx}" cy="{ground}" rx="8" ry="3.8" fill="{mul(cer, 0.77)}" stroke="{EDGE}" stroke-width="1"/>')
+
+    # ② 后水箱：24 宽，比便盆（34）窄一圈，下沿压进盆沿
+    tw = 24
+    parts.append(f'<rect x="{cx - tw // 2}" y="{tank_top}" width="{tw}" height="{tank_h}" rx="2" '
+                 f'fill="{mul(cer, 0.92)}" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<rect x="{cx - tw // 2}" y="{tank_top}" width="{tw}" height="4.2" rx="2" '
+                 f'fill="{mul(cer, 1.08)}" stroke="{EDGE}" stroke-width="0.9"/>')
+    # 左侧暗面
+    parts.append(f'<rect x="{cx - tw // 2}" y="{tank_top + 4.2}" width="5" height="{tank_h - 4.2}" '
+                 f'fill="rgba(138,156,164,.20)"/>')
+    # 冲水按钮
+    parts.append(f'<ellipse cx="{cx + 5}" cy="{tank_top + 10}" rx="3.4" ry="1.7" fill="#c4ced2" '
+                 f'stroke="rgba(120,135,140,.5)" stroke-width="0.7"/>')
+
+    # ③ 盆沿：外深内白两层，下沿压住柱顶
+    parts.append(f'<ellipse cx="{cx}" cy="{bowl_cy + 1}" rx="17" ry="8.6" fill="{mul(cer, 0.86)}" '
+                 f'stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<ellipse cx="{cx}" cy="{bowl_cy}" rx="17" ry="8.6" fill="#ffffff" '
+                 f'stroke="rgba(118,133,138,.5)" stroke-width="1"/>')
+
+    # ④ 盖板：合着，正好盖住盆口，比盆沿小 3px
+    parts.append(f'<ellipse cx="{cx}" cy="{bowl_cy - 1}" rx="14.2" ry="7" fill="{mul(cer, 1.01)}" '
+                 f'stroke="rgba(122,138,144,.6)" stroke-width="1"/>')
+    parts.append(f'<ellipse cx="{cx}" cy="{bowl_cy - 1}" rx="9.6" ry="4.4" fill="none" '
+                 f'stroke="rgba(152,170,176,.4)" stroke-width="0.9"/>')
+    # 铰链缝：贴水箱那一侧的一道浅弧
+    parts.append(f'<path d="M{cx - 11},{bowl_cy - 5} Q{cx},{bowl_cy - 9} {cx + 11},{bowl_cy - 5}" fill="none" '
+                 f'stroke="rgba(132,148,154,.5)" stroke-width="1"/>')
+
+    b = Box(W, 20, top_y=tank_top)
+    b.ay = ground - 2
+    b.total_h = ground + 10
+    parts.insert(0, b.shadow())
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def desk():
+    """书桌：桌面 + 四条腿，锚点在腿底。"""
+    parts, b = leg_table(128, 11, 34, '#c89559')
+    # 桌面上：一叠纸 + 一支笔
+    for k in range(3):
+        x, y = b.t_point(0.3 + k * 0.02, 0.5 - k * 0.03)
+        parts.append(f'<polygon points="{x - 13:.1f},{y:.1f} {x + 13:.1f},{y + 13:.1f} '
+                     f'{x + 21:.1f},{y + 9:.1f} {x - 5:.1f},{y - 4:.1f}" fill="#f8f5ec" '
+                     f'stroke="rgba(150,138,116,.55)" stroke-width="0.9"/>')
+    px, py = b.t_point(0.62, 0.62)
+    parts.append(f'<line x1="{px:.1f}" y1="{py:.1f}" x2="{px + 16:.1f}" y2="{py + 8:.1f}" '
+                 f'stroke="#3f6a8e" stroke-width="2.4" stroke-linecap="round"/>')
+    # 抽屉（右面）
+    parts.append(f'<polygon points="{b.r_quad(0.06, 0.94, 2, 8)}" fill="{mul("#c89559", 0.62)}"/>')
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def coffeetable():
+    """茶几：矮桌面 + 短腿。"""
+    parts, b = leg_table(128, 9, 16, '#be955f', leg_inset=0.1, leg_w=3.2)
+    # 下层隔板
+    y0 = b.ty + b.W // 2 + b.H + 8
+    cx = b.cx
+    parts.insert(1, f'<polygon points="{cx - 44},{y0} {cx},{y0 + 22} {cx + 44},{y0} {cx},{y0 - 22}" '
+                    f'fill="{mul("#be955f", 0.8)}" stroke="{EDGE}" stroke-width="1"/>')
+    # 上面放一本书和一只杯子
+    x, y = b.t_point(0.34, 0.5)
+    parts.append(f'<polygon points="{x - 12:.1f},{y:.1f} {x + 12:.1f},{y + 12:.1f} '
+                 f'{x + 18:.1f},{y + 8:.1f} {x - 6:.1f},{y - 4:.1f}" fill="#a8503f" '
+                 f'stroke="rgba(80,40,30,.5)" stroke-width="0.9"/>')
+    ux, uy = b.t_point(0.68, 0.56)
+    parts.append(f'<ellipse cx="{ux:.1f}" cy="{uy:.1f}" rx="6" ry="3.2" fill="#f7f2e8" stroke="rgba(140,130,110,.5)" stroke-width="0.8"/>')
+    parts.append(f'<rect x="{ux - 6:.1f}" y="{uy - 5:.1f}" width="12" height="5" fill="#8a6bb5"/>')
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def pc():
+    """电脑桌：桌腿落地 + 显示器支架踩在桌面 + 键盘是薄板。
+    原来显示器整体平移画在桌面上方，中间留了 9px 空隙，看着就是"浮着的相框"。"""
+    parts, b = leg_table(128, 11, 32, '#b98a4e', top_y=50)   # 显示器要占 66px 高
+    cx, ty, h = b.cx, b.ty, b.half
+    # 显示器：底座 + 立柱 + 屏幕，全部从桌面往上长
+    base_x, base_y = b.t_point(0.5, 0.34)
+    b.ay  # 保持引用，避免误删
+    sw, sh = 54, 34
+    # 屏幕底边要穿过底座那一点：等距下底边是斜的，若按"矩形左上角"定位，
+    # 左端会比底座高出一大截，看起来就是显示器浮在半空（上一版差 21px）。
+    bx0 = base_x - sw // 2
+    by0 = base_y - sw / 4
+    parts.append(f'<polygon points="{bx0:.1f},{by0:.1f} {bx0 + sw:.1f},{by0 + sw / 2:.1f} '
+                 f'{bx0 + sw:.1f},{by0 + sw / 2 - sh:.1f} {bx0:.1f},{by0 - sh:.1f}" '
+                 f'fill="#2f3439" stroke="rgba(20,24,28,.8)" stroke-width="1.4"/>')
+    # 屏幕内容
+    parts.append(f'<polygon points="{bx0 + 3:.1f},{by0 - 2:.1f} {bx0 + sw - 3:.1f},{by0 + sw / 2 - 2:.1f} '
+                 f'{bx0 + sw - 3:.1f},{by0 + sw / 2 - sh + 3:.1f} {bx0 + 3:.1f},{by0 - sh + 3:.1f}" '
+                 f'fill="#5b87a8"/>')
+    parts.append(f'<polygon points="{bx0 + 3:.1f},{by0 - 2:.1f} {bx0 + sw - 3:.1f},{by0 + sw / 2 - 2:.1f} '
+                 f'{bx0 + sw - 3:.1f},{by0 + sw / 2 - sh + 12:.1f} {bx0 + 3:.1f},{by0 - sh + 12:.1f}" '
+                 f'fill="rgba(190,222,240,.35)"/>')
+    # 立柱与底座
+    parts.append(f'<rect x="{base_x - 2.4:.1f}" y="{base_y - 8:.1f}" width="4.8" height="8" fill="#3a4046"/>')
+    parts.append(f'<ellipse cx="{base_x:.1f}" cy="{base_y - 1:.1f}" rx="15" ry="7" fill="#3a4046" '
+                 f'stroke="rgba(20,24,28,.7)" stroke-width="1"/>')
+    # 键盘
+    kx, ky = b.t_point(0.5, 0.66)
+    parts.append(f'<polygon points="{kx - 22:.1f},{ky:.1f} {kx + 4:.1f},{ky + 13:.1f} '
+                 f'{kx + 22:.1f},{ky + 4:.1f} {kx - 4:.1f},{ky - 9:.1f}" '
+                 f'fill="#e6e3da" stroke="rgba(120,112,96,.55)" stroke-width="1"/>')
+    for k in range(3):
+        parts.append(f'<line x1="{kx - 14 + k * 5:.1f}" y1="{ky + 2 + k * 1.5:.1f}" '
+                     f'x2="{kx - 2 + k * 5:.1f}" y2="{ky + 8 + k * 1.5:.1f}" '
+                     f'stroke="rgba(120,112,96,.5)" stroke-width="0.8"/>')
+    # 鼠标
+    mx, my = b.t_point(0.74, 0.6)
+    parts.append(f'<ellipse cx="{mx:.1f}" cy="{my:.1f}" rx="4.4" ry="2.6" fill="#d8d5cc" stroke="rgba(120,112,96,.5)" stroke-width="0.8"/>')
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def vanity():
+    """梳妆台：桌子 + 立在"左后边"上的镜子。
+    镜子必须沿顶面某条边立起来（板面是等距侧面），浮在后边缘外面的那版读成"插了张纸"。"""
+    parts, b = leg_table(128, 12, 26, '#c08b6a', leg_inset=0.12, top_y=52)  # 镜面 40 高
+    # 镜子立在 back 边（左角 → 后角）
+    mir_h = 40
+    parts.append(vertical_panel(b, 'back', mir_h, '#8a6a52', thickness=3.4))
+    # 镜面
+    parts.append(panel_rect(b, 'back', mir_h, 0.14, 0.86, 5, mir_h - 5, '#cfe0e8',
+                            'rgba(120,140,150,.5)', 1.2))
+    # 镜面反光：两条斜纹必须画在镜子那块板里，落到桌面上就成了"台面多了一道白线"
+    parts.append(panel_rect(b, 'back', mir_h, 0.28, 0.4, 10, mir_h - 8, 'rgba(255,255,255,.55)'))
+    parts.append(panel_rect(b, 'back', mir_h, 0.46, 0.54, 14, mir_h - 6, 'rgba(255,255,255,.32)'))
+    # 台面上：三只小瓶
+    for k, (u, v, col) in enumerate(((0.5, 0.55, '#c96f8a'), (0.62, 0.66, '#7fa8c4'), (0.72, 0.54, '#c9a15e'))):
+        x, y = b.t_point(u, v)
+        hh = 8 + k * 2
+        parts.append(f'<rect x="{x - 3.4:.1f}" y="{y - hh:.1f}" width="6.8" height="{hh}" rx="1.6" '
+                     f'fill="{col}" stroke="rgba(80,60,50,.35)" stroke-width="0.8"/>')
+        parts.append(f'<rect x="{x - 1.4:.1f}" y="{y - hh - 3:.1f}" width="2.8" height="3" fill="#5a4a3a"/>')
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def stereo():
+    """音响：深色箱体 + 两个喇叭 + 一根短天线。
+
+    手写版有两个问题：天线从 (50,10) 拉到 (60,0) 直接冲出画布右上角（截图里那道
+    "扇叶"就是它），阴影画在 y=66 而锚点在 52——影子沉在箱体下面 14px。
+    """
+    b = Box(64, 26)
+    cx, ty, h = b.cx, b.ty, b.half
+    parts = [b.shadow()]
+    parts.append(f'<polygon points="{b.left_face()}" fill="#2f353c" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.right_face()}" fill="#3c434b" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.top_pts()}" fill="#525b66" stroke="{EDGE}" stroke-width="1"/>')
+
+    # 左右两个喇叭：圆心落在各自的侧面上
+    lx, ly = b.l_point(0.52, b.H * 0.5)
+    parts.append(f'<ellipse cx="{lx:.1f}" cy="{ly:.1f}" rx="7" ry="6.4" fill="#1c2025" stroke="#59616b" stroke-width="1"/>')
+    parts.append(f'<ellipse cx="{lx:.1f}" cy="{ly:.1f}" rx="3.2" ry="2.9" fill="#31383f"/>')
+    rx, ry = b.r_point(0.52, b.H * 0.5)
+    parts.append(f'<ellipse cx="{rx:.1f}" cy="{ry:.1f}" rx="8" ry="7.2" fill="#1c2025" stroke="#6b7480" stroke-width="1.2"/>')
+    parts.append(f'<ellipse cx="{rx:.1f}" cy="{ry:.1f}" rx="4.2" ry="3.8" fill="#31383f"/>')
+    parts.append(f'<ellipse cx="{rx:.1f}" cy="{ry:.1f}" rx="1.8" ry="1.6" fill="#6b7480"/>')
+
+    # 电源灯：放在顶面，靠前一点，别浮在箱体外面
+    px, py = b.t_point(0.62, 0.4)
+    parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="1.8" fill="#7ce38b"/>')
+
+    # 天线：从顶面后部斜向上，长度控制在画布内
+    ax, ay = b.t_point(0.5, 0.2)
+    parts.append(f'<line x1="{ax:.1f}" y1="{ay:.1f}" x2="{ax + 9:.1f}" y2="{ay - 15:.1f}" '
+                 f'stroke="#8b939e" stroke-width="1.8" stroke-linecap="round"/>')
+    parts.append(f'<circle cx="{ax + 9:.1f}" cy="{ay - 15:.1f}" r="1.5" fill="#8b939e"/>')
+
+    p = b.top_pts().split()
+    parts.append(f'<polyline points="{p[3]} {p[0]} {p[1]}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2"/>')
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def chair():
+    """椅子：薄座面 + 四条腿 + 贴在后边上的靠背。
+
+    手写版把靠背画成一块斜板放在座面**之后**，两者没有接触，
+    整件读成"一张小桌上斜靠着一块木板"。
+    """
+    parts, b = leg_table(64, 8, 15, '#8e9aa8', leg_inset=0.1, top_y=34, leg_w=3)
+    # 靠背：沿 back 边（左角 → 后角）立起来，宽度略收
+    parts.append(vertical_panel(b, 'back', 24, '#7b8794', thickness=3))
+    # 靠背上的横档
+    cx, ty, h = b.cx, b.ty, b.half
+    parts.append(f'<polygon points="{cx - 24},{ty + h - 14} {cx},{ty - 14} {cx},{ty - 10} {cx - 24},{ty + h - 10}" '
+                 f'fill="{mul("#7b8794", 0.8)}"/>')
+    # 座面坐垫：比座面小一圈的浅色椭圆
+    parts.append(b.t_ellipse(0.5, 0.56, 20, 10, 'fill="#a8b4c0" stroke="rgba(60,80,100,.28)" stroke-width="1"'))
+    return svg(''.join(parts), b.W, b.total_h), b
+
+
+def shower():
+    """淋浴间：底盘 + 两块玻璃 + 从后边立起来的喷头管。
+
+    手写版把喷头挂在一根细线顶端，那根线没连到底盘，喷头就"飞"在盒外。
+    """
+    base = Box(128, 12, top_y=44)   # 玻璃 + 喷头要占 26+ 的上方空间
+    parts = [base.shadow()]
+    # 底盘
+    parts.append(f'<polygon points="{base.left_face()}" fill="#dfe6e9" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{base.right_face()}" fill="#eef3f5" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{base.top_pts()}" fill="#f7fafb" stroke="{EDGE}" stroke-width="1"/>')
+    cx, ty, h = base.cx, base.ty, base.half
+    # 地漏
+    parts.append(base.t_ellipse(0.5, 0.5, 7, 3.4, 'fill="#c9d3d8" stroke="rgba(120,140,150,.5)" stroke-width="1"'))
+
+    # 两块玻璃：沿 back 边与 right 边立起，高 26
+    gh = 26
+    p0 = (cx - 64, ty + h); p1 = (cx, ty); p2 = (cx + 64, ty + h)
+    parts.append(f'<polygon points="{p0[0]},{p0[1] - gh} {p1[0]},{p1[1] - gh} {p1[0]},{p1[1]} {p0[0]},{p0[1]}" '
+                 f'fill="rgba(168,210,226,.55)" stroke="rgba(112,155,175,.8)" stroke-width="1.4"/>')
+    parts.append(f'<polygon points="{p1[0]},{p1[1] - gh} {p2[0]},{p2[1] - gh} {p2[0]},{p2[1]} {p1[0]},{p1[1]}" '
+                 f'fill="rgba(168,210,226,.38)" stroke="rgba(112,155,175,.7)" stroke-width="1.4"/>')
+    # 玻璃上的反光斜纹
+    parts.append(f'<polygon points="{p0[0] + 12},{p0[1] - gh + 6} {p0[0] + 22},{p0[1] - gh + 6} '
+                 f'{p0[0] + 6},{p0[1] - 6} {p0[0] - 4},{p0[1] - 6}" fill="rgba(255,255,255,.45)"/>')
+
+    # 喷头：从后边立一根管，管头出横臂，末端是花洒
+    px, py = cx, ty - gh + 8
+    parts.append(f'<line x1="{px}" y1="{py}" x2="{px}" y2="{py + gh - 4}" stroke="#9aa8b2" stroke-width="2.6" '
+                 f'stroke-linecap="round"/>')
+    parts.append(f'<line x1="{px}" y1="{py}" x2="{px + 14}" y2="{py + 7}" stroke="#9aa8b2" stroke-width="2.4" '
+                 f'stroke-linecap="round"/>')
+    parts.append(f'<ellipse cx="{px + 15}" cy="{py + 8}" rx="7" ry="3.4" fill="#b8c6d0" '
+                 f'stroke="rgba(110,130,140,.6)" stroke-width="1"/>')
+    for k in range(3):
+        parts.append(f'<line x1="{px + 11 + k * 3}" y1="{py + 11}" x2="{px + 11 + k * 3}" y2="{py + 17}" '
+                     f'stroke="rgba(150,190,210,.75)" stroke-width="1.2" stroke-linecap="round"/>')
+    return svg(''.join(parts), base.W, base.total_h + gh), base
+
+
+def waterdisp():
+    """饮水机：机身 + 有瓶颈的桶。
+
+    手写版那个桶是个大蓝球，像一颗飘在机顶的泡泡。加上瓶颈和上窄下宽的形状，
+    才读得出是"倒插在饮水机上的水桶"。
+    """
+    b = Box(64, 36, top_y=34)
+    cx, ty, h = b.cx, b.ty, b.half
+    parts = [b.shadow()]
+    parts.append(f'<polygon points="{b.left_face()}" fill="#dfe4e8" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.right_face()}" fill="#eef2f5" stroke="{EDGE}" stroke-width="1"/>')
+    parts.append(f'<polygon points="{b.top_pts()}" fill="#f8fbfc" stroke="{EDGE}" stroke-width="1"/>')
+    # 接水槽
+    parts.append(f'<polygon points="{b.l_quad(0.34, 0.66, 10, 20)}" fill="#c4ced4" stroke="rgba(120,140,150,.5)" stroke-width="1"/>')
+    # 两个龙头
+    parts.append(f'<circle cx="{cx - 9}" cy="{ty + h + 6}" r="2.6" fill="#c8503f"/>')
+    parts.append(f'<circle cx="{cx + 8}" cy="{ty + h + 3}" r="2.6" fill="#3f78c8"/>')
+    # 水桶：倒插在机顶（瓶颈朝下）。24 宽 26 高——再宽就成了漏斗
+    jug_y = ty + h - 2
+    neck_h, body_h = 10, 26
+    parts.append(f'<rect x="{cx - 3}" y="{jug_y - neck_h}" width="6" height="{neck_h}" fill="#a8cfe0" '
+                 f'stroke="rgba(110,150,170,.6)" stroke-width="0.9"/>')
+    parts.append(f'<path d="M{cx - 3},{jug_y - neck_h} Q{cx - 12},{jug_y - neck_h - 6} {cx - 12},{jug_y - neck_h - body_h} '
+                 f'L{cx + 12},{jug_y - neck_h - body_h} Q{cx + 12},{jug_y - neck_h - 6} {cx + 3},{jug_y - neck_h} Z" '
+                 f'fill="#a8cfe0" stroke="rgba(110,150,170,.65)" stroke-width="1.1"/>')
+    top_y2 = jug_y - neck_h - body_h
+    # 桶顶是**圆顶**不是敞口：亮椭圆+深内圈会被读成"一个杯子"。
+    # 倒插的水桶，朝上那一面其实是桶底，是实心的。
+    parts.append(f'<path d="M{cx - 12},{top_y2} Q{cx - 12},{top_y2 - 8} {cx},{top_y2 - 8} '
+                 f'Q{cx + 12},{top_y2 - 8} {cx + 12},{top_y2} Z" fill="#b6dbe9" '
+                 f'stroke="rgba(110,150,170,.55)" stroke-width="1"/>')
+    # 桶身上的水面（在侧面看是一条弧形亮带）
+    parts.append(f'<path d="M{cx - 11.5},{top_y2 + 9} Q{cx},{top_y2 + 2} {cx + 11.5},{top_y2 + 9}" '
+                 f'fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2"/>')
+    parts.append(f'<path d="M{cx - 8},{top_y2 + 5} Q{cx - 10},{jug_y - neck_h - 12} {cx - 6},{jug_y - neck_h - 4}" '
+                 f'fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round"/>')
+    return svg(''.join(parts), b.W, b.total_h), b
+
 
 ITEMS = {
     'wardrobe': wardrobe, 'bookshelf': bookshelf, 'fridge': fridge,
     'stove': stove, 'dining': dining, 'shelf': shelf,
     'bed': bed, 'sofa': sofa, 'lamp': lamp, 'plant': plant,
     'painting': painting, 'tv': tv, 'sink': sink,
+    # 第二批：原来手写的 7 件，几何/锚点/阴影都没跟上统一规范
+    'bathtub': bathtub, 'toilet': toilet, 'desk': desk,
+    'coffeetable': coffeetable, 'pc': pc, 'vanity': vanity,
+    'stereo': stereo, 'chair': chair, 'shower': shower, 'waterdisp': waterdisp,
 }
 
 
