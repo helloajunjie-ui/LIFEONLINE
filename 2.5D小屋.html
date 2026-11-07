@@ -1232,7 +1232,6 @@ function firstHouseLevelOf(type){
 function applyHouseLevel(fromUpgrade){
   markDirty();
   _puddles = null; _eaveCells = null;   // 房型变了，积水与屋檐格要重算
-  _puddles = null; _eaveCells = null;   // 房型变了，积水与屋檐格要重算
   const lv = HOUSE_LEVELS[houseLevel];
   HOUSE_W = lv.w; HOUSE_H = lv.h;
   HOME_W = HOUSE_W + 8; HOME_H = HOUSE_H + 8;
@@ -7820,9 +7819,10 @@ function villaPriceOf(bid){
   return lv ? (Number(lv.price) || 0) : 0;
 }
 function villaOwned(bid){ return !!estateOf(bid, 0, 0); }
-/* MOVE_IN_HERE 拎包入住。
+/* __DECO_ROOM_FINAL__ 拎包入住。
  * 别墅是精装交付：买下来就带着整套家具家电，不用再一件件买、一件件摆。
- * 原来那套公寓里的家具不吞掉——全部收回仓库，想用随时拿出来。 */
+ * 原来那套公寓的家具不再打包——它们留在旧房原位（装修跟着房子走），
+ * 想回去住、想搬家具，搬回去就行。 */
 function furnishHouse(planIdx){
   const lv = HOUSE_LEVELS[planIdx];
   const fu = lv && lv.furnish;
@@ -7846,13 +7846,6 @@ function furnishHouse(planIdx){
   }
   return { laid: laid, skipped: skipped };
 }
-/** 把现在摆着的家具全部收回仓库，返回件数 */
-function packUpFurniture(){
-  let n = 0;
-  for (const f of placed){ invAdd(f.catalogId); n++; }
-  placed = [];
-  return n;
-}
 
 /** 买下一整栋。返回是否成功 */
 function buyVilla(bid){
@@ -7869,20 +7862,30 @@ function buyVilla(bid){
     SND.err(); return false;
   }
   debit(price, 'estate', '买下 ' + (b.label || bid) + '（独栋）');
-  ESTATES.push({ buildingId: bid, floor: 0, room: 0, mode: 'owned', paid: price });
+  /* 旧房的装修留在旧房——不打包、不塞仓库。搬进去的是一套新的精装房，
+   * 想回公寓住、想拿旧家具，随时搬回去就行（那套的家具还在原位）。 */
+  const oldAddr = ADDRESS, oldN = placed.length;
+  stashRoom();
+  ESTATES.push({ buildingId: bid, floor: 0, room: 0, mode: 'owned', paid: price, deco: null });
   RESIDENCE = { buildingId: bid, floor: 0, room: 0 };
   ADDRESS = residenceAddress();
-  /* 拎包入住：先把原来那套里的东西全部打包收回仓库，再换户型、铺精装 */
-  const packed = packUpFurniture();
-  houseLevel = plan;
+  houseLevel = plan; floorStyle = 0; wallStyle = 0; placed = [];
   applyHouseLevel(false);
   const got = furnishHouse(plan);
+  stashRoom();                       // 精装写进别墅自己的档案
+  /* 别墅比公寓大，进门位置得按新户型重算，否则原地站在墙外或墙里 */
+  PLAYER.target = null; PLAYER.path = []; PLAYER.moving = false;
+  {
+    const spot = findFreeNear(HOUSE_X + Math.floor(HOUSE_W / 2) + 1, HOUSE_Y + HOUSE_H);
+    PLAYER.fx = spot.gx; PLAYER.fy = spot.gy;
+  }
+  const nx = Math.round(PLAYER.fx), ny = Math.round(PLAYER.fy);
   dirtyPlaced = true; markDirty();
   SND.build();
-  showFloat('搬进 ' + (b.label || bid) + ' · ' + HOUSE_LEVELS[plan].name + '（精装交付）', px, py);
-  if (got.laid) showFloat('已配齐 ' + got.laid + ' 件家具家电，拎包入住', px, py - 1);
-  if (packed) showFloat('原来的 ' + packed + ' 件家具收进了仓库', px, py - 2);
-  if (got.skipped) showFloat('有 ' + got.skipped + ' 件没摆下，留在仓库', px, py - 3);
+  showFloat('搬进 ' + (b.label || bid) + ' · ' + HOUSE_LEVELS[plan].name + '（精装交付）', nx, ny);
+  if (got.laid) showFloat('已配齐 ' + got.laid + ' 件家具家电，拎包入住', nx, ny - 1);
+  if (oldN) showFloat('原来 ' + oldN + ' 件家具留在 ' + oldAddr, nx, ny - 2);
+  if (got.skipped) showFloat('有 ' + got.skipped + ' 件没摆下，留在仓库', nx, ny - 3);
   spawnParticles(PLAYER.fx, PLAYER.fy, '#f4d35e', 14);
   updateHUD(); saveGame();
   if (typeof renderBuilding === 'function') renderBuilding();
@@ -7897,6 +7900,17 @@ function estateOf(bid, floor, room){
 }
 function estateCount(){ return ESTATES.length; }
 function estateFull(){ return ESTATES.length >= ESTATE_CAP; }
+/* __DECO_ROOM_V1__ 一套房的装修：户型等级 + 地板 + 墙色 + 摆着的家具。
+ * 有了它，"我的另外几套"才真的是几套不同的家，而不是同一间房换个门牌。 */
+function normalizeDeco(raw){
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    lv: Math.max(0, Math.min(Math.floor(Number(raw.lv) || 0), HOUSE_LEVELS.length - 1)),
+    floor: Math.max(0, Math.floor(Number(raw.floor) || 0)),
+    wall: Math.max(0, Math.floor(Number(raw.wall) || 0)),
+    placed: normalizePlaced(raw.placed)
+  };
+}
 function normalizeEstate(e){
   if (!e || typeof e !== 'object') return null;
   const u = normalizeResidence({ buildingId: e.buildingId, floor: e.floor, room: e.room });
@@ -7904,7 +7918,42 @@ function normalizeEstate(e){
   // 独栋不能有楼层/房号，也不能挂"租住"以外的花样；未知模式一律当自有
   const mode = (u.floor === 0) ? 'owned' : (e.mode === 'rented' ? 'rented' : 'owned');
   const paid = Math.max(0, Math.floor(Number(e.paid) || 0));
-  return { buildingId: u.buildingId, floor: u.floor, room: u.room, mode, paid };
+  return { buildingId: u.buildingId, floor: u.floor, room: u.room, mode, paid,
+           deco: normalizeDeco(e.deco) };
+}
+/** 当前住的这套房在房产表里那一条 */
+function currentEstate(){
+  if (!RESIDENCE) return null;
+  return estateOf(RESIDENCE.buildingId, RESIDENCE.floor, RESIDENCE.room);
+}
+/** 把眼前这套房的户型/地板/墙色/家具抄一份 */
+function snapshotRoom(){
+  return {
+    lv: houseLevel, floor: floorStyle, wall: wallStyle,
+    placed: placed.map(f => ({ catalogId: f.catalogId, gx: f.gx, gy: f.gy, rot: normalizeRot(f.rot) }))
+  };
+}
+/** 换房之前必须调：把当前装修写回当前这套房的档案。
+ * 忘记调 = 旧房的家具凭空消失（这轮之前的"家具跟着人走"就是这个毛病）。 */
+function stashRoom(){
+  const e = currentEstate();
+  if (e) e.deco = snapshotRoom();
+  return e;
+}
+/** 把某套房的装修装进现场。deco 为空 = 空房：基础户型、一件家具都没有。 */
+function loadRoomOf(e){
+  const d = e && e.deco;
+  if (d && typeof d.lv === 'number'){
+    houseLevel = Math.max(0, Math.min(d.lv | 0, HOUSE_LEVELS.length - 1));
+    floorStyle = Math.max(0, d.floor | 0);
+    wallStyle = Math.max(0, d.wall | 0);
+    placed = normalizePlaced(d.placed);
+    applyHouseLevel();
+    return true;
+  }
+  houseLevel = 0; floorStyle = 0; wallStyle = 0; placed = [];
+  applyHouseLevel();
+  return false;
 }
 /** 读档后补齐：老档没有 estates，就按当前住址造一套（初始房不算买来的，paid=0） */
 function ensureEstates(){
@@ -7925,7 +7974,8 @@ function ensureEstates(){
   const cur = estateOf(RESIDENCE.buildingId, RESIDENCE.floor, RESIDENCE.room);
   if (!cur){
     if (ESTATES.length < ESTATE_CAP){
-      ESTATES.push({ buildingId: RESIDENCE.buildingId, floor: RESIDENCE.floor, room: RESIDENCE.room, mode: 'owned', paid: 0 });
+      ESTATES.push({ buildingId: RESIDENCE.buildingId, floor: RESIDENCE.floor, room: RESIDENCE.room,
+                     mode: 'owned', paid: 0, deco: null });
     } else {
       RESIDENCE = { buildingId: ESTATES[0].buildingId, floor: ESTATES[0].floor, room: ESTATES[0].room };
       ADDRESS = residenceAddress();
@@ -9320,7 +9370,10 @@ function collectSave(){
     },
     achievements: { unlocked: ACH.unlocked, visited: ACH.visited },
     residence: RESIDENCE, address: ADDRESS,
-    estates: ESTATES.map(e => ({ buildingId: e.buildingId, floor: e.floor, room: e.room, mode: e.mode, paid: e.paid })),
+    estates: ESTATES.map(e => ({
+      buildingId: e.buildingId, floor: e.floor, room: e.room, mode: e.mode, paid: e.paid,
+      deco: e.deco ? { lv: e.deco.lv, floor: e.deco.floor, wall: e.deco.wall, placed: e.deco.placed } : null
+    })),
     car: MY_CAR ? { model: MY_CAR.model, gx: MY_CAR.gx, gy: MY_CAR.gy } : null,
     rent: { lastDay: RENT_LAST_DAY },
     lottery: { bought: LOTTERY_STATS.bought, won: LOTTERY_STATS.won },
@@ -9461,10 +9514,24 @@ function migrateSave(d){
       d.stock = (d.stock && typeof d.stock === 'object') ? d.stock : { hold: [] };
       if (!Array.isArray(d.stock.orders)) d.stock.orders = [];
     }
-    if (schema === 17){
-      // v18：股市限价委托。老存档没有挂单，从零开始，不动已有持仓
-      d.stock = (d.stock && typeof d.stock === 'object') ? d.stock : { hold: [] };
-      if (!Array.isArray(d.stock.orders)) d.stock.orders = [];
+    if (schema === 18){
+      // v19：装修跟着房子走。老存档只有一份装修，记到当前住址那套名下；
+      // 其余几套按空房算——它们本来就没有独立内容，不能凭空复制一份。
+      d.estates = Array.isArray(d.estates) ? d.estates : [];
+      const cur = (d.residence && typeof d.residence === 'object') ? d.residence : null;
+      for (const e of d.estates){
+        if (!e || typeof e !== 'object' || e.deco) continue;
+        e.deco = null;
+        if (cur && String(e.buildingId) === String(cur.buildingId) &&
+            (e.floor | 0) === (cur.floor | 0) && (e.room | 0) === (cur.room | 0)){
+          e.deco = {
+            lv: typeof d.houseLevel === 'number' ? d.houseLevel : 0,
+            floor: typeof d.floorStyle === 'number' ? d.floorStyle : 0,
+            wall: typeof d.wallStyle === 'number' ? d.wallStyle : 0,
+            placed: Array.isArray(d.placed) ? d.placed : []
+          };
+        }
+      }
     }
     schema++;
   }
@@ -9525,6 +9592,12 @@ function applySave(d){
   if (!RESIDENCE) RESIDENCE = assignResidence((d.person && d.person.uid) || PERSON.uid);
   ESTATES = Array.isArray(d.estates) ? d.estates.map(normalizeEstate).filter(Boolean) : [];
   ensureEstates();                    // 老档：按当前住址补一套，并夹到上限
+  /* 当前这套房的装修以存档里的 placed 为准：deco 为空说明是老档或刚补出来的房产，
+   * 用眼前的现场补一份，否则一读档就被当成"空房"清干净了。 */
+  {
+    const e = currentEstate();
+    if (e && !e.deco) e.deco = snapshotRoom();
+  }
   MY_CAR = normalizeCar(d.car);
   IN_CAR = false;                     // 存档里不保留"正在车上"，读档一律先下车
   RENT_LAST_DAY = Math.max(0, Number(d.rent && d.rent.lastDay) || DAY);
@@ -10111,7 +10184,8 @@ function selectUnit(floor, room){
   paintUnitDetail();
 }
 
-/* 搬进选中的房源：钱够就扣、立刻改住址并存档；家具跟着人走，不搬家具 */
+/* 搬进选中的房源：钱够就扣、立刻改住址并存档。
+ * 装修不跟着人走——旧房的户型、地板、家具全留在旧房，新到手的是一间空房。 */
 function moveInto(floor, room){
   const b = myBuilding();
   if (!b || b.kind !== 'apartment') return false;
@@ -10132,18 +10206,21 @@ function moveInto(floor, room){
     return false;
   }
   debit(cost, 'estate', (st === 'sale' ? '买房 ' : '租房押金 ') + floor + ' 层 ' + room + ' 号');
+  stashRoom();                       // 旧房的装修留在旧房
   ESTATES.push({
     buildingId: b.id, floor: floor, room: room,
-    mode: st === 'sale' ? 'owned' : 'rented', paid: cost
+    mode: st === 'sale' ? 'owned' : 'rented', paid: cost,
+    deco: null                       // 新到手是空房：户型基础档，家具自己搬
   });
-  if (st === 'rent') RENT_LAST_DAY = DAY;   // 新租的房从今天起算 */
+  if (st === 'rent') RENT_LAST_DAY = DAY;   // 新租的房从今天起算
 
   RESIDENCE = { buildingId: b.id, floor: floor, room: room };
   ADDRESS = residenceAddress();
   refreshAddrLabel();
+  loadRoomOf(currentEstate());       // 空房：清空 placed、回到基础户型
   buildingSelected = null;
   SND.coin();
-  showFloat('搬进 ' + ADDRESS + '（房 ' + estateCount() + '/' + ESTATE_CAP + '）',
+  showFloat('搬进 ' + ADDRESS + '（空房 · 房 ' + estateCount() + '/' + ESTATE_CAP + '）',
     Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   updateHUD();
   saveGame();
@@ -10156,12 +10233,17 @@ function switchHome(floor, room){
   const b = myBuilding();
   if (!b || !estateOf(b.id, floor, room)) return false;
   if (isMyUnit(floor, room)) return true;
+  stashRoom();                       // 现在这套先存好，回头还能搬回来
   RESIDENCE = { buildingId: b.id, floor: floor, room: room };
   ADDRESS = residenceAddress();
   refreshAddrLabel();
+  const target = currentEstate();
+  const had = loadRoomOf(target);    // 把那套的户型/地板/家具装回来
+  const n = (had && target && target.deco) ? target.deco.placed.length : 0;
   buildingSelected = null;
   SND.door();
-  showFloat('搬回 ' + ADDRESS, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  showFloat('搬回 ' + ADDRESS + (n ? '（' + n + ' 件家具还在原位）' : '（空房）'),
+    Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   updateHUD();
   saveGame();
   renderBuilding();
@@ -10181,12 +10263,18 @@ function sellEstate(floor, room){
     return false;
   }
   const refund = estateResaleValue(e);
+  /* 那套房里摆着的家具不能跟着房子一起卖掉：全部收回仓库 */
+  let back = 0;
+  if (e.deco && Array.isArray(e.deco.placed)){
+    for (const f of e.deco.placed){ invAdd(f.catalogId); back++; }
+  }
   ESTATES = ESTATES.filter(x => estateKey(x.buildingId, x.floor, x.room) !== estateKey(b.id, floor, room));
   credit(refund, 'sell', (e.mode === 'rented' ? '退租 ' : '卖房 ') + floor + ' 层 ' + room + ' 号');
   buildingSelected = null;
   SND.coin();
   showFloat((e.mode === 'rented' ? '退租' : '卖出') + ' ¥' + refund + ' · 房 ' +
     estateCount() + '/' + ESTATE_CAP, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  if (back) showFloat('屋里 ' + back + ' 件家具收进了仓库', Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
   updateHUD();
   saveGame();
   renderBuilding();
@@ -10403,7 +10491,10 @@ function paintUnitDetail(){
       '<div class="fh"><span class="fno">' + no + '</span>' +
         '<span class="fst mine">我的房</span>' +
         '<span class="fp" style="margin:0 0 0 auto">' + floor + ' 层 · ' + (isRented ? '租住' : '自有') + '</span></div>' +
-      '<div class="fp">' + addr + ' · 当初付出 ¥' + (held.paid || 0) + '</div>' +
+      '<div class="fp">' + addr + ' · 当初付出 ¥' + (held.paid || 0) + ' · ' +
+        (held.deco && held.deco.placed.length
+          ? '<b style="color:#3f8a44">已装修 ' + held.deco.placed.length + ' 件</b>'
+          : '<span style="color:#8a7f70">空房</span>') + '</div>' +
       '<div class="fn">' + (isRented
         ? '押金不退；每 ' + RENT_CYCLE + ' 天往楼下信箱投一张房租单（约 ¥' +
           Math.round(unitMonthlyRent(floor) / 30 * RENT_CYCLE) + '），退租能腾出一套名额。'
@@ -10434,7 +10525,7 @@ function paintUnitDetail(){
     : '月租 ¥' + unitMonthlyRent(floor) + ' · 押金 ¥' + cost + '（押一付一，一次性）';
   const note = full
     ? '你已经有 ' + ESTATE_CAP + ' 套房（含自住）。想换房请先到自己的另一套里卖掉或退租。'
-    : (st === 'sale' ? '买下后这户归你，住址立即变成 ' + addr + '，家具跟着人走。'
+    : (st === 'sale' ? '买下后这户归你，住址立即变成 ' + addr + '。空房——家具不跟着走，现在这套的装修留在原地。'
                      : '租下后住址立即变成 ' + addr + '，押金一次性收取。');
 
   const mainTxt = full ? '房已满 ' + estateCount() + '/' + ESTATE_CAP

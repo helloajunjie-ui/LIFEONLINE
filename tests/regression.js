@@ -3446,30 +3446,38 @@
           P('AK2 every furnished item fits its floor plan', bad.length === 0, bad.slice(0, 5).join(' | ') || 'ok');
         }
 
-        // AK3 买下别墅 = 旧家具全部回仓库 + 精装家具全部摆好
+        // AK3 买下别墅 = 旧房的装修留在旧房 + 别墅铺满精装（不再把旧家具塞仓库）
         {
-          houseLevel = 0; placed = [                                 // 假装住在一居
+          houseLevel = 2; wallStyle = 0; floorStyle = 1;
+          placed = [
             { catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
             { catalogId: 'lamp', gx: 7, gy: 5, rot: 0 }
           ];
-          inventory = []; ESTATES = [];
+          inventory = [];
           RESIDENCE = { buildingId: 'house.公寓楼', floor: 8, room: 3 };
-          MONEY = 200000; wallStyle = 0; floorStyle = 1;
+          /* 当前住址必须在房产表里，否则旧房的装修无处可存（真实流程由 ensureEstates 保证） */
+          ESTATES = [{ buildingId: RESIDENCE.buildingId, floor: 8, room: 3,
+                       mode: 'owned', paid: 0, deco: null }];
+          const oldRes = { buildingId: RESIDENCE.buildingId, floor: 8, room: 3 };
+          MONEY = 200000;
           const bid = villaBuildings()[0].id;
           const planIdx = villaPlanOf(bid);
           const plan = HOUSE_LEVELS[planIdx];
           const okBuy = buyVilla(bid) === true;
           const laidRight = placed.length === plan.furnish.items.length;
-          const invGot = inventory.reduce((a, x) => a + (x.count || 0), 0) === 2;
+          const invEmpty = inventory.length === 0;              // 旧家具不再进仓库
           const wallRight = wallStyle === plan.furnish.wallStyle;
           const floorZone = floorStyle === 0;
           const moved = RESIDENCE.buildingId === bid;
-          P('AK3 moving in packs up the old flat and lays the new furniture',
-            okBuy && laidRight && invGot && wallRight && floorZone && moved,
+          const old = estateOf(oldRes.buildingId, oldRes.floor, oldRes.room);
+          const oldKept = !!(old && old.deco && old.deco.placed.length === 2 && old.deco.lv === 2);
+          const v = estateOf(bid, 0, 0);
+          const villaStashed = !!(v && v.deco && v.deco.placed.length === plan.furnish.items.length);
+          P('AK3 old flat keeps its furniture, villa comes furnished',
+            okBuy && laidRight && invEmpty && wallRight && floorZone && moved && oldKept && villaStashed,
             'buy=' + okBuy + ' laid=' + placed.length + '/' + plan.furnish.items.length +
-            ' inv=' + invGot + ' wall=' + wallRight + ' floor=' + floorZone + ' moved=' + moved);
+            ' inv=' + inventory.length + ' old=' + oldKept + ' stash=' + villaStashed);
         }
-
         // AK4 买不起就不能搬进去（不能把旧家具打包了却没买成）
         {
           placed = [{ catalogId: 'bed', gx: 5, gy: 5, rot: 0 }];
@@ -3489,6 +3497,111 @@
             'villaMin=' + vilMin + ' aptMax=' + aptMax);
         }
 
+        // ---------- AL：装修跟着房子走（每套各一份） ----------
+        {
+          const dc = {
+            placed: placed, inv: inventory, estates: ESTATES, res: RESIDENCE,
+            addr: ADDRESS, lvl: houseLevel, money: MONEY, wall: wallStyle, floor: floorStyle
+          };
+          const aptB = resBuilding('house.公寓楼');
+
+          // AL1 快照能原样装回来（户型 / 地板 / 墙色 / 家具朝向）
+          {
+            houseLevel = 2; floorStyle = 1; wallStyle = 1;
+            placed = [{ catalogId: 'bed', gx: 5, gy: 5, rot: 3 }];
+            const snap = snapshotRoom();
+            houseLevel = 0; floorStyle = 0; wallStyle = 0; placed = [];
+            loadRoomOf({ buildingId: 'x', floor: 1, room: 1, mode: 'owned', paid: 0, deco: snap });
+            const ok = houseLevel === 2 && floorStyle === 1 && wallStyle === 1 &&
+                       placed.length === 1 && placed[0].rot === 3 && placed[0].gx === 5;
+            P('AL1 room snapshot round-trips', ok,
+              'lvl=' + houseLevel + ' floor=' + floorStyle + ' placed=' + placed.length);
+          }
+
+          // AL2 买第二套公寓：新的是空房，旧房的装修和家具原地不动
+          {
+            let target = null;
+            for (let f = 8; f <= 10 && !target; f++){
+              for (let r = 1; r <= 4; r++){
+                if (f === 8 && r === 3) continue;
+                const st2 = unitState(aptB.id, f, r);
+                if (st2 === 'sale' || st2 === 'rent'){ target = { f, r }; break; }
+              }
+            }
+            if (!aptB || !target){ P('AL2 second flat starts empty', false, 'no target unit'); }
+            else {
+              houseLevel = 1; floorStyle = 0; wallStyle = 0;
+              placed = [{ catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
+                        { catalogId: 'tv', gx: 7, gy: 9, rot: 0 }];
+              inventory = []; MONEY = 500000;
+              RESIDENCE = { buildingId: aptB.id, floor: 8, room: 3 };
+              ESTATES = [{ buildingId: aptB.id, floor: 8, room: 3, mode: 'owned', paid: 0, deco: null }];
+              ADDRESS = residenceAddress();
+              const ok = moveInto(target.f, target.r) === true;
+              const nowEmpty = placed.length === 0 && houseLevel === 0;
+              const old = estateOf(aptB.id, 8, 3);
+              const oldKept = !!(old && old.deco && old.deco.placed.length === 2 && old.deco.lv === 1);
+              P('AL2 second flat starts empty, old flat keeps its fitout',
+                ok && nowEmpty && oldKept,
+                'moved=' + ok + ' empty=' + nowEmpty + ' old=' + oldKept);
+            }
+          }
+
+          // AL3 搬回旧房：户型、地板、家具全都在原位
+          {
+            const old = aptB ? estateOf(aptB.id, 8, 3) : null;
+            const ok = !!old && switchHome(8, 3) === true;
+            const back = ok && houseLevel === 1 && placed.length === 2 &&
+                         placed.some(f => f.catalogId === 'tv' && f.gy === 9) &&
+                         RESIDENCE.floor === 8 && RESIDENCE.room === 3;
+            P('AL3 switching back restores that flat', back,
+              'ok=' + ok + ' lvl=' + houseLevel + ' placed=' + placed.length);
+          }
+
+          // AL4 卖房：那套屋里摆着的家具收回仓库，不能跟着房子一起卖
+          {
+            inventory = [];
+            ESTATES = [
+              { buildingId: aptB.id, floor: 8, room: 3, mode: 'owned', paid: 0, deco: null },
+              { buildingId: aptB.id, floor: 8, room: 4, mode: 'owned', paid: 1000,
+                deco: { lv: 0, floor: 0, wall: 0, placed: [
+                  { catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
+                  { catalogId: 'lamp', gx: 7, gy: 5, rot: 0 } ] } }
+            ];
+            RESIDENCE = { buildingId: aptB.id, floor: 8, room: 3 };
+            ADDRESS = residenceAddress();
+            const ok = sellEstate(8, 4) === true;
+            const got = inventory.reduce((a, x) => a + (x.count || 0), 0);
+            P('AL4 selling a flat returns its furniture to storage', ok && got === 2,
+              'sold=' + ok + ' inv=' + got);
+          }
+
+          // AL5 老档迁移：当前那套继承现场装修，其余套是空房（不凭空复制）
+          {
+            const old = migrateSave({
+              schema: 18,
+              residence: { buildingId: 'house.公寓楼', floor: 8, room: 3 },
+              estates: [
+                { buildingId: 'house.公寓楼', floor: 8, room: 3, mode: 'owned', paid: 1000 },
+                { buildingId: 'house.公寓楼', floor: 9, room: 1, mode: 'owned', paid: 2000 }
+              ],
+              houseLevel: 2, floorStyle: 1, wallStyle: 1,
+              placed: [{ catalogId: 'bed', gx: 5, gy: 5, rot: 1 }]
+            });
+            const cur = old.estates[0], other = old.estates[1];
+            const ok = old.schema === CLIENT_VERSION.saveSchema &&
+                       cur.deco && cur.deco.placed.length === 1 && cur.deco.lv === 2 &&
+                       other.deco === null;
+            P('AL5 legacy save puts the fitout on the flat you live in', ok,
+              'schema=' + old.schema + ' cur=' + (cur.deco ? cur.deco.placed.length : 'null') +
+              ' other=' + (other.deco === null ? 'null' : 'set'));
+          }
+
+          placed = dc.placed; inventory = dc.inv; ESTATES = dc.estates;
+          RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
+          MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;
+          applyHouseLevel(false);
+        }
         placed = bak.placed; inventory = bak.inv; ESTATES = bak.estates;
         RESIDENCE = bak.res; ADDRESS = bak.addr; houseLevel = bak.lvl; MONEY = bak.money;
         wallStyle = bak.wall; floorStyle = bak.floor;
