@@ -474,6 +474,7 @@
   #building .bfoot .fp{font-size:12px; color:#7a5a3a; margin-bottom:2px;}
   #building .bfoot .fn{font-size:11px; color:#9a8a6a; margin-bottom:8px;}
   #building .bfoot .frow{display:flex; gap:8px; flex-wrap:wrap;}
+  #building .bfoot .frow + .frow{margin-top:8px;}
   #building .bfoot .fbtn{
     flex:1; min-width:96px; padding:8px 10px; border-radius:9px; border:1px solid rgba(122,82,48,.25);
     background:var(--accent2); color:#fff; font-weight:700; font-size:12.5px; cursor:pointer;
@@ -7799,6 +7800,11 @@ function unitMoveCost(floor, st){
  *   · 自住那套不能卖（否则会变成无家可归）；卖自有房回收 resaleRatio，退租不退押金 */
 const ESTATE_CAP = Math.max(1, Math.min(6, Number(UNIT_DEF.maxPerUser) || 3));
 const RESALE_RATIO = Math.max(0, Math.min(1, Number(UNIT_DEF.resaleRatio ?? 0.7)));
+/* 带装修卖房时，屋里那套家具按目录价折几成现金。
+ * 比在仓库里一件件卖（economy.sellRatio，默认 50%）高一些——买家图的是"拎包就有"，
+ * 省了置办和搬家的功夫，愿意为现成的家多付一点。仍然是亏的（买 100 最多回 65），
+ * 所以不会变成印钞机。 */
+const FITOUT_RATIO = Math.max(0, Math.min(1, Number(UNIT_DEF.fitoutRatio ?? 0.65)));
 /* VILLA_BUY_HERE 独栋别墅。
  * 每栋按楼号做稳定散列绑定一个别墅户型——同一栋楼在谁的机器上都是同一种布局，
  * 不会出现"我这栋是中庭、你那栋也是中庭但长得不一样"。 */
@@ -10251,8 +10257,10 @@ function switchHome(floor, room){
 }
 
 /** 卖掉/退租另一套：自住那套不能卖（否则会变成无家可归）。
- * 自有房按 resaleRatio 回收，租住房退租不退押金；腾出的格子可以再买。 */
-function sellEstate(floor, room){
+ * 自有房按 resaleRatio 回收，租住房退租不退押金；腾出的格子可以再买。
+ * withFitout=true 是"带装修卖"：屋里家具折成现金一并结算，家具归买家、
+ * 不再退回仓库——两条路不能同时拿钱又拿家具，否则就是印钞机。 */
+function sellEstate(floor, room, withFitout){
   const b = myBuilding();
   if (!b) return false;
   const e = estateOf(b.id, floor, room);
@@ -10262,19 +10270,25 @@ function sellEstate(floor, room){
     SND.err();
     return false;
   }
-  const refund = estateResaleValue(e);
-  /* 那套房里摆着的家具不能跟着房子一起卖掉：全部收回仓库 */
+  const keepFitout = !!withFitout && e.mode === 'owned';
+  const refund = estateResaleValue(e, keepFitout);
+  /* 空房出手：那套房里摆着的家具不能跟着房子一起卖掉，全部收回仓库。
+   * 带装修卖：家具留在屋里跟着房子走，折价已经算进 refund 里了。 */
   let back = 0;
-  if (e.deco && Array.isArray(e.deco.placed)){
+  if (!keepFitout && e.deco && Array.isArray(e.deco.placed)){
     for (const f of e.deco.placed){ invAdd(f.catalogId); back++; }
   }
   ESTATES = ESTATES.filter(x => estateKey(x.buildingId, x.floor, x.room) !== estateKey(b.id, floor, room));
-  credit(refund, 'sell', (e.mode === 'rented' ? '退租 ' : '卖房 ') + floor + ' 层 ' + room + ' 号');
+  credit(refund, 'sell', (e.mode === 'rented' ? '退租 ' : '卖房 ') + floor + ' 层 ' + room + ' 号' +
+    (keepFitout ? '（带装修）' : ''));
   buildingSelected = null;
   SND.coin();
-  showFloat((e.mode === 'rented' ? '退租' : '卖出') + ' ¥' + refund + ' · 房 ' +
+  showFloat((e.mode === 'rented' ? '退租' : (keepFitout ? '带装修卖出' : '卖出')) + ' ¥' + refund + ' · 房 ' +
     estateCount() + '/' + ESTATE_CAP, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   if (back) showFloat('屋里 ' + back + ' 件家具收进了仓库', Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
+  if (keepFitout && e.deco && e.deco.placed.length){
+    showFloat('屋里 ' + e.deco.placed.length + ' 件家具跟着房子一起交付了', Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
+  }
   updateHUD();
   saveGame();
   renderBuilding();
@@ -10343,7 +10357,8 @@ if (buildingEl){
       if (act === 'view') previewUnit(floor, room);
       else if (act === 'move') moveInto(floor, room);
       else if (act === 'switch') switchHome(floor, room);
-      else if (act === 'sell') sellEstate(floor, room);
+      else if (act === 'sell') sellEstate(floor, room, false);
+      else if (act === 'sellfit') sellEstate(floor, room, true);
       else if (act === 'cancel'){
         buildingSelected = null;
         paintBuilding();
@@ -10461,10 +10476,25 @@ function paintBuilding(){
   paintUnitDetail();
 }
 
-/** 卖出/退租能拿回多少：自有房按 resaleRatio 回收，租住房不退押金 */
-function estateResaleValue(e){
-  if (!e) return 0;
-  return e.mode === 'owned' ? Math.floor((e.paid || 0) * RESALE_RATIO) : 0;
+/** 那套屋里摆着的家具，按目录价折几成、能换多少钱。
+ * 注意这里**只算能搬走的家具**：地板和墙纸是账号级解锁（ownedFloors/ownedWalls），
+ * 卖房不会失去，所以不能折进房价，否则就是凭空多发一笔。 */
+function estateFitoutValue(e){
+  if (!e || !e.deco || !Array.isArray(e.deco.placed)) return 0;
+  let v = 0;
+  for (const f of e.deco.placed){
+    const def = FURN_BY_ID[f && f.catalogId];
+    v += (def && Number(def.price)) || 0;
+  }
+  return Math.floor(v * FITOUT_RATIO);
+}
+
+/** 卖出/退租能拿回多少：自有房按 resaleRatio 回收，租住房不退押金。
+ * withFitout=true 表示连装修一起卖：家具折成现金计入，家具不退回仓库。 */
+function estateResaleValue(e, withFitout){
+  if (!e || e.mode !== 'owned') return 0;
+  const base = Math.floor((e.paid || 0) * RESALE_RATIO);
+  return base + (withFitout ? estateFitoutValue(e) : 0);
 }
 
 /* 底部详情：三种情况——我的另一套房 / 待售待租 / 无选中。
@@ -10487,23 +10517,51 @@ function paintUnitDetail(){
     const isRented = held.mode === 'rented';
     const gain = held.paid ? Math.round((refund / held.paid - 1) * 100) : 0;
     const gainTxt = isRented ? '' : '（' + (gain >= 0 ? '+' : '') + gain + '%）';
+    const nFit = (held.deco && Array.isArray(held.deco.placed)) ? held.deco.placed.length : 0;
+    const fitVal = isRented ? 0 : estateFitoutValue(held);
+    const fitRefund = refund + fitVal;
+    /* 三条路分开写清楚：租的只能退租；自有且屋里有家具，空房卖 / 带装修卖各报一个价；
+     * 自有空房就一个卖出价。 */
+    const sellBtns = isRented
+      ? '<button class="fbtn ghost" data-act="sell">退租</button>'
+      : (fitVal > 0
+        ? '<button class="fbtn ghost" data-act="sell">空房卖 ¥' + refund + '</button>' +
+          '<button class="fbtn ghost" data-act="sellfit">带装修卖 ¥' + fitRefund + '</button>'
+        : '<button class="fbtn ghost" data-act="sell">卖出 ¥' + refund + '</button>');
+    const note = isRented
+      ? '押金不退；每 ' + RENT_CYCLE + ' 天往楼下信箱投一张房租单（约 ¥' +
+        Math.round(unitMonthlyRent(floor) / 30 * RENT_CYCLE) + '），退租能腾出一套名额。'
+      : (fitVal > 0
+        ? '卖出可回收 ¥' + refund + gainTxt + '（售价的 ' + Math.round(RESALE_RATIO * 100) + '%）；' +
+          '屋里 ' + nFit + ' 件家具打包按 ' + Math.round(FITOUT_RATIO * 100) + '% 折 ¥' + fitVal +
+          '（比在仓库零卖 ' + Math.round(sellRatio() * 100) + '% 划算）——带装修卖一次结清，家具归买家；' +
+          '空房卖则家具全退回仓库。自住那套不能卖，先搬走再卖。'
+        : '卖出可回收 ¥' + refund + gainTxt + '（售价的 ' + Math.round(RESALE_RATIO * 100) + '%），自住那套不能卖——先搬走再卖。');
+    /* 四条按钮时一行挤不下（面板 339px，298px 只放得下三个），拆成 2+2 两行 */
+    const actRows = (fitVal > 0 && !isRented)
+      ? '<div class="frow">' +
+          '<button class="fbtn" data-act="switch">搬来住</button>' +
+          '<button class="fbtn ghost" data-act="sell">空房卖 ¥' + refund + '</button>' +
+        '</div>' +
+        '<div class="frow">' +
+          '<button class="fbtn ghost" data-act="sellfit">带装修卖 ¥' + fitRefund + '</button>' +
+          '<button class="fbtn ghost" data-act="cancel">取消</button>' +
+        '</div>'
+      : '<div class="frow">' +
+          '<button class="fbtn" data-act="switch">搬来住</button>' +
+          sellBtns +
+          '<button class="fbtn ghost" data-act="cancel">取消</button>' +
+        '</div>';
     buildingFoot.innerHTML =
       '<div class="fh"><span class="fno">' + no + '</span>' +
         '<span class="fst mine">我的房</span>' +
         '<span class="fp" style="margin:0 0 0 auto">' + floor + ' 层 · ' + (isRented ? '租住' : '自有') + '</span></div>' +
       '<div class="fp">' + addr + ' · 当初付出 ¥' + (held.paid || 0) + ' · ' +
-        (held.deco && held.deco.placed.length
-          ? '<b style="color:#3f8a44">已装修 ' + held.deco.placed.length + ' 件</b>'
+        (nFit
+          ? '<b style="color:#3f8a44">已装修 ' + nFit + ' 件</b>'
           : '<span style="color:#8a7f70">空房</span>') + '</div>' +
-      '<div class="fn">' + (isRented
-        ? '押金不退；每 ' + RENT_CYCLE + ' 天往楼下信箱投一张房租单（约 ¥' +
-          Math.round(unitMonthlyRent(floor) / 30 * RENT_CYCLE) + '），退租能腾出一套名额。'
-        : '卖出可回收 ¥' + refund + gainTxt + '（售价的 ' + Math.round(RESALE_RATIO * 100) + '%），自住那套不能卖——先搬走再卖。') + '</div>' +
-      '<div class="frow">' +
-        '<button class="fbtn" data-act="switch">搬来住</button>' +
-        '<button class="fbtn ghost" data-act="sell">' + (isRented ? '退租' : '卖出 ¥' + refund) + '</button>' +
-        '<button class="fbtn ghost" data-act="cancel">取消</button>' +
-      '</div>';
+      '<div class="fn">' + note + '</div>' +
+      actRows;
     buildingFoot.hidden = false;
     return;
   }

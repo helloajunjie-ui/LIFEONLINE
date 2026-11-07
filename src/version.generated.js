@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.38.0",
+  "appVersion": "1.39.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 19,
   "contentVersion": 1,
-  "contentHash": "2ab93a49d4c0",
-  "builtAt": "2026-11-07T16:30:30.589Z",
+  "contentHash": "0ff2f4806761",
+  "builtAt": "2026-11-07T17:42:32.467Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
@@ -64,12 +64,12 @@ export const BUILD = {
       "hash": "0611393d2e77"
     },
     "content/house/levels.json": {
-      "version": 2,
-      "hash": "817eada84d88"
+      "version": 3,
+      "hash": "416b75486996"
     },
     "content/house/residence.json": {
-      "version": 4,
-      "hash": "a43b4e06a42f"
+      "version": 5,
+      "hash": "8a974e46249c"
     },
     "content/house/styles.json": {
       "version": 1,
@@ -88,8 +88,8 @@ export const BUILD = {
       "hash": "fa7263c09f78"
     },
     "content/maps/street.map.json": {
-      "version": 18,
-      "hash": "c287e2ed22af"
+      "version": 19,
+      "hash": "38c7e23e8da3"
     },
     "content/pets/pets.json": {
       "version": 1,
@@ -121,7 +121,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "2ab93a49d4c0"
+      "hash": "0ff2f4806761"
     },
     "src/core/clock.js": {
       "version": null,

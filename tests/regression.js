@@ -3597,6 +3597,79 @@
               ' other=' + (other.deco === null ? 'null' : 'set'));
           }
 
+          // ---------- AM：卖房时屋里家具怎么算（换钱 or 留仓库，二选一） ----------
+          // AM1 空房出手：只按售价回收，家具不折钱
+          {
+            const e = { buildingId: aptB.id, floor: 9, room: 1, mode: 'owned', paid: 1000,
+              deco: { lv: 0, floor: 0, wall: 0, placed: [
+                { catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
+                { catalogId: 'sofa', gx: 7, gy: 5, rot: 0 } ] } };
+            const got = estateResaleValue(e, false);
+            const want = Math.floor(1000 * RESALE_RATIO);
+            P('AM1 empty-handover resale is just the flat price', got === want,
+              'got=' + got + ' want=' + want);
+          }
+
+          // AM2 带装修卖：多出来的钱正好是家具目录价 x FITOUT_RATIO
+          {
+            const e = { buildingId: aptB.id, floor: 9, room: 1, mode: 'owned', paid: 1000,
+              deco: { lv: 0, floor: 0, wall: 0, placed: [
+                { catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
+                { catalogId: 'sofa', gx: 7, gy: 5, rot: 0 } ] } };
+            const raw2 = (FURN_BY_ID['bed'].price || 0) + (FURN_BY_ID['sofa'].price || 0);
+            const fit = estateFitoutValue(e);
+            const all = estateResaleValue(e, true);
+            const ok = raw2 > 0 && fit === Math.floor(raw2 * FITOUT_RATIO) &&
+                       all === estateResaleValue(e, false) + fit;
+            P('AM2 fit-in sale adds exactly the furniture residual', ok,
+              'raw=' + raw2 + ' fit=' + fit + ' all=' + all);
+          }
+
+          // AM3 地板/墙纸是账号级解锁，卖房不会失去，所以不能折进房价
+          {
+            const a = { buildingId: aptB.id, floor: 9, room: 1, mode: 'owned', paid: 1000,
+              deco: { lv: 0, floor: 0, wall: 0, placed: [{ catalogId: 'bed', gx: 5, gy: 5, rot: 0 }] } };
+            const b2 = { buildingId: aptB.id, floor: 9, room: 1, mode: 'owned', paid: 1000,
+              deco: { lv: 3, floor: 2, wall: 2, placed: [{ catalogId: 'bed', gx: 5, gy: 5, rot: 0 }] } };
+            P('AM3 floor and wall unlocks are not resold with the flat',
+              estateFitoutValue(a) === estateFitoutValue(b2) && estateResaleValue(a, true) === estateResaleValue(b2, true),
+              'a=' + estateFitoutValue(a) + ' b=' + estateFitoutValue(b2));
+          }
+
+          // AM4 带装修卖：钱多拿了，家具就不许再进仓库（不能两头都拿）
+          {
+            inventory = [];
+            MONEY = 100000;
+            ESTATES = [
+              { buildingId: aptB.id, floor: 8, room: 3, mode: 'owned', paid: 0, deco: null },
+              { buildingId: aptB.id, floor: 8, room: 4, mode: 'owned', paid: 10000,
+                deco: { lv: 0, floor: 0, wall: 0, placed: [
+                  { catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
+                  { catalogId: 'lamp', gx: 7, gy: 5, rot: 0 } ] } }
+            ];
+            RESIDENCE = { buildingId: aptB.id, floor: 8, room: 3 };
+            ADDRESS = residenceAddress();
+            const e = estateOf(aptB.id, 8, 4);
+            const want = estateResaleValue(e, true);
+            const before = MONEY;
+            const sold = sellEstate(8, 4, true) === true;
+            const gained = MONEY - before;
+            const inv = inventory.reduce((x, y) => x + (y.count || 0), 0);
+            const gone = !estateOf(aptB.id, 8, 4);
+            P('AM4 fit-in sale pays for the furniture instead of returning it',
+              sold && gained === want && inv === 0 && gone,
+              'sold=' + sold + ' gained=' + gained + ' want=' + want + ' inv=' + inv);
+          }
+
+          // AM5 租来的房：押金不退，带不带装修都一分不给
+          {
+            const e = { buildingId: aptB.id, floor: 9, room: 2, mode: 'rented', paid: 3000,
+              deco: { lv: 0, floor: 0, wall: 0, placed: [{ catalogId: 'bed', gx: 5, gy: 5, rot: 0 }] } };
+            P('AM5 rented flats never pay out for fitout',
+              estateResaleValue(e, true) === 0 && estateResaleValue(e, false) === 0,
+              'with=' + estateResaleValue(e, true) + ' without=' + estateResaleValue(e, false));
+          }
+
           placed = dc.placed; inventory = dc.inv; ESTATES = dc.estates;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

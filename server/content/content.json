@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-07T03:22:57.923Z",
+  "generatedAt": "2026-11-07T17:42:32.343Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -74,14 +74,14 @@
       "updatedAt": "2026-11-05T13:42:24.753Z"
     },
     "house/levels.json": {
-      "version": 2,
-      "hash": "817eada84d88",
-      "updatedAt": "2026-11-07T01:36:49.250Z"
+      "version": 3,
+      "hash": "416b75486996",
+      "updatedAt": "2026-11-07T17:42:32.336Z"
     },
     "house/residence.json": {
-      "version": 4,
-      "hash": "a43b4e06a42f",
-      "updatedAt": "2026-11-05T19:17:35.957Z"
+      "version": 5,
+      "hash": "8a974e46249c",
+      "updatedAt": "2026-11-07T17:42:32.337Z"
     },
     "house/styles.json": {
       "version": 1,
@@ -104,9 +104,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "maps/street.map.json": {
-      "version": 18,
-      "hash": "c287e2ed22af",
-      "updatedAt": "2026-11-07T01:36:49.254Z"
+      "version": 19,
+      "hash": "38c7e23e8da3",
+      "updatedAt": "2026-11-07T17:42:32.338Z"
     },
     "pets/pets.json": {
       "version": 1,
@@ -649,6 +649,24 @@
       "w": 27,
       "h": 18,
       "price": 32000
+    },
+    {
+      "name": "花园小墅",
+      "w": 20,
+      "h": 14,
+      "price": 38000
+    },
+    {
+      "name": "中庭别墅",
+      "w": 24,
+      "h": 16,
+      "price": 68000
+    },
+    {
+      "name": "横厅独栋",
+      "w": 26,
+      "h": 16,
+      "price": 90000
     }
   ],
   "floorStyles": [
