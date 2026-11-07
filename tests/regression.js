@@ -3272,6 +3272,56 @@
         try { renderStock(); } catch(e){}
       }
 
+      // AI 组：走势图
+      {
+        const bakDay = DAY;
+
+        // AI1 历史序列长度对、末位 = 今日收盘价
+        {
+          DAY = 40;
+          _histCache = { day: -1, data: null };
+          const h = stockHistory(20);
+          const conv = h['st.conv'];
+          const okLen = conv.length === 20;
+          const okTail = Math.abs(conv[conv.length - 1] - stockPrice('st.conv')) < 1e-9;
+          P('AI1 stockHistory ends at today close', okLen && okTail,
+            'len=' + conv.length + ' tail=' + conv[conv.length - 1] + ' price=' + stockPrice('st.conv'));
+        }
+
+        // AI2 开局前几天取不到 20 天，不能报错，也不能拿到空数组
+        {
+          DAY = 3;
+          _histCache = { day: -1, data: null };
+          const h = stockHistory(20);
+          const ok = h['st.conv'].length >= 2 && h['st.conv'].length <= 3;
+          P('AI2 history degrades gracefully on a new save', ok, 'len=' + h['st.conv'].length);
+        }
+
+        // AI3 折线点数 = 天数，且不会因为全平就除零
+        {
+          DAY = 40;
+          _histCache = { day: -1, data: null };
+          const hist = stockHistory(20)['st.conv'];
+          const svg = sparkSvg(hist, 300, 74, '#c0392b');
+          const points = (svg.match(/<polyline points="([^"]+)"/) || [])[1] || '';
+          const n = points ? points.trim().split(/\s+/).length : 0;
+          const flat = sparkSvg([10, 10, 10], 100, 40, '#2f8a52');
+          const flatOk = flat.indexOf('NaN') < 0 && flat.indexOf('Infinity') < 0 && flat.length > 40;
+          P('AI3 sparkline draws one point per day, survives a flat line',
+            n === hist.length && flatOk, 'points=' + n + ' days=' + hist.length + ' flat=' + flatOk);
+        }
+
+        // AI4 红涨绿跌（国内习惯）
+        {
+          const up = sparkColorOf([10, 11]) === '#c0392b';
+          const down = sparkColorOf([11, 10]) === '#2f8a52';
+          P('AI4 sparkline colour follows the CN convention', up && down, 'up=' + up + ' down=' + down);
+        }
+
+        DAY = bakDay;
+        _histCache = { day: -1, data: null };
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;

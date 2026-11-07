@@ -381,6 +381,12 @@
   #stock .onm{font-size:12.5px; font-weight:800; color:var(--accent2); flex:none;}
   #stock .olim{font-size:11px; color:#8a7a5c; margin-left:auto; font-variant-numeric:tabular-nums;}
   #stock .oritem .fbtn{padding:4px 8px; font-size:11px;}
+  /* ---- 走势图 ---- */
+  #stock .sparkbox{margin:8px 0 2px; padding:7px 8px 5px; border-radius:10px;
+    background:rgba(122,82,48,.06); border:1px solid rgba(122,82,48,.1);}
+  #stock .sparkhead{display:flex; align-items:baseline; gap:6px; font-size:10.5px; color:#9a8a6a; margin-bottom:2px;}
+  #stock .sparkhead b{font-size:11px; color:var(--accent2); font-weight:800;}
+  #stock .sparkhead .rng{margin-left:auto; font-variant-numeric:tabular-nums;}
   #counter .cnote{font-size:11px; color:#9a8a6a; line-height:1.7; padding:2px 2px 10px;}
   #counter .ctag{
     display:inline-block; margin-left:6px; font-size:10px; font-weight:800;
@@ -1152,7 +1158,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-07T13:15:06.113Z */
+/* 由 tools/build.mjs 生成：2026-11-07T13:18:25.389Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2639,12 +2645,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.34.0",
+  "appVersion": "1.35.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 18,
   "contentVersion": 1,
   "contentHash": "6706c004c6c3",
-  "builtAt": "2026-11-07T13:15:06.108Z",
+  "builtAt": "2026-11-07T13:18:25.383Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
@@ -13595,6 +13601,47 @@ function stockChange(id){
   return (now - prev) / prev;
 }
 
+/** SPARK_HERE 近 n 日收盘序列。
+ *  价格本来就是"股票编号 + 日期"的纯函数，想看多少天历史都能现算，
+ *  不存盘也不占存档——这正是用推导而不是抓真实行情的好处。 */
+const SPARK_DAYS = 20;
+let _histCache = { day: -1, data: null };
+function stockHistory(days){
+  const n = Math.max(2, Math.min(240, Math.round(days || SPARK_DAYS)));
+  if (_histCache.day === DAY && _histCache.data && _histCache.data.__n === n) return _histCache.data;
+  const start = Math.max(2, DAY - n + 1);
+  const out = { __n: n };
+  for (const st of STOCKS) out[st.id] = [];
+  for (let d = start; d <= DAY; d++){
+    const px = stockSeriesAt(d);
+    for (const st of STOCKS) out[st.id].push(Number(px[st.id]) || 0);
+  }
+  _histCache = { day: DAY, data: out };
+  return out;
+}
+/** 把一组价格画成摸不着坐标轴的折线（panel 里的小图，不需要轴） */
+function sparkSvg(vals, w, h, color){
+  if (!vals || vals.length < 2) return '';
+  let lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  if (!(hi > lo)){ hi = lo + Math.max(0.01, Math.abs(lo) * 0.01); }
+  const pad = 2;
+  const iw = w - pad * 2, ih = h - pad * 2;
+  const X = i => pad + iw * i / (vals.length - 1);
+  const Y = v => pad + ih - ih * (v - lo) / (hi - lo);
+  const pts = vals.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join(' ');
+  const base = (pad + ih).toFixed(1);
+  const area = 'M' + X(0).toFixed(1) + ',' + base + ' L' + pts.split(' ').join(' L') +
+               ' L' + X(vals.length - 1).toFixed(1) + ',' + base + ' Z';
+  return '<svg class="spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true">' +
+    '<path d="' + area + '" fill="' + color + '" fill-opacity=".12" stroke="none"/>' +
+    '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="1.5" ' +
+      'stroke-linejoin="round" stroke-linecap="round"/></svg>';
+}
+function sparkColorOf(vals){
+  if (!vals || vals.length < 2) return '#9a8a6a';
+  return vals[vals.length - 1] >= vals[0] ? '#c0392b' : '#2f8a52';   // 红涨绿跌
+}
+
 /* ===================== 持仓 ===================== */
 function stockHoldOf(id){ return STOCK_HOLD.find(h => h.id === id) || null; }
 function stockShares(id){ const h = stockHoldOf(id); return h ? h.shares : 0; }
@@ -14122,6 +14169,18 @@ function renderStock(){
       out.push('<div class="sd">' + (s.desc || '') + '</div>');
     }
     if (stockSel === s.id){
+      /* 近 20 日走势：没有图的时候，涨跌幅只是一个数，玩家看不出趋势 */
+      {
+        const hist = stockHistory(SPARK_DAYS)[s.id] || [];
+        if (hist.length >= 2){
+          const lo = Math.min.apply(null, hist), hi = Math.max.apply(null, hist);
+          out.push('<div class="sparkbox">' +
+            '<div class="sparkhead"><b>近 ' + hist.length + ' 日</b><span>收盘价走势</span>' +
+              '<span class="rng">高 ' + hi.toFixed(2) + ' · 低 ' + lo.toFixed(2) + '</span></div>' +
+            sparkSvg(hist, 300, 74, sparkColorOf(hist)) +
+            '</div>');
+        }
+      }
       out.push('<div class="brow" style="margin-top:6px">' +
         '<button class="fbtn" data-buy="' + s.id + '" data-n="' + STOCK_LOT + '"' + (canBuy ? '' : ' disabled') + '>' +
           (MONEY < cost1 ? '差 ¥' + (cost1 - MONEY) : (h || STOCK_HOLD.length < STOCK_MAX ? '买 1 手 ¥' + cost1 : '持仓已满')) +
