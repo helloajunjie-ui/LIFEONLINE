@@ -3167,6 +3167,111 @@
         dirtyPlaced = true; markDirty();
       }
 
+      // AH 组：股市限价委托
+      {
+        const bakO = STOCK_ORDERS.slice();
+        const bakH = STOCK_HOLD.slice();
+        const bakM = MONEY, bakSel = stockSel, bakDraft = Object.assign({}, _orderDraft);
+
+        // AH1 挂买单入列，不动现金
+        {
+          STOCK_ORDERS = []; STOCK_HOLD = []; MONEY = 5000;
+          stockSel = 'st.conv';
+          _orderDraft = { limit: '1.00', lots: 1 };
+          const ok = orderAdd('buy') === true;
+          const o = STOCK_ORDERS[0];
+          P('AH1 orderAdd queues a limit buy without touching cash',
+            ok && STOCK_ORDERS.length === 1 && o.side === 'buy' && o.limit === 1 &&
+            o.shares === STOCK_LOT && MONEY === 5000,
+            JSON.stringify(o) + ' money=' + MONEY);
+        }
+
+        // AH2 挂单上限
+        {
+          STOCK_ORDERS = [];
+          for (let k = 0; k < ORDER_MAX; k++){
+            STOCK_ORDERS.push({ uid: orderUid(), id: 'st.conv', side: 'buy', limit: 1, shares: STOCK_LOT });
+          }
+          const blocked = orderAdd('buy') === false && STOCK_ORDERS.length === ORDER_MAX;
+          P('AH2 order queue is capped', blocked, 'n=' + STOCK_ORDERS.length);
+        }
+
+        // AH3 跨天撮合：收盘价低于挂单价 → 买单成交
+        {
+          STOCK_ORDERS = [{ uid: orderUid(), id: 'st.conv', side: 'buy', limit: 9999, shares: STOCK_LOT }];
+          STOCK_HOLD = []; MONEY = 100000;
+          const px0 = stockPrice('st.conv');
+          settleStockOrders();
+          const h = stockHoldOf('st.conv');
+          const ok = STOCK_ORDERS.length === 0 && !!h && h.shares === STOCK_LOT && MONEY < 100000;
+          P('AH3 settle fills a buy order at close', ok,
+            'px=' + px0 + ' left=' + STOCK_ORDERS.length + ' shares=' + (h ? h.shares : 0) + ' money=' + MONEY);
+        }
+
+        // AH4 价格没到 → 继续挂着
+        {
+          STOCK_ORDERS = [{ uid: orderUid(), id: 'st.conv', side: 'buy', limit: 0.01, shares: STOCK_LOT }];
+          STOCK_HOLD = []; MONEY = 100000;
+          settleStockOrders();
+          P('AH4 order stays queued when price never reaches the limit',
+            STOCK_ORDERS.length === 1, 'left=' + STOCK_ORDERS.length);
+        }
+
+        // AH5 卖单挂单要求有足够持仓；不够就拒绝
+        {
+          STOCK_ORDERS = []; STOCK_HOLD = []; MONEY = 5000;
+          stockSel = 'st.conv';
+          _orderDraft = { limit: '99.00', lots: 1 };
+          const noHold = orderAdd('sell') === false && STOCK_ORDERS.length === 0;
+          STOCK_HOLD = [{ id: 'st.conv', shares: STOCK_LOT, cost: 5000 }];
+          const withHold = orderAdd('sell') === true && STOCK_ORDERS.length === 1;
+          P('AH5 sell order needs enough shares', noHold && withHold,
+            'noHold=' + noHold + ' withHold=' + withHold);
+        }
+
+        // AH6 撤单
+        {
+          STOCK_ORDERS = [{ uid: 4242, id: 'st.conv', side: 'buy', limit: 5, shares: STOCK_LOT }];
+          orderCancel(4242);
+          P('AH6 cancel removes the order', STOCK_ORDERS.length === 0);
+        }
+
+        // AH7 存档往返：委托要跟着存下去
+        {
+          STOCK_ORDERS = [{ uid: orderUid(), id: 'st.cafe', side: 'sell', limit: 33.5, shares: STOCK_LOT * 2 }];
+          STOCK_HOLD = [{ id: 'st.cafe', shares: STOCK_LOT * 2, cost: 5000 }];
+          const saved = collectSave();
+          const hasOrders = saved.stock && Array.isArray(saved.stock.orders) && saved.stock.orders.length === 1 &&
+                            saved.stock.orders[0].side === 'sell' && saved.stock.orders[0].limit === 33.5;
+          STOCK_ORDERS = []; STOCK_HOLD = [];
+          applySave(saved);
+          const back = STOCK_ORDERS.length === 1 && STOCK_ORDERS[0].id === 'st.cafe' &&
+                       STOCK_ORDERS[0].shares === STOCK_LOT * 2 && typeof STOCK_ORDERS[0].uid === 'number';
+          P('AH7 orders survive a save/load round-trip', hasOrders && back,
+            'saved=' + hasOrders + ' back=' + back);
+        }
+
+        // AH8 脏存档里的委托要过滤：未知股票、方向不对、价格不是正数
+        {
+          const dirty = migrateSave({
+            schema: CLIENT_VERSION.saveSchema,
+            stock: { hold: [], orders: [
+              { id: 'st.nope', side: 'buy', limit: 10, shares: 100 },
+              { id: 'st.conv', side: 'hold', limit: 10, shares: 100 },
+              { id: 'st.conv', side: 'buy', limit: -5, shares: 100 },
+              { id: 'st.conv', side: 'buy', limit: 10, shares: 100 }
+            ] }
+          });
+          STOCK_ORDERS = []; STOCK_HOLD = [];
+          applySave(dirty);
+          const ok = STOCK_ORDERS.length === 1 && STOCK_ORDERS[0].id === 'st.conv' && STOCK_ORDERS[0].limit === 10;
+          P('AH8 dirty orders are filtered on load', ok, 'n=' + STOCK_ORDERS.length);
+        }
+
+        STOCK_ORDERS = bakO; STOCK_HOLD = bakH; MONEY = bakM; stockSel = bakSel; _orderDraft = bakDraft;
+        try { renderStock(); } catch(e){}
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;

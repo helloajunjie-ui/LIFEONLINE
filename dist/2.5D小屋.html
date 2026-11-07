@@ -360,6 +360,27 @@
   #stock .sd{font-size:11px; color:#9a8a6a; margin-top:4px; line-height:1.6;}
   #stock .brow{display:flex; gap:6px; margin-top:6px;}
   #stock .brow .fbtn{flex:1; padding:6px 4px; font-size:11.5px;}
+  /* ---- 限价委托 ---- */
+  #stock .ordbox{margin:8px 0 6px; padding:9px 10px; border-radius:10px; background:rgba(122,82,48,.06);}
+  #stock .orow{display:flex; align-items:center; gap:7px; margin-bottom:7px;}
+  #stock .orow:last-child{margin-bottom:0;}
+  #stock .olab{font-size:11.5px; color:#8a7a5c; flex:none;}
+  #stock .oin{
+    border:1px solid rgba(122,82,48,.25); background:#fff; color:var(--ink);
+    border-radius:8px; padding:5px 7px; font-size:12.5px; font-family:inherit; min-width:0;
+  }
+  #stock #ordPx{width:84px; font-variant-numeric:tabular-nums;}
+  #stock #ordLots{width:64px;}
+  #stock .ordbox .fbtn{flex:1; padding:7px 4px; font-size:12px;}
+  #stock .ohint{font-size:10.5px; color:#b3a488; line-height:1.6; margin-top:6px;}
+  #stock .osec{font-size:11.5px; font-weight:800; color:#8a7a5c; margin:12px 2px 6px;}
+  #stock .oritem{background:#fff; border:1px solid rgba(122,82,48,.16); border-radius:10px; padding:7px 9px;}
+  #stock .otag{flex:none; font-size:10px; font-weight:800; color:#fff; border-radius:5px; padding:2px 5px;}
+  #stock .otag.buy{background:#c0642e;}
+  #stock .otag.sell{background:#4c7f56;}
+  #stock .onm{font-size:12.5px; font-weight:800; color:var(--accent2); flex:none;}
+  #stock .olim{font-size:11px; color:#8a7a5c; margin-left:auto; font-variant-numeric:tabular-nums;}
+  #stock .oritem .fbtn{padding:4px 8px; font-size:11px;}
   #counter .cnote{font-size:11px; color:#9a8a6a; line-height:1.7; padding:2px 2px 10px;}
   #counter .ctag{
     display:inline-block; margin-left:6px; font-size:10px; font-weight:800;
@@ -1131,7 +1152,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-07T05:35:14.933Z */
+/* 由 tools/build.mjs 生成：2026-11-07T13:15:06.113Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2618,12 +2639,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.33.0",
+  "appVersion": "1.34.0",
   "minAppVersion": "1.6.0",
-  "saveSchema": 17,
+  "saveSchema": 18,
   "contentVersion": 1,
   "contentHash": "6706c004c6c3",
-  "builtAt": "2026-11-07T05:35:14.928Z",
+  "builtAt": "2026-11-07T13:15:06.108Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
@@ -7462,6 +7483,7 @@ function updateSim(dt){
     _billTickDay = DAY;
     if (typeof tickBills === 'function') tickBills();
     if (typeof settleBusiness === 'function') settleBusiness();
+    if (typeof settleStockOrders === 'function') settleStockOrders();
   }
 }
 let _billTickDay = 0;
@@ -9796,11 +9818,25 @@ if (billChip) billChip.addEventListener('click', () => {
   const sl = document.getElementById('stockList');
   if (sl && !sl._bound){
     sl._bound = true;
+    /* 输入只记状态、不重绘：重绘会把输入框换掉 */
+    sl.addEventListener('input', (ev) => {
+      const t = ev.target;
+      if (!t) return;
+      if (t.id === 'ordPx') _orderDraft.limit = t.value;
+      else if (t.id === 'ordLots') _orderDraft.lots = Math.max(1, Number(t.value) || 1);
+    });
     sl.addEventListener('click', (ev) => {
+      /* 委托表单里的点击不能当成"选中这只股"，否则一点输入框就重建 DOM、光标丢了 */
+      if (ev.target.closest('.ordbox')) {
+        const ob = ev.target.closest('button[data-ord]');
+        if (ob && !ob.disabled){ orderAdd(ob.getAttribute('data-ord')); }
+        return;
+      }
       const btn = ev.target.closest('button');
       if (btn && !btn.disabled){
         if (btn.hasAttribute('data-buy')) stockBuy(btn.getAttribute('data-buy'), Number(btn.getAttribute('data-n')));
         else if (btn.hasAttribute('data-sell')) stockSell(btn.getAttribute('data-sell'), Number(btn.getAttribute('data-n')));
+        else if (btn.hasAttribute('data-cancel')) { orderCancel(Number(btn.getAttribute('data-cancel'))); return; }
         renderStock();
         return;
       }
@@ -10775,7 +10811,7 @@ function collectSave(){
       fixed: BANK.fixed, loans: BANK.loans,
       lastDay: BANK.lastDay, lateTotal: BANK.lateTotal
     },
-    stock: { hold: STOCK_HOLD },
+    stock: { hold: STOCK_HOLD, orders: STOCK_ORDERS },
     world: { total: worldNow(), rate: WORLD.rate },
     bills: {
       list: BILLS,
@@ -10894,6 +10930,16 @@ function migrateSave(d){
         if (!f || typeof f !== 'object') continue;
         f.rot = (f.rot === 1 || f.rot === 3) ? 3 : 0;
       }
+    }
+    if (schema === 17){
+      // v18：股市限价委托。老存档没有挂单，从零开始，不动已有持仓
+      d.stock = (d.stock && typeof d.stock === 'object') ? d.stock : { hold: [] };
+      if (!Array.isArray(d.stock.orders)) d.stock.orders = [];
+    }
+    if (schema === 17){
+      // v18：股市限价委托。老存档没有挂单，从零开始，不动已有持仓
+      d.stock = (d.stock && typeof d.stock === 'object') ? d.stock : { hold: [] };
+      if (!Array.isArray(d.stock.orders)) d.stock.orders = [];
     }
     schema++;
   }
@@ -11084,6 +11130,18 @@ function applySave(d){
         shares: Math.max(STOCK_LOT, Math.round(Number(h.shares) / STOCK_LOT) * STOCK_LOT),
         cost: num(h.cost, 1, 1e9)
       }));
+    /* 委托：只认目录里有的股票、合法方向、正数价与整手数量 */
+    STOCK_ORDERS = (Array.isArray(sd.orders) ? sd.orders : [])
+      .filter(o => o && stockDef(o.id) && (o.side === 'buy' || o.side === 'sell') &&
+                   Number(o.limit) > 0 && Number(o.shares) >= STOCK_LOT)
+      .slice(0, ORDER_MAX)
+      .map(o => ({
+        uid: orderUid(),
+        id: o.id,
+        side: o.side,
+        limit: Math.round(Number(o.limit) * 100) / 100,
+        shares: Math.max(STOCK_LOT, Math.round(Number(o.shares) / STOCK_LOT) * STOCK_LOT)
+      }));
     stockSel = null;
     _stockDay = 0; _stockPx = {};
   }
@@ -11147,6 +11205,18 @@ function applySave(d){
         id: h.id,
         shares: Math.max(STOCK_LOT, Math.round(Number(h.shares) / STOCK_LOT) * STOCK_LOT),
         cost: num(h.cost, 1, 1e9)
+      }));
+    /* 委托：只认目录里有的股票、合法方向、正数价与整手数量 */
+    STOCK_ORDERS = (Array.isArray(sd.orders) ? sd.orders : [])
+      .filter(o => o && stockDef(o.id) && (o.side === 'buy' || o.side === 'sell') &&
+                   Number(o.limit) > 0 && Number(o.shares) >= STOCK_LOT)
+      .slice(0, ORDER_MAX)
+      .map(o => ({
+        uid: orderUid(),
+        id: o.id,
+        side: o.side,
+        limit: Math.round(Number(o.limit) * 100) / 100,
+        shares: Math.max(STOCK_LOT, Math.round(Number(o.shares) / STOCK_LOT) * STOCK_LOT)
       }));
     stockSel = null;
     _stockDay = 0; _stockPx = {};
@@ -13455,6 +13525,15 @@ const STOCK_LOT   = Math.max(1, Math.round(Number(STOCK_DEF.lotSize) || 100));
 const STOCK_MODEL = STOCK_DEF.model || {};
 let STOCK_HOLD = [];          // [{ id, shares, cost }]；cost 是含手续费的买入总成本
 let stockSel = null;          // 面板里选中的股票 id
+/* STOCK_ORDERS_HERE 限价委托。
+ * 为什么不冻结资金：这是个休闲游戏，冻结会让"手里有钱但买不了饭"变成新的困惑。
+ * 改成成交时才扣款，不够就自动失效并告诉玩家——失败也是一种结果。 */
+const ORDER_MAX = 6;
+let STOCK_ORDERS = [];        // [{ uid, id, side:'buy'|'sell', limit, shares }]
+let _orderUid = 1;
+let _orderDraft = { limit: '', lots: 1 };
+function orderUid(){ return _orderUid++; }
+function stockNameOf(id){ const st = stockDef(id); return st ? st.name : id; }
 
 function bankTerm(id){ return BANK_FIXED.find(t => t.id === id) || null; }
 function bankTier(id){ return BANK_LOANS.find(t => t.id === id) || null; }
@@ -13584,6 +13663,71 @@ function stockSell(id, shares){
     Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   updateHUD(); saveGame();
   return net;
+}
+
+/* ===================== 限价委托 ===================== */
+/** 挂单。side 只有 buy / sell；数量按整手。 */
+function orderAdd(side){
+  const st = stockSel ? stockDef(stockSel) : null;
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  if (!st){ showFloat('先选一支股票', px, py); return false; }
+  if (STOCK_ORDERS.length >= ORDER_MAX){
+    showFloat('最多同时挂 ' + ORDER_MAX + ' 笔，先撤一笔', px, py); SND.err(); return false;
+  }
+  const limit = Math.round((Number(_orderDraft.limit) || 0) * 100) / 100;
+  if (!(limit > 0)){
+    showFloat('先填一个挂单价', px, py); SND.err(); return false;
+  }
+  const lots = Math.max(1, Math.min(99, Math.round(Number(_orderDraft.lots) || 1)));
+  const shares = lots * STOCK_LOT;
+  if (side === 'sell' && stockShares(st.id) < shares){
+    showFloat('持仓不够 ' + shares + ' 股（现有 ' + stockShares(st.id) + '）', px, py);
+    SND.err(); return false;
+  }
+  STOCK_ORDERS.push({ uid: orderUid(), id: st.id, side: side, limit: limit, shares: shares });
+  showFloat('已挂' + (side === 'buy' ? '买' : '卖') + '单 · ' + st.name +
+    ' · ' + (side === 'buy' ? '≤' : '≥') + ' ¥' + limit.toFixed(2) + ' · ' + shares + ' 股', px, py);
+  SND.ok();
+  saveGame();
+  renderStock();
+  return true;
+}
+function orderCancel(uid){
+  const before = STOCK_ORDERS.length;
+  STOCK_ORDERS = STOCK_ORDERS.filter(o => o.uid !== uid);
+  if (STOCK_ORDERS.length !== before){
+    showFloat('已撤单', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    SND.pickup();
+    saveGame();
+    renderStock();
+  }
+}
+/** 跨天撮合：收盘价达到挂单价就按收盘价成交。
+ *  买单不够钱 / 卖单不够股 → 自动失效（不挂着占名额）。 */
+function settleStockOrders(){
+  if (!STOCK_ORDERS.length) return;
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  const keep = [];
+  let filled = 0, dead = 0;
+  for (const o of STOCK_ORDERS){
+    const cur = stockPrice(o.id);
+    if (!cur){ keep.push(o); continue; }
+    if (o.side === 'buy'){
+      if (cur > o.limit + 1e-9){ keep.push(o); continue; }
+      if (stockBuy(o.id, o.shares) > 0) filled++; else dead++;
+    } else {
+      if (cur < o.limit - 1e-9){ keep.push(o); continue; }
+      if (stockSell(o.id, o.shares) > 0) filled++; else dead++;
+    }
+  }
+  STOCK_ORDERS = keep;
+  if (filled || dead){
+    showFloat('委托结算：成交 ' + filled + ' 笔' +
+      (dead ? ' · 失效 ' + dead + ' 笔' : '') +
+      (keep.length ? ' · 待成交 ' + keep.length + ' 笔' : ''), px, py);
+    if (typeof stockOpen !== 'undefined' && stockOpen) renderStock();
+    saveGame();
+  }
 }
 
 /* ===================== 银行：存取与定期 ===================== */
@@ -13987,8 +14131,40 @@ function renderStock(){
         (h ? '<button class="fbtn ghost" data-sell="' + s.id + '" data-n="' + STOCK_LOT + '">卖 1 手</button>' : '') +
         (h ? '<button class="fbtn ghost" data-sell="' + s.id + '" data-n="' + h.shares + '">全卖</button>' : '') +
         '</div>');
+      /* ORDERS_UI_HERE 限价委托表单：买卖都挂在这里 */
+      const lotsMax = Math.max(1, Math.min(9, Math.floor(MONEY / Math.max(1, lot))));
+      let lotsOpts = '';
+      for (let k = 1; k <= lotsMax; k++){
+        lotsOpts += '<option value="' + k + '"' + (k === Math.round(Number(_orderDraft.lots) || 1) ? ' selected' : '') + '>' + k + ' 手</option>';
+      }
+      const draftPx = String(_orderDraft.limit == null ? '' : _orderDraft.limit).replace(/[^0-9.]/g, '').slice(0, 10);
+      out.push('<div class="ordbox">' +
+        '<div class="orow"><span class="olab">挂单价</span>' +
+          '<input id="ordPx" class="oin" type="number" step="0.01" min="0.01" inputmode="decimal" value="' + draftPx + '" placeholder="' +
+            px.toFixed(2) + '">' +
+          '<select id="ordLots" class="oin">' + lotsOpts + '</select>' +
+          '<span class="olab" style="margin-left:auto">现价 ¥' + px.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="orow">' +
+          '<button class="fbtn" data-ord="buy">挂买单</button>' +
+          '<button class="fbtn ghost" data-ord="sell"' + (h ? '' : ' disabled') + '>挂卖单</button>' +
+        '</div>' +
+        '<div class="ohint">收盘价 ≤ 挂单价时买入、≥ 挂单价时卖出。' +
+          '每天跨天撮合一次，没成交的继续挂着。</div>' +
+        '</div>');
     }
     out.push('</div>');
+  }
+  if (STOCK_ORDERS.length){
+    out.push('<div class="osec">待成交委托 ' + STOCK_ORDERS.length + '/' + ORDER_MAX + '</div>');
+    for (const o of STOCK_ORDERS){
+      out.push('<div class="orow oritem">' +
+        '<span class="otag ' + (o.side === 'buy' ? 'buy' : 'sell') + '">' + (o.side === 'buy' ? '买入' : '卖出') + '</span>' +
+        '<span class="onm">' + stockNameOf(o.id) + '</span>' +
+        '<span class="olim">' + (o.side === 'buy' ? '≤' : '≥') + ' ¥' + o.limit.toFixed(2) + ' · ' + o.shares + ' 股</span>' +
+        '<button class="fbtn ghost" data-cancel="' + o.uid + '">撤单</button>' +
+        '</div>');
+    }
   }
   list.innerHTML = out.join('');
 }
