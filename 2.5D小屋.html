@@ -265,6 +265,8 @@
   #biz .shop.mine{border-color:rgba(110,150,90,.5); background:#f7fbf2;}
   #biz .shop.expired{border-color:rgba(200,85,61,.4); background:#fff9f7;}
   #biz .shop.taken{border-color:rgba(122,82,48,.28); background:#f7f4ee;}
+  /* 从店门口「去承包」跳进来的那张卡：闪一下，省得在一列里找 */
+  #biz .shop.focus{box-shadow:0 0 0 2px rgba(232,150,40,.85); background:#fffaf0;}
   #biz .bstate.taken{color:#8a6a3a;}
   #biz .sh{display:flex; align-items:center; gap:8px;}
   #biz .sn{font-weight:800; font-size:13.5px; color:var(--accent2);}
@@ -701,6 +703,7 @@
     <button class="chip" id="decorBtn">装修</button>
     <!-- 低频操作收进「更多」：桌面与手机同一套，点开直接排进 HUD，stats 自动下移 -->
     <span id="hudMore">
+      <button class="chip" id="moreLedgerBtn" title="收支账本：今天钱从哪来、花到哪去">账本</button>
       <button class="chip" id="expandBtn">房型</button>
       <button class="chip" id="homeBtn">回原位</button>
       <button class="chip" id="speedBtn">速度 1×</button>
@@ -1300,6 +1303,7 @@ const LEDGER_CATS = {
     clinic:  '看病',
     lottery: '彩票',
     biz:     '承包金',
+    pet:     '宠物',
     bank:    '存入银行',
     stock:   '买入股票',
     loan:    '还贷',
@@ -1424,6 +1428,7 @@ function toggleLedger(force){
   const el = document.getElementById('ledger');
   if (el) el.classList.toggle('open', next);
   if (next){
+    closeOtherPanels('ledger');
     // 一次只开一个面板：账本和生意/商店同时开着会挤在一起
     if (typeof bizOpen !== 'undefined' && bizOpen) toggleBiz(false);
     if (typeof counterOpen !== 'undefined' && counterOpen) toggleCounter(false);
@@ -5593,11 +5598,6 @@ function clamp(v){ return Math.max(0, Math.min(100, v)); }
 
 /* ---------- 工作状态机（先干完，后发钱） ---------- */
 const work = { active: false, remaining: 0 };
-function startWork(){
-  if (work.active) return;
-  work.active = true;
-  work.remaining = WORK_TIME;
-}
 /* ============================ 职业：在地图上上班 ============================
  * 岗位直接绑定地图分区（content/careers/jobs.json 的 zone 字段）：
  * 走到便利店 / 咖啡店 / 医院 / 学校 / 球场…… 附近就能打卡，做完单子到点下班。
@@ -6588,6 +6588,12 @@ function toggleHudMore(force){
 if (hudMenuBtn){
   hudMenuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleHudMore(); });
 }
+/* 账本原来只挂在金钱条上——触屏没有 hover，没人数会去点那根条子。
+ * 放进「更多」之后，手机上也有明确入口。 */
+{
+  const moreLedgerBtn = document.getElementById('moreLedgerBtn');
+  if (moreLedgerBtn) moreLedgerBtn.addEventListener('click', () => toggleLedger());
+}
 if (hudMore){
   // 点菜单里的按钮后自动收起，少点一次
   hudMore.addEventListener('click', (e)=>{
@@ -6888,6 +6894,54 @@ function fmtClock(min){
   const h = Math.floor(min/60), m = Math.floor(min%60);
   return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
 }
+
+/* ---------------------- 底部提示：按状态给"下一步" ----------------------
+ * 优先级从上到下，命中第一条就显示。全都没命中才回落到操作说明。
+ * 这里的每一条都对应一个真实会卡住的瞬间，不要随便往后面加。 */
+function tipText(){
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  // ① 有未付账单（最容易被忘掉，而且逾期扣情绪）
+  if (typeof unpaidCount === 'function' && unpaidCount() > 0){
+    const n = unpaidCount(), late = (typeof lateCount === 'function') ? lateCount() : 0;
+    return n + ' 张账单待付' + (late ? '（' + late + ' 张已逾期）' : '') + ' · 回小区点信箱付掉';
+  }
+  // ② 饿了
+  if (STATS.hunger < 32){
+    const hasFood = (foodTotal() > 0);
+    return '饿了 ·' + (hasFood ? ' 回家点灶台做饭（或餐桌吃饭）'
+      : ' 冰箱空了：去菜市场买食材，或到老张饭馆吃一顿');
+  }
+  // ③ 今天还没上班（一天只有一班，越早去越好）
+  if (typeof shiftUsedToday === 'function' && !shiftUsedToday() && typeof SHIFT !== 'undefined' && !SHIFT.active){
+    if (scene === 'street'){
+      const near = (typeof jobAtPlayer === 'function') ? jobAtPlayer() : null;
+      if (near) return '就在「' + near.name + '」门口 · 点「打卡上班」，日薪 ¥' +
+        (typeof careerDailyPay === 'function' ? careerDailyPay(near) : '');
+      return '今天还没上班 · 走到便利店 / 咖啡店门口打卡，一天一班';
+    }
+    return '今天还没上班 · 从院子出口去小区，找便利店或咖啡店打卡';
+  }
+  // ④ 背包塞满了
+  if (typeof bagRoom === 'function' && bagRoom() <= 0){
+    return '背包满了（' + BAG + '/' + bagCap() + '）· 回家进屋会自动放进冰箱';
+  }
+  // ⑤ 家里没菜也没存粮
+  if (typeof foodTotal === 'function' && foodTotal() === 0 && STATS.hunger < 70){
+    return '食材用完了 · 菜市场 10 份 ¥26、超市 6 份 ¥24、便利店 3 份 ¥15';
+  }
+  // ⑥ 兜底：操作说明
+  // 兜底保持短：窄屏这行会折成两三行，太长会顶到「目标」按钮
+  return scene === 'street'
+    ? '点店铺看工作与柜台 · 信箱在公寓楼门口 · 银行 / 证券在商业街东端'
+    : '点地面走动 · 点家具交互 · 院子出口通往小区';
+}
+function updateTip(){
+  const el = document.getElementById('tip');
+  if (!el) return;
+  const t = tipText();
+  if (el.textContent !== t) el.textContent = t;
+}
+
 function updateHUD(){
   /* 小区里显示"街区名"而不是坐标：分区表里有 label，玩家能知道自己站在哪 */
   let where;
@@ -7020,6 +7074,7 @@ function updateHUD(){
       jobChip.style.display = 'none';
     }
   }
+  if (typeof updateTip === 'function') updateTip();
 }
 /* ---------- 工作面板 ---------- */
 const workEl   = document.getElementById('work');
@@ -7033,6 +7088,7 @@ function toggleWork(force){
   workOpen = (force === undefined) ? !workOpen : force;
   workEl.classList.toggle('open', workOpen);
   if (workOpen){
+    closeOtherPanels('work');
     if (shopOpen) toggleShop(false);
     if (typeof socialOpen !== 'undefined' && socialOpen) toggleSocial(false);
     if (achOpen) toggleAch(false);
@@ -7099,6 +7155,22 @@ function renderWork(){
   if (gshop){
     const room = bagRoom();
     const canBuy = MONEY >= gshop.price && room >= gshop.pack;
+    // 站在店门口就能看到"这家能承包"，不用回 HUD 翻列表
+    {
+      const bshop = (typeof bizShopByZone === 'function') ? bizShopByZone(near.zone) : null;
+      if (bshop){
+        const mine = (typeof bizEntry === 'function') ? bizEntry(bshop.id) : null;
+        const running = mine && (typeof bizRunning === 'function') && bizRunning(mine);
+        html.push('<div class="sgroup">这家店可以承包</div>');
+        html.push('<div class="item"><div class="ib">' +
+          '<div class="in">' + (typeof bizNameOf === 'function' ? bizNameOf(bshop) : bshop.name) + '</div>' +
+          '<div class="id">' + (running
+            ? ('你在经营 · 剩 ' + bizDaysLeft(mine) + ' 天')
+            : ('月费 ¥' + bshop.fee + ' · 日收约 ¥' + bshop.daily + ' · 全自动结算')) + '</div></div>' +
+          '<button class="sbtn" data-bizopen="' + bshop.id + '">' +
+          (running ? '查看' : '去承包') + '</button></div>');
+      }
+    }
     html.push('<div class="sgroup">顺便买点 · 背包 ' + BAG + '/' + bagCap() + ' · 冰箱 ' + PANTRY + '/' + pantryMax() + '</div>');
     html.push('<div class="item"><div class="ib">' +
       '<div class="in">' + gshop.name + '食材 · ' + gshop.pack + ' ' + foodUnit() + '</div>' +
@@ -7124,6 +7196,15 @@ function renderWork(){
 
   workList.querySelectorAll('[data-grocery]').forEach(el => {
     el.addEventListener('click', () => buyGroceries(el.getAttribute('data-grocery'), 1));
+  });
+  // 「去承包」：把生意面板打开并定位到这家店，而不是让玩家回 HUD 再翻一遍
+  workList.querySelectorAll('[data-bizopen]').forEach(el => {
+    el.addEventListener('click', () => {
+      const sid = el.getAttribute('data-bizopen');
+      BIZ_FOCUS = sid;
+      toggleWork(false);
+      toggleBiz(true);
+    });
   });
 
   const inBtn = document.getElementById('workInBtn');
@@ -7207,6 +7288,7 @@ function toggleAch(force){
   achOpen = (force === undefined) ? !achOpen : force;
   if (achEl) achEl.classList.toggle('open', achOpen);
   if (achOpen){
+    closeOtherPanels('ach');
     if (shopOpen) toggleShop(false);
     if (workOpen) toggleWork(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
@@ -7586,6 +7668,50 @@ const shopList = document.getElementById('shopList');
 const shopBal = document.getElementById('shopBal');
 const shopCats = document.getElementById('shopCats');
 const shopBtn = document.getElementById('shopBtn');
+/* ============================ 面板互斥 ============================
+ * 以前每个 toggle 各写一份"要关掉谁"的清单，谁后加谁就漏——
+ * 结果银行/股市/彩票/医院/4S店/柜台/信箱/生意/账本/宠物店这 10 个
+ * 一个都没被早先的清单收进去，实测能同时叠 4 层。
+ * 现在只有这一张表 + 一处调用，以后再加面板不会漏。
+ * 用函数声明（会提升），所以在任何 toggle 里都能直接调。
+ */
+function panelCloser(id){
+  switch (id){
+    case 'shop':      return toggleShop;
+    case 'social':    return toggleSocial;
+    case 'work':      return toggleWork;
+    case 'ach':       return toggleAch;
+    case 'inventory': return closeInventory;
+    case 'building':  return toggleBuilding;
+    case 'bank':      return toggleBank;
+    case 'stock':     return toggleStock;
+    case 'lottery':   return toggleLottery;
+    case 'clinic':    return toggleClinic;
+    case 'carshop':   return toggleCarShop;
+    case 'counter':   return toggleCounter;
+    case 'mailbox':   return toggleMailbox;
+    case 'biz':       return toggleBiz;
+    case 'ledger':    return toggleLedger;
+    case 'petshop':   return togglePetShop;
+  }
+  return null;
+}
+var PANEL_IDS = ['shop', 'social', 'work', 'ach', 'inventory', 'building', 'bank', 'stock',
+                 'lottery', 'clinic', 'carshop', 'counter', 'mailbox', 'biz', 'ledger', 'petshop'];
+var panelTop = '';          // 最后打开的那一个，Esc 关它
+/** 关掉除 keep 之外所有开着的面板，并把 panelTop 记成 keep */
+function closeOtherPanels(keep){
+  for (var i = 0; i < PANEL_IDS.length; i++){
+    var id = PANEL_IDS[i];
+    if (id === keep) continue;
+    var el = document.getElementById(id);
+    if (!el || !el.classList.contains('open')) continue;
+    var fn = panelCloser(id);
+    if (fn){ try { fn(false); } catch (e){} }
+  }
+  panelTop = keep;
+}
+
 let shopOpen = false;
 let shopCat = 'all';
 
@@ -7651,6 +7777,7 @@ function toggleShop(force){
   shopOpen = (force===undefined) ? !shopOpen : force;
   shopEl.classList.toggle('open', shopOpen);
   if (shopOpen){
+    closeOtherPanels('shop');
     if (window.closeSocialPanel) window.closeSocialPanel();   // 两个侧栏别叠在一起
     if (workOpen) toggleWork(false);
     if (achOpen) toggleAch(false);
@@ -7822,6 +7949,7 @@ function sellFurniture(catalogId){
 function openInventory(){
   invOpen = true;
   invEl.classList.add('open');
+    closeOtherPanels('inventory');
   if (shopOpen) toggleShop(false);
   if (workOpen) toggleWork(false);
   if (typeof socialOpen !== 'undefined' && socialOpen) toggleSocial(false);
@@ -9099,6 +9227,7 @@ function toggleSocial(force){
   socialOpen = (force === undefined) ? !socialOpen : force;
   socialEl.classList.toggle('open', socialOpen);
   if (socialOpen){
+    closeOtherPanels('social');
     if (shopOpen) toggleShop(false);
     if (workOpen) toggleWork(false);
     if (achOpen) toggleAch(false);
@@ -9107,6 +9236,53 @@ function toggleSocial(force){
   }
 }
 window.closeSocialPanel = () => toggleSocial(false);
+
+/* ---------------------------- Esc ----------------------------
+ * 依次优先关掉：动作菜单 → 摆放/编辑模式 → 最上层面板 → 人物/捏人弹窗。
+ * 之前 Esc 完全没响应，玩家按了会以为卡住了。 */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (typeof actMenuEl !== 'undefined' && actMenuEl && actMenuEl.classList.contains('open')){
+    if (typeof closeActMenu === 'function') closeActMenu();
+    e.preventDefault();
+    return;
+  }
+  if (typeof buildMode !== 'undefined' && buildMode && buildMode !== 'normal'){
+    if (typeof cancelBuild === 'function') cancelBuild();
+    e.preventDefault();
+    return;
+  }
+  var closed = false;
+  if (panelTop){
+    var el = document.getElementById(panelTop);
+    var fn = panelCloser(panelTop);
+    if (el && el.classList.contains('open') && fn){
+      try { fn(false); } catch (err) {}
+      panelTop = '';
+      closed = true;
+    }
+  }
+  if (!closed){
+    for (var i = PANEL_IDS.length - 1; i >= 0; i--){
+      var id = PANEL_IDS[i];
+      var e2 = document.getElementById(id);
+      if (e2 && e2.classList.contains('open')){
+        var f2 = panelCloser(id);
+        if (f2){ try { f2(false); } catch (err) {} }
+        panelTop = '';
+        break;
+      }
+    }
+  }
+  if (typeof charBackdrop !== 'undefined' && charBackdrop && charBackdrop.style.display !== 'none'){
+    if (typeof closeChar === 'function') closeChar();
+  }
+  if (typeof lookBackdrop !== 'undefined' && lookBackdrop && lookBackdrop.style.display !== 'none'){
+    if (typeof closeLook === 'function') closeLook();
+  }
+  e.preventDefault();
+});
+
 /* 社区数据缓存：渲染时按钮只带 uid，点的时候从这里取完整房间对象 */
 let socialFeed = [], socialFriends = [];
 async function loadSocial(){
@@ -9230,6 +9406,7 @@ function toggleBuilding(force){
   if (!buildingEl) return;
   buildingEl.classList.toggle('open', open);
   if (open){
+    closeOtherPanels('building');
     if (shopOpen) toggleShop(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -9616,6 +9793,7 @@ function toggleCarShop(force){
   if (!carshopEl) return;
   carshopEl.classList.toggle('open', open);
   if (open){
+    closeOtherPanels('carshop');
     if (shopOpen) toggleShop(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -9785,6 +9963,7 @@ function togglePetShop(force){
   if (!petshopEl) return;
   petshopEl.classList.toggle('open', open);
   if (open){
+    closeOtherPanels('petshop');
     if (shopOpen) toggleShop(false);
     if (invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -9864,7 +10043,7 @@ function buyPetFood(){
   const pf = (PETS_DEF && PETS_DEF.petfood) || {};
   const price = pf.price || 30, pack = pf.pack || 5;
   if (MONEY < price){ showFloat('还差 ¥' + (price - MONEY), Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return false; }
-  debit(price, 'petfood', '买宠物粮');
+  debit(price, 'pet', '宠物粮 ×' + pack);
   PETFOOD += pack;
   SND.coin();
   showFloat('买到 ' + pack + ' 份宠物粮 · 共 ' + PETFOOD + ' 份', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
@@ -9910,6 +10089,7 @@ function toggleClinic(force){
   if (!clinicEl) return;
   clinicEl.classList.toggle('open', open);
   if (open){
+    closeOtherPanels('clinic');
     if (shopOpen) toggleShop(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -10082,6 +10262,7 @@ function toggleLottery(force){
   if (!lotteryEl) return;
   lotteryEl.classList.toggle('open', open);
   if (open){
+    closeOtherPanels('lottery');
     if (shopOpen) toggleShop(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -10251,6 +10432,7 @@ function toggleCounter(force, zoneId){
   if (!counterEl) return;
   counterEl.classList.toggle('open', next);
   if (next){
+    closeOtherPanels('counter');
     if (shopOpen) toggleShop(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -10594,6 +10776,7 @@ function toggleMailbox(force){
   if (!mailboxEl) return;
   mailboxEl.classList.toggle('open', next);
   if (next){
+    closeOtherPanels('mailbox');
     if (shopOpen) toggleShop(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -10761,6 +10944,7 @@ const BIZ_TERMS = (Array.isArray(BIZ_DEF.termOptions) && BIZ_DEF.termOptions.len
     }))
   : [{ months: 1, mul: 1, note: '' }];
 let BIZ_TERM_PICK = BIZ_TERMS[0].months;      // 当前选中的租期（月）
+let BIZ_FOCUS = '';                            // 从店门口「去承包」进来时要定位的店
 
 let BIZ_LIST = [];        // 我的承包 [{shopId, start, end, fee}]，start/end 是游戏日
 let BIZ_LAST_DAY = 0;     // 上次结算日（离线回来按天数补）
@@ -11005,6 +11189,7 @@ function toggleBiz(force){
   if (!bizEl) return;
   bizEl.classList.toggle('open', next);
   if (next){
+    closeOtherPanels('biz');
     if (shopOpen) toggleShop(false);
     if (typeof invOpen !== 'undefined' && invOpen) closeInventory();
     if (workOpen) toggleWork(false);
@@ -11067,7 +11252,7 @@ function bizCard(s){
       '</b>（明天到账）</div>'
     : '';
 
-  return '<div class="' + cls + '">' +
+  return '<div class="' + cls + '" data-card="' + s.id + '">' +
     '<div class="sh"><span class="sn">' + bizNameOf(s) + '</span>' +
       (s.tag ? '<span class="btag">' + s.tag + '</span>' : '') + state + '</div>' +
     '<div class="sd">' + (s.desc || '') + '</div>' +
@@ -11111,6 +11296,17 @@ function renderBiz(){
     out.push(bizCard(s));
   }
   bizListEl.innerHTML = out.join('');
+
+  // 从店门口点「去承包」进来的：把那张卡滚进视野并闪一下，省得自己找
+  if (BIZ_FOCUS){
+    const target = bizListEl.querySelector('[data-card="' + BIZ_FOCUS + '"]');
+    BIZ_FOCUS = '';
+    if (target){
+      try { target.scrollIntoView({ block: 'center' }); } catch (e){ target.scrollIntoView(); }
+      target.classList.add('focus');
+      setTimeout(() => target.classList.remove('focus'), 1400);
+    }
+  }
 }
 
 if (bizEl){
@@ -11528,6 +11724,7 @@ function toggleBank(force){
   const el = document.getElementById('bank');
   if (el) el.classList.toggle('open', next);
   if (!next) return;
+    closeOtherPanels('bank');
   _panelOff('stock', v => { stockOpen = v; });
   if (typeof shopOpen !== 'undefined' && shopOpen) toggleShop(false);
   if (typeof bizOpen !== 'undefined' && bizOpen) toggleBiz(false);
@@ -11540,6 +11737,7 @@ function toggleStock(force){
   const el = document.getElementById('stock');
   if (el) el.classList.toggle('open', next);
   if (!next) return;
+    closeOtherPanels('stock');
   _panelOff('bank', v => { bankOpen = v; });
   if (typeof shopOpen !== 'undefined' && shopOpen) toggleShop(false);
   if (typeof bizOpen !== 'undefined' && bizOpen) toggleBiz(false);

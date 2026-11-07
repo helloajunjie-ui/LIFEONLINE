@@ -1348,7 +1348,7 @@
         const opened = !!(more && more.classList.contains('open') && menuBtn.textContent === '收起');
         toggleHudMore(false);
         P('T1 hud groups secondary actions',
-          count === 4 && opened && menuBtn.textContent === '更多',
+          count === 5 && opened && menuBtn.textContent === '更多',
           'buttons=' + count + ' opened=' + opened);
 
         const bakS = { active: STICK.active, dx: STICK.dx, dy: STICK.dy };
@@ -2777,6 +2777,109 @@
 
       scene = bk.scene; MONEY = bk.money; PETFOOD = bk.food;
       MY_PETS = bk.pets; STATS.emotion = bk.emo; petUidSeq = bk.uid;
+    }
+
+/* ---------- AD 组：面板互斥 / Esc / 状态提示 / 记账分类（本轮审计新增） ---------- */
+    {
+      const bk = {
+        scene: scene, money: MONEY, hunger: STATS.hunger,
+        bills: (typeof BILLS !== 'undefined') ? BILLS.slice() : null,
+        bag: BAG, pantry: PANTRY, shift: LAST_SHIFT_DAY
+      };
+
+      // AD1 面板互斥：依次打开四个"后加"的面板，任何时刻只应有一个开着
+      {
+        const seq = [
+          ['bank', () => toggleBank(true)],
+          ['stock', () => toggleStock(true)],
+          ['lottery', () => toggleLottery(true)],
+          ['carshop', () => toggleCarShop(true)],
+          ['clinic', () => toggleClinic(true)],
+          ['mailbox', () => toggleMailbox(true)],
+          ['biz', () => toggleBiz(true)],
+          ['ledger', () => toggleLedger(true)],
+          ['petshop', () => togglePetShop(true)],
+          ['counter', () => toggleCounter(true, 'shop_restaurant')],
+        ];
+        let worst = 0, worstAt = '';
+        for (const [id, fn] of seq){
+          fn();
+          const n = ['bank','stock','lottery','carshop','clinic','mailbox','biz','ledger','petshop','counter']
+            .filter(x => document.getElementById(x) && document.getElementById(x).classList.contains('open')).length;
+          if (n > worst){ worst = n; worstAt = id; }
+        }
+        P('AD1 only one panel open at a time', worst === 1, 'worst=' + worst + ' at ' + worstAt);
+      }
+
+      // AD2 Esc 关掉最上层面板
+      {
+        toggleBiz(true);
+        const before = document.getElementById('biz').classList.contains('open');
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const after = document.getElementById('biz').classList.contains('open');
+        P('AD2 Escape closes the top panel', before === true && after === false,
+          'before=' + before + ' after=' + after);
+        // 收尾：确保全关
+        ['bank','stock','lottery','carshop','clinic','mailbox','biz','ledger','petshop','counter']
+          .forEach(x => { const el = document.getElementById(x); if (el) el.classList.remove('open'); });
+      }
+
+      // AD3 底部提示按状态切换（原来是一句固定说明）
+      {
+        scene = 'home';
+        STATS.hunger = 90; PANTRY = 20; BAG = 0;
+        if (typeof BILLS !== 'undefined') BILLS.length = 0;
+        LAST_SHIFT_DAY = DAY;
+        const t1 = (updateTip(), document.getElementById('tip').textContent);
+        LAST_SHIFT_DAY = 0;
+        const t2 = (updateTip(), document.getElementById('tip').textContent);
+        STATS.hunger = 20;
+        const t3 = (updateTip(), document.getElementById('tip').textContent);
+        PANTRY = 0;
+        const t4 = (updateTip(), document.getElementById('tip').textContent);
+        // 背包那条的优先级在"没上班"之后，所以要先把当天名额用掉，否则测不到
+        STATS.hunger = 90; PANTRY = 20; LAST_SHIFT_DAY = DAY; BAG = bagCap();
+        const t5 = (updateTip(), document.getElementById('tip').textContent);
+        BAG = 0;
+
+        const ok = /走|WASD/.test(t1) && /没上班/.test(t2) && /饿了/.test(t3) &&
+                   /饿了/.test(t4) && /冰箱/.test(t4) && /背包满/.test(t5);
+        P('AD3 bottom tip follows the state', ok,
+          JSON.stringify({ t1: t1.slice(0, 10), t2: t2.slice(0, 10), t3: t3.slice(0, 8), t5: t5.slice(0, 8) }));
+      }
+
+      // AD4 记账分类必须都在白名单里（否则会被静默归到"其他"）
+      {
+        const must = ['wage','biz','sell','lottery','ach','refund','bank','stock','loan',
+                      'food','bill','estate','car','furn','decor','clinic','pet'];
+        const bad = must.filter(c => {
+          const kind = ['wage','biz','sell','lottery','ach','refund','bank','stock','loan'].indexOf(c) >= 0 ? 'in' : 'out';
+          return ledgerCat(kind, c) !== c;
+        });
+        P('AD4 every ledger category is whitelisted', bad.length === 0, bad.join(',') || 'ok');
+      }
+
+      // AD5 走到店门口能看到"这家店可以承包"（不需要回 HUD 翻列表）
+      {
+        scene = 'street';
+        const z = STREET_ZONES.find(x => x.id === 'shop1');
+        PLAYER.fx = z.x + Math.floor(z.w / 2);
+        PLAYER.fy = z.y + z.h;
+        PLAYER.moving = false; PLAYER.path = [];
+        toggleWork(true);
+        const html = document.getElementById('workList').innerHTML;
+        const has = html.indexOf('这家店可以承包') >= 0 && html.indexOf('data-bizopen') >= 0;
+        P('AD5 shopfront offers the contract entry', has, 'has=' + has);
+        toggleWork(false);
+        scene = bk.scene;
+      }
+
+      // 还原
+      MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
+      LAST_SHIFT_DAY = bk.shift;
+      if (bk.bills && typeof BILLS !== 'undefined'){ BILLS.length = 0; bk.bills.forEach(b => BILLS.push(b)); }
+      scene = bk.scene;
+      updateTip();
     }
 
     flush();
