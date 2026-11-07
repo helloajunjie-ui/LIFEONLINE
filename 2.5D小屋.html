@@ -605,6 +605,8 @@
     font-size:13px; color:var(--accent2);
   }
   #buildBar.show{display:flex;}
+  #buildBar{max-width:calc(100vw - 28px);}
+  #buildBar .bmsg{min-width:0; white-space:normal; line-height:1.4;}
   #buildBar .bname{font-weight:700; color:var(--accent);}
   #buildBar button{
     border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;
@@ -789,7 +791,7 @@
       <div class="gbody">
         <div class="grow"><b>走动</b><span>点地面就走过去，WASD / 方向键也行。院子右下角是出口，出去就是小区。</span></div>
         <div class="grow"><b>赚钱</b><span>便利店、咖啡店、医院、学校都能上班，一天一次，下班日结。攒够钱还能承包店铺，不用盯着也有净收益。</span></div>
-        <div class="grow"><b>安家</b><span>右上「商店」买家具，买完直接进摆放——点空地放下。装修度越高，睡觉回的心情越多。</span></div>
+        <div class="grow"><b>安家</b><span>右上「商店」买家具，买完直接进摆放，点空地放下；按 R 换个朝向，别让电视对着墙。装修度越高，睡觉回的心情越多。</span></div>
         <div class="grow"><b>别饿着</b><span>饿了去便利店买饭，或到菜市场买食材回家做。冰箱空了 HUD 会提醒你。</span></div>
       </div>
       <div class="gfoot">
@@ -3960,15 +3962,26 @@ for (const _d of FURNITURE_CATALOG) FURN_BY_ID[_d.id] = _d;
  * x 取反就等于把 gx/gy 对调——所以占地从 w×h 真的变成 h×w。
  * 家具的立面仍然向上，水平轮廓沿对角换了方向，水平上看就是"换个朝向"。
  * 所以所有占地判断都必须走这里，不能直接拿 catalog 的 w/h。 */
+/* ROT4_HERE 朝向 0..3：
+ *   bit0（1）＝ 镜像：正面从"右前"翻到"左前"，占地形状不变
+ *   bit1（2）＝ 转置：长边从 gx 轴换到 gy 轴，占地 w/h 互换
+ * 这两件事本来是独立的，早期把它们绑在一起，结果"横着放但正面朝左"根本摆不出来
+ * ——这就是"电视只能对着墙"的根因。 */
+function normalizeRot(r){
+  r = Math.round(Number(r) || 0);
+  return ((r % 4) + 4) % 4;
+}
+function isFlippedRot(r){ return (normalizeRot(r) % 2) === 1; }
+function isTransposedRot(r){ return normalizeRot(r) >= 2; }
 function footOf(id, rot){
   const d = FURN_BY_ID[id];
   if (!d) return { w: 1, h: 1, walk: false };
-  return rot
+  return isTransposedRot(rot)
     ? { w: d.h, h: d.w, walk: !!d.walk }
     : { w: d.w, h: d.h, walk: !!d.walk };
 }
 function footOfFurn(f){
-  return footOf(f && f.catalogId, f && f.rot ? 1 : 0);
+  return footOf(f && f.catalogId, f && f.rot);
 }
 
 // 已放置的家具实例：{catalogId, gx, gy}
@@ -4303,8 +4316,8 @@ function drawFurnitureItem(f){
   const img = svgImage(d.id);
   if (img){
     const rec = FURN_SVG[d.id];
-    if (f.rot){
-      /* 换向：水平镜像。对称轴就是占地中心，所以平移到中心再翻转即可 */
+    if (isFlippedRot(f.rot)){
+      /* 镜像：对称轴就是占地中心，平移到中心再翻转即可。转置与否不影响这一步 */
       ctx.save();
       ctx.translate(c.x, c.y);
       ctx.scale(-1, 1);
@@ -4329,7 +4342,7 @@ function drawFurnitureItem(f){
   // 真加载失败（比如浏览器禁了 data URI）才退回程序化形状，至少还能看见东西
   ctx.save();
   ctx.translate(c.x, c.y);
-  if (f.rot) ctx.scale(-1, 1);
+  if (isFlippedRot(f.rot)) ctx.scale(-1, 1);
   drawFurnitureShape(d, f);
   ctx.restore();
 }
@@ -5247,11 +5260,21 @@ function highlightTile(gx, gy, color){
 function drawBuildHint(){
   if (scene !== 'home') return;
   if (buildMode === 'placing' && placingId && hoverTile){
+    /* GHOST_PREVIEW_HERE 半透明实体预览。
+     * 只画绿色格子的话，按 R 换向看不出"电视会朝哪边"——而这正是玩家最在意的。
+     * 预览画在高亮之后、氛围光之前，所以它永远在最上层，不会被墙挡住。 */
     const fs = footOf(placingId, placingRot);
     const ok = canPlace(placingId, hoverTile.gx, hoverTile.gy, placingRot);
     for (let y=hoverTile.gy; y<hoverTile.gy+fs.h; y++)
       for (let x=hoverTile.gx; x<hoverTile.gx+fs.w; x++)
         highlightTile(x, y, ok ? 'rgba(95,174,98,.4)' : 'rgba(192,57,43,.4)');
+    if (ok && FURN_BY_ID[placingId] && FURN_SVG[placingId]){
+      const ghost = { catalogId: placingId, gx: hoverTile.gx, gy: hoverTile.gy, rot: placingRot };
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      drawFurnitureItem(ghost);
+      ctx.restore();
+    }
   } else if (buildMode === 'editing' && editingFurn){
     const fs = footOfFurn(editingFurn);
     for (let y=editingFurn.gy; y<editingFurn.gy+fs.h; y++)
@@ -6463,7 +6486,7 @@ function clickHandler(e){
       updateHUD();
       saveGame();
     } else {
-      bbMsg.textContent = '这里放不下，换块空地（按 Esc 取消，家具会退回仓库）';
+      bbMsg.textContent = '这里放不下，换块空地（Esc 取消，家具退回仓库）';
     }
     return;
   }
@@ -8291,7 +8314,8 @@ function enterPlace(id){
   buildMode = 'placing'; placingId = id; editingFurn = null; placingRot = 0;
   const d = FURN_BY_ID[id];
   bbName.textContent = d.name;
-  bbMsg.textContent = '点空地放置 · 取消会留在仓库 · 占地 ' + d.w + '×' + d.h;
+  /* SHORT_BUILDBAR 提示条要短：长了会折成三行，把换向/取消挤成竖排 */
+  bbMsg.textContent = '点空地放下 · 取消不丢 · 占地 ' + d.w + '×' + d.h;
   buildBar.classList.add('show');
   syncRotateBtn();
 }
@@ -8299,7 +8323,7 @@ function enterEdit(f){
   buildMode = 'editing'; editingFurn = f; placingId = null;
   const d = FURN_BY_ID[f.catalogId];
   bbName.textContent = d.name + '（编辑中）';
-  bbMsg.textContent = '点空地移动 · 按 R 换向 · 再点一次收回';
+  bbMsg.textContent = '点空地移动 · 按 R 换向（4 档） · 再点一次收回';
   buildBar.classList.add('show');
   editBtn.textContent = '退出整理';
   syncRotateBtn();
@@ -8323,12 +8347,12 @@ function syncRotateBtn(){
   const show = (buildMode === 'placing' && !!placingId) || (buildMode === 'editing' && !!editingFurn);
   bbRotate.style.display = show ? '' : 'none';
   if (!show) return;
-  const rot = (buildMode === 'placing') ? placingRot : (editingFurn.rot ? 1 : 0);
-  bbRotate.textContent = rot ? '« 换向' : '» 换向';
+  const rot = normalizeRot((buildMode === 'placing') ? placingRot : editingFurn.rot);
+  bbRotate.textContent = '换向 ' + (rot + 1) + '/4';
 }
 /** 已摆放家具原地换向：占地会换方向，得先把占位挪开重新校验 */
 function flipPlacedFurn(f){
-  const next = f.rot ? 0 : 1;
+  const next = (normalizeRot(f.rot) + 1) % 4;
   const backup = placed;
   placed = placed.filter(x => x !== f);
   const ok = canPlace(f.catalogId, f.gx, f.gy, next);
@@ -8341,10 +8365,10 @@ function flipPlacedFurn(f){
 }
 function rotatePlacing(){
   if (buildMode === 'placing' && placingId){
-    placingRot = placingRot ? 0 : 1;
+    placingRot = (normalizeRot(placingRot) + 1) % 4;
     const fs = footOf(placingId, placingRot);
-    bbMsg.textContent = '点空地放置 · 取消会留在仓库 · 占地 ' + fs.w + '×' + fs.h +
-      (placingRot ? ' · 已换向' : '');
+    bbMsg.textContent = '点空地放下 · 占地 ' + fs.w + '×' + fs.h +
+      ' · 朝向 ' + (placingRot + 1) + '/4';
     syncRotateBtn();
     SND.pickup();
     markDirty();
@@ -8354,7 +8378,7 @@ function rotatePlacing(){
     const f = editingFurn;
     if (flipPlacedFurn(f)){
       const fs = footOfFurn(f);
-      bbMsg.textContent = '已换向 · 占地 ' + fs.w + '×' + fs.h + ' · 点空地移动';
+      bbMsg.textContent = '朝向 ' + (normalizeRot(f.rot) + 1) + '/4 · 占地 ' + fs.w + '×' + fs.h + ' · 点空地移动';
       syncRotateBtn();
       SND.place();
       updateHUD();
@@ -8390,7 +8414,7 @@ function buyFurniture(d){
 function canPlace(id, gx, gy, rot){
   const d = FURN_BY_ID[id];
   if (!d) return false;
-  const s2 = footOf(id, rot ? 1 : 0);
+  const s2 = footOf(id, rot);
   const w = s2.w, h = s2.h;
   // 家具只能放在房子内部（外墙以内）
   if (gx<=HOUSE_X || gy<=HOUSE_Y || gx+w-1>=HOUSE_X+HOUSE_W+1 || gy+h-1>=HOUSE_Y+HOUSE_H+1) return false;
@@ -8415,9 +8439,9 @@ function applyPlace(id, gx, gy, existing, rot){
   if (!canPlace(id, gx, gy, rot)) return false;
   if (existing){
     existing.gx = gx; existing.gy = gy;
-    if (rot !== undefined) existing.rot = rot ? 1 : 0;
+    if (rot !== undefined) existing.rot = normalizeRot(rot);
   } else {
-    placed.push({catalogId: id, gx, gy, rot: rot ? 1 : 0});
+    placed.push({catalogId: id, gx, gy, rot: normalizeRot(rot)});
   }
   spawnParticles(gx, gy, '#9dbf80', 7);
   SND.place();
@@ -9201,6 +9225,15 @@ function migrateSave(d){
       d.placed = Array.isArray(d.placed) ? d.placed : [];
       for (const f of d.placed){ if (f && typeof f === 'object' && f.rot === undefined) f.rot = 0; }
     }
+    if (schema === 16){
+      // v17：换向从 2 档扩到 4 档（镜像/转置解耦）。
+      // 旧语义 rot=1 是"镜像 + 转置"，新语义里对应 3；rot=0 不变。
+      d.placed = Array.isArray(d.placed) ? d.placed : [];
+      for (const f of d.placed){
+        if (!f || typeof f !== 'object') continue;
+        f.rot = (f.rot === 1 || f.rot === 3) ? 3 : 0;
+      }
+    }
     schema++;
   }
   d.schema = schema;
@@ -9527,7 +9560,7 @@ function normalizePlaced(list){
     if (!f || !FURN_BY_ID[f.catalogId]) continue;
     const gx = Math.round(Number(f.gx)), gy = Math.round(Number(f.gy));
     if (!isFinite(gx) || !isFinite(gy)) continue;
-    out.push({ catalogId: f.catalogId, gx, gy, rot: f.rot ? 1 : 0 });
+    out.push({ catalogId: f.catalogId, gx, gy, rot: normalizeRot(f.rot) });
   }
   return out;
 }

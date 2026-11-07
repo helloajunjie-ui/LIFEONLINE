@@ -3048,102 +3048,117 @@
         try { renderWork(); } catch(e){}
       }
 
-      // AG 组：家具换向 180°
+      // AG 组：家具换向（4 档：镜像 bit0 / 转置 bit1）
       {
         const bakP = placed.slice();
         const bakMode = buildMode, bakPid = placingId, bakProt = placingRot, bakEdit = editingFurn;
 
-        // AG1 换向 = 占地 w/h 互换（等距投影下镜像等价于转置）
+        // AG1 转置只跟 bit1 走，镜像不改占地
         {
           const bed = FURN_BY_ID['bed'];
-          const a = footOf('bed', 0), b = footOf('bed', 1);
-          const ok = a.w === bed.w && a.h === bed.h && b.w === bed.h && b.h === bed.w &&
-                     a.w !== b.w;
-          P('AG1 footOf swaps w/h after flip', ok,
-            'orig=' + a.w + 'x' + a.h + ' flip=' + b.w + 'x' + b.h);
+          const r0 = footOf('bed', 0), r1 = footOf('bed', 1), r2 = footOf('bed', 2), r3 = footOf('bed', 3);
+          const ok = r0.w === bed.w && r0.h === bed.h &&
+                     r1.w === bed.w && r1.h === bed.h &&      // 只翻面
+                     r2.w === bed.h && r2.h === bed.w &&      // 只转置
+                     r3.w === bed.h && r3.h === bed.w;        // 两者
+          P('AG1 rotation: mirror keeps footprint, transpose swaps it', ok,
+            [r0, r1, r2, r3].map(r => r.w + 'x' + r.h).join(' | '));
         }
 
-        // AG2 放置校验真的用了新占地：挡住旧占地的那格，换向后就能放了
+        // AG2 isFlipped / isTransposed 两个位各管一件事
+        {
+          const ok = !isFlippedRot(0) && isFlippedRot(1) && !isFlippedRot(2) && isFlippedRot(3) &&
+                     !isTransposedRot(0) && !isTransposedRot(1) && isTransposedRot(2) && isTransposedRot(3);
+          P('AG2 flip/transpose are independent bits', ok);
+        }
+
+        // AG3 放置校验真的用了转置后的占地
         {
           const bed = FURN_BY_ID['bed'];
           const gx = HOUSE_X + 2, gy = HOUSE_Y + 2;
           placed = [];
-          const lampId = 'lamp';
-          const lamp = FURN_BY_ID[lampId];
-          const freeBoth = canPlace('bed', gx, gy, 0) && canPlace('bed', gx, gy, 1);
-          placed = [{ catalogId: lampId, gx: gx + bed.w - 1, gy, rot: 0 }];
-          const blocked = canPlace('bed', gx, gy, 0);
-          const allowed = canPlace('bed', gx, gy, 1);
-          P('AG2 canPlace honours rotation', freeBoth && blocked === false && allowed === true,
-            'free=' + freeBoth + ' rot0=' + blocked + ' rot1=' + allowed +
-            ' lampAt=' + (gx + bed.w - 1) + ',' + gy);
+          const freeBoth = canPlace('bed', gx, gy, 0) && canPlace('bed', gx, gy, 2);
+          placed = [{ catalogId: 'lamp', gx: gx + bed.w - 1, gy, rot: 0 }];
+          const blocked = canPlace('bed', gx, gy, 0);      // 2×1，撞灯
+          const stillBlocked = canPlace('bed', gx, gy, 1); // 镜像不改占地，还是撞
+          const allowed = canPlace('bed', gx, gy, 2);      // 1×2，躲开了
+          P('AG3 canPlace follows the transposed footprint',
+            freeBoth && blocked === false && stillBlocked === false && allowed === true,
+            'free=' + freeBoth + ' r0=' + blocked + ' r1=' + stillBlocked + ' r2=' + allowed);
           placed = [];
         }
 
-        // AG3 放置模式里按换向：状态与提示都跟着变
+        // AG4 放置模式按 R：四档循环、文案跟着走
         {
           placed = [];
           enterPlace('bed');
-          const before = bbMsg.textContent;
-          const r1 = rotatePlacing();
-          const after = bbMsg.textContent;
-          const r2 = rotatePlacing();
-          const ok = r1 && r2 && before.indexOf('2×1') >= 0 && after.indexOf('1×2') >= 0 &&
-                     after.indexOf('换向') >= 0 && placingRot === 0 &&
-                     bbRotate && bbRotate.style.display !== 'none';
-          P('AG3 rotate while placing updates footprint text', ok,
-            'before=[' + before + '] after=[' + after + '] rot=' + placingRot);
+          const seen = [];
+          for (let k = 0; k < 5; k++){
+            seen.push(placingRot + ':' + bbMsg.textContent.replace(/^.*占地 /, ''));
+            rotatePlacing();
+          }
+          const ok = placingRot === 1 &&
+                     seen[0].indexOf('2×1') >= 0 &&
+                     seen[1].indexOf('2×1') >= 0 && seen[1].indexOf('2/4') >= 0 &&
+                     seen[2].indexOf('1×2') >= 0 && seen[2].indexOf('3/4') >= 0 &&
+                     seen[3].indexOf('1×2') >= 0 && seen[3].indexOf('4/4') >= 0 &&
+                     seen[4].indexOf('2×1') >= 0 && seen[4].indexOf('1/4') >= 0 &&
+                     bbRotate.style.display !== 'none';
+          P('AG4 rotate cycles 4 steps while placing', ok, seen.join(' > '));
+          placingRot = 0;
           cancelBuild();
         }
 
-        // AG4 已摆好的家具能原地换向；碍硅挡着就拒绝
+        // AG5 整理模式：原地换向能转四档；碰到旁边的东西就拒绝
         {
-          const bed = FURN_BY_ID['bed'];
-          const gx = HOUSE_X + 2, gy = HOUSE_Y + 2;
-          placed = [{ catalogId: 'bed', gx, gy, rot: 0 }];
+          placed = [{ catalogId: 'bed', gx: HOUSE_X + 2, gy: HOUSE_Y + 2, rot: 0 }];
           const f = placed[0];
           enterEdit(f);
-          const ok1 = rotatePlacing();
-          const rotAfter = f.rot;
-          // 再掉一次应回到 0
-          const ok2 = rotatePlacing();
-          P('AG4 flip in place works and toggles', ok1 && ok2 && rotAfter === 1 && f.rot === 0,
-            'rot1=' + rotAfter + ' rot2=' + f.rot);
+          const seq = [];
+          for (let k = 0; k < 4; k++){ rotatePlacing(); seq.push(normalizeRot(f.rot)); }
+          const ok = seq.join(',') === '1,2,3,0';
+          P('AG5 flip in place cycles through all four', ok, seq.join(','));
 
-          // 挡住新占地的那格 → 应该拒绝
-          placed = [{ catalogId: 'bed', gx, gy, rot: 0 },
-                    { catalogId: 'lamp', gx, gy: gy + bed.h, rot: 0 }];
+          // 挡住新占地：床 1×2（rot=2）时会占到 gy+1
+          placed = [{ catalogId: 'bed', gx: HOUSE_X + 2, gy: HOUSE_Y + 2, rot: 0 },
+                    { catalogId: 'lamp', gx: HOUSE_X + 2, gy: HOUSE_Y + 2 + 1, rot: 0 }];
           const g = placed[0];
           enterEdit(g);
-          const refused = rotatePlacing() === true && g.rot === 0;
-          P('AG4b flip refuses when the new footprint is blocked', refused, 'rot=' + g.rot);
+          rotatePlacing();     // 0 -> 1（仔 2×1，不受影响）
+          const r1 = normalizeRot(g.rot);
+          rotatePlacing();     // 1 -> 2（1×2，撞灯）应被拒
+          const r2 = normalizeRot(g.rot);
+          P('AG5b flip refuses when the new footprint is blocked', r1 === 1 && r2 === 1,
+            'after1=' + r1 + ' after2=' + r2);
           cancelBuild();
           placed = [];
         }
 
-        // AG5 脏存档不能造出家具，rot 只收 0/1
+        // AG6 脏存档：rot 只收 0..3，不认的家具直接丢
         {
           const dirty = [
             { catalogId: 'bed', gx: 6, gy: 6, rot: 7 },
             { catalogId: '不存在', gx: 1, gy: 1 },
             { catalogId: 'lamp', gx: 'x', gy: 2 },
             null,
-            { catalogId: 'tv', gx: 8, gy: 8, rot: 1 }
+            { catalogId: 'tv', gx: 8, gy: 8, rot: 3 }
           ];
           const out = normalizePlaced(dirty);
-          const ok = out.length === 2 && out[0].catalogId === 'bed' && out[0].rot === 1 &&
-                     out[1].catalogId === 'tv' && out[1].rot === 1 &&
-                     out.every(x => x.rot === 0 || x.rot === 1);
-          P('AG5 normalizePlaced sanitises dirty saves', ok, JSON.stringify(out));
+          const ok = out.length === 2 && out[0].rot === 3 && out[1].rot === 3 &&
+                     out.every(x => x.rot >= 0 && x.rot <= 3);
+          P('AG6 normalizePlaced clamps rot to 0..3', ok, JSON.stringify(out));
         }
 
-        // AG6 老存档迁移到最新 schema，家具补上 rot
+        // AG7 老存档：schema16 的 rot=1（镜像+转置）在新语义里是 3
         {
-          const mig = migrateSave({ schema: 15, placed: [{ catalogId: 'bed', gx: 5, gy: 5 }] });
+          const mig = migrateSave({ schema: 16, placed: [
+            { catalogId: 'bed', gx: 5, gy: 5, rot: 0 },
+            { catalogId: 'tv', gx: 8, gy: 5, rot: 1 }
+          ]});
           const ok = mig.schema === CLIENT_VERSION.saveSchema &&
-                     Array.isArray(mig.placed) && mig.placed[0].rot === 0;
-          P('AG6 migration adds rot to old furniture', ok,
-            'schema=' + mig.schema + ' rot=' + (mig.placed && mig.placed[0] ? mig.placed[0].rot : '-'));
+                     mig.placed[0].rot === 0 && mig.placed[1].rot === 3;
+          P('AG7 schema16 rot=1 migrates to rot=3', ok,
+            'schema=' + mig.schema + ' rots=' + mig.placed.map(f => f.rot).join(','));
         }
 
         placed = bakP;
