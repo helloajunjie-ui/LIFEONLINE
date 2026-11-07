@@ -15,7 +15,7 @@
     "treeDensity": 0.045,
     "density": 0.12
   },
-  "layoutNote": "楼高 3 格、屋顶向上延伸约 6 格：同一条街上不要排两排楼，否则南排会挡住北排门口的人。商铺一律单行、门朝南。",
+  "layoutNote": "楼高 3 格、屋顶向上延伸约 6 格：同一条街上不要排两排楼，否则南排会挡住北排门口的人。商铺一律单行、门朝南。 12-16 栋是一层独栋别墅（可购买），其余是公寓楼。",
   "houses": [
     {
       "id": "house.2栋",
@@ -217,14 +217,15 @@
         "h": 3
       },
       "palette": {
-        "body": "#d3b98d"
+        "body": "#d8b48a"
       },
-      "floors": 2,
+      "floors": 1,
       "door": {
         "edge": "bottom",
         "offset": "center"
       },
-      "owner": null
+      "owner": null,
+      "villa": true
     },
     {
       "id": "house.13栋",
@@ -236,14 +237,15 @@
         "h": 3
       },
       "palette": {
-        "body": "#c7ab7f"
+        "body": "#cfa87f"
       },
-      "floors": 3,
+      "floors": 1,
       "door": {
         "edge": "bottom",
         "offset": "center"
       },
-      "owner": null
+      "owner": null,
+      "villa": true
     },
     {
       "id": "house.14栋",
@@ -255,14 +257,15 @@
         "h": 3
       },
       "palette": {
-        "body": "#e0c9a0"
+        "body": "#dcc09a"
       },
-      "floors": 3,
+      "floors": 1,
       "door": {
         "edge": "bottom",
         "offset": "center"
       },
-      "owner": "npc.n4"
+      "owner": "npc.n4",
+      "villa": true
     },
     {
       "id": "house.15栋",
@@ -274,14 +277,15 @@
         "h": 3
       },
       "palette": {
-        "body": "#d3b98d"
+        "body": "#d3ae86"
       },
-      "floors": 2,
+      "floors": 1,
       "door": {
         "edge": "bottom",
         "offset": "center"
       },
-      "owner": null
+      "owner": null,
+      "villa": true
     },
     {
       "id": "house.16栋",
@@ -293,14 +297,15 @@
         "h": 3
       },
       "palette": {
-        "body": "#cfb894"
+        "body": "#c9a27a"
       },
-      "floors": 4,
+      "floors": 1,
       "door": {
         "edge": "bottom",
         "offset": "center"
       },
-      "owner": null
+      "owner": null,
+      "villa": true
     },
     {
       "id": "house.17栋",

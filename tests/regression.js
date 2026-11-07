@@ -19,7 +19,9 @@
     P('C3 bed mapped', !!bed && bed.w === 2 && bed.cozy === 6 && bed.action === 'sleep', JSON.stringify(bed));
     const rug = FURNITURE_CATALOG.find(d => d.id === 'rug_warm');
     P('C4 rug walkable flag', !!rug && rug.walk === true && rug.w === 2 && rug.h === 2);
-    P('C5 house levels from content', HOUSE_LEVELS.length === 5 && HOUSE_LEVELS[1].walls.length === 0 && HOUSE_LEVELS[1].w === 17, 'lv1 walls=' + HOUSE_LEVELS[1].walls.length);
+    const _aptN = HOUSE_LEVELS.filter(l => (l.type || 'apartment') === 'apartment').length;
+    const _vilN = HOUSE_LEVELS.filter(l => l.type === 'villa').length;
+    P('C5 house levels from content', HOUSE_LEVELS.length === 8 && _aptN === 5 && _vilN === 3 && HOUSE_LEVELS[1].walls.length === 0 && HOUSE_LEVELS[1].w === 17, 'lv=' + HOUSE_LEVELS.length + ' apt=' + _aptN + ' villa=' + _vilN + ' lv1w=' + HOUSE_LEVELS[1].w);
     P('C6 styles from content', FLOOR_STYLES.length === 4 && WALL_STYLES.length === 4 && FLOOR_STYLES[1].pattern === 'tile');
     P('C7 rules from content', Math.abs(DECAY.hunger - 0.05) < 1e-9 && Math.abs(EMOTION_DECAY - 0.06) < 1e-9 && WORK_PAY === 60,
       JSON.stringify({ hunger: DECAY.hunger, emo: EMOTION_DECAY, pay: WORK_PAY }));
@@ -3320,6 +3322,94 @@
 
         DAY = bakDay;
         _histCache = { day: -1, data: null };
+      }
+
+      // AJ 组：户型分类（公寓 / 别墅）与布局完整性
+      {
+        const bakLevel = houseLevel;
+
+        // AJ1 两类户型各自连续，且互不混排
+        {
+          const apt = houseLevelsOfType('apartment');
+          const vil = houseLevelsOfType('villa');
+          const contiguous = apt.join(',') === '0,1,2,3,4' && vil.join(',') === '5,6,7';
+          P('AJ1 house types split cleanly', contiguous && apt.length === 5 && vil.length === 3,
+            'apt=' + apt.join(',') + ' villa=' + vil.join(','));
+        }
+
+        // AJ2 升级只在同类里走：公寓最大一档不会跳到别墅
+        {
+          const ok = nextHouseLevelOf(0) === 1 && nextHouseLevelOf(3) === 4 &&
+                     nextHouseLevelOf(4) === -1 &&          // 公寓到头了
+                     nextHouseLevelOf(5) === 6 && nextHouseLevelOf(7) === -1 &&
+                     firstHouseLevelOf('villa') === 5 && firstHouseLevelOf('apartment') === 0;
+          P('AJ2 upgrade never crosses house type', ok,
+            'n0=' + nextHouseLevelOf(0) + ' n4=' + nextHouseLevelOf(4) + ' n5=' + nextHouseLevelOf(5) + ' n7=' + nextHouseLevelOf(7));
+        }
+
+        // AJ3 每个户型的分区要完整铺满占地，不重叠、不留空洞。
+        //     留空洞会在屋里出现一块"无主地板"，重叠则后画的分区盖掉前面的。
+        {
+          const bad = [];
+          for (let i = 0; i < HOUSE_LEVELS.length; i++){
+            const lv = HOUSE_LEVELS[i];
+            const grid = new Uint8Array(lv.w * lv.h);
+            for (const z of (lv.zones || [])){
+              for (let y = z.y; y < z.y + z.h; y++){
+                for (let x = z.x; x < z.x + z.w; x++){
+                  if (x < 0 || y < 0 || x >= lv.w || y >= lv.h){ bad.push(lv.name + ':越界'); continue; }
+                  grid[y * lv.w + x]++;
+                }
+              }
+            }
+            let holes = 0, dup = 0;
+            for (let k = 0; k < grid.length; k++){ if (grid[k] === 0) holes++; else if (grid[k] > 1) dup++; }
+            if (holes || dup) bad.push(lv.name + ':空' + holes + '/重' + dup);
+          }
+          P('AJ3 every floor plan tiles its footprint exactly', bad.length === 0, bad.join(' | ') || 'ok');
+        }
+
+        // AJ4 别墅确实比公寓最大一档更宽松，且每栋都不一样
+        {
+          const villas = houseLevelsOfType('villa').map(i => HOUSE_LEVELS[i]);
+          /* 别墅卖的是"独栋 + 户型"，不跟大平层拼面积，只要求明显比公寓入门档宽敞 */
+          const smallestApt = Math.min.apply(null, houseLevelsOfType('apartment').map(i => HOUSE_LEVELS[i].w * HOUSE_LEVELS[i].h));
+          const allBigger = villas.every(v => v.w * v.h >= smallestApt * 2);
+          const shapes = villas.map(v => v.w + 'x' + v.h).join(',');
+          const distinct = new Set(villas.map(v => v.w + 'x' + v.h)).size === villas.length;
+          const zoneCounts = new Set(villas.map(v => (v.zones || []).length)).size;
+          P('AJ4 villas are roomier and each has its own plan',
+            allBigger && distinct && zoneCounts > 1,
+            'shapes=' + shapes + ' zones=' + villas.map(v => v.zones.length).join('/'));
+        }
+
+        // AJ5 别墅的分区名字要和公寓不同——否则只是"放大了一号"
+        {
+          const aptNames = new Set();
+          for (const i of houseLevelsOfType('apartment')) for (const z of HOUSE_LEVELS[i].zones) aptNames.add(z.name);
+          const villaNames = new Set();
+          for (const i of houseLevelsOfType('villa')) for (const z of HOUSE_LEVELS[i].zones) villaNames.add(z.name);
+          const own = ['中庭客厅', '横厅', '衣帽间'];
+          const hasOwn = own.filter(n => villaNames.has(n) && !aptNames.has(n));
+          P('AJ5 villas introduce their own room kinds', hasOwn.length >= 2, 'own=' + hasOwn.join('/'));
+        }
+
+        // AJ6 换户型不会把 houseLevel 越界（老存档拿到大号也能开机）
+        {
+          houseLevel = 4; applyHouseLevel(false);
+          const okApt = HOUSE_W === HOUSE_LEVELS[4].w && HOUSE_H === HOUSE_LEVELS[4].h;
+          houseLevel = 5; applyHouseLevel(false);
+          const okVil = HOUSE_W === HOUSE_LEVELS[5].w && HOUSE_H === HOUSE_LEVELS[5].h;
+          houseLevel = 99;
+          if (houseLevel > HOUSE_LEVELS.length - 1) houseLevel = HOUSE_LEVELS.length - 1;
+          applyHouseLevel(false);
+          const okMax = houseLevel === 7;
+          P('AJ6 applyHouseLevel handles every tier', okApt && okVil && okMax,
+            'apt=' + okApt + ' villa=' + okVil + ' max=' + okMax);
+        }
+
+        houseLevel = bakLevel;
+        applyHouseLevel(false);
       }
 
       // 还原

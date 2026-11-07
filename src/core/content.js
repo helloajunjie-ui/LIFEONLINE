@@ -277,6 +277,9 @@ export function lottery(){ return content.lottery; }
 export function toLegacyHouseLevels(){
   return content.levels.map(lv => ({
     name: lv.name,
+    /* apartment = 公寓楼里的一套；villa = 楼外独栋。两类户型互不升级 */
+    type: lv.type || 'apartment',
+    id: lv.id,
     w: lv.footprint.w,
     h: lv.footprint.h,
     price: lv.price,

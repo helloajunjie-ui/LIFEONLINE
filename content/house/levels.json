@@ -1,6 +1,6 @@
 {
   "schema": "house/1",
-  "note": "房型等级：升级只扩大室内区块，左上角固定；地面分区（无实墙），每区内联地板配色，空间完全可走",
+  "note": "房型等级：升级只扩大室内区块，左上角固定；地面分区（无实墙），每区内联地板配色，空间完全可走 房型分两类：apartment（公寓楼里的一套）和 villa（公寓楼外面的独栋）。别墅户型更大更开放，房间数和分区都不同；两类互不升级，住哪种才能用哪种的户型。",
   "origin": {
     "x": 3,
     "y": 3
@@ -98,7 +98,8 @@
       "door": {
         "edge": "bottom",
         "offset": "center"
-      }
+      },
+      "type": "apartment"
     },
     {
       "level": 1,
@@ -229,7 +230,8 @@
       "door": {
         "edge": "bottom",
         "offset": "center"
-      }
+      },
+      "type": "apartment"
     },
     {
       "level": 2,
@@ -379,7 +381,8 @@
       "door": {
         "edge": "bottom",
         "offset": "center"
-      }
+      },
+      "type": "apartment"
     },
     {
       "level": 3,
@@ -567,7 +570,8 @@
       "door": {
         "edge": "bottom",
         "offset": "center"
-      }
+      },
+      "type": "apartment"
     },
     {
       "level": 4,
@@ -793,7 +797,423 @@
       "door": {
         "edge": "bottom",
         "offset": "center"
-      }
+      },
+      "type": "apartment"
+    },
+    {
+      "id": "house.villa.garden",
+      "name": "花园小墅",
+      "type": "villa",
+      "price": 26000,
+      "footprint": {
+        "w": 20,
+        "h": 14
+      },
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "walls": [],
+      "note": "独栋入门款：三间卧室横排在北侧，南面是一整片 12 格宽的客厅，尽头接厨房与卫浴。",
+      "zones": [
+        {
+          "id": "master",
+          "name": "主卧",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 8,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "bed2",
+          "name": "次卧",
+          "rect": {
+            "x": 8,
+            "y": 0,
+            "w": 5,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "closet",
+          "name": "衣帽间",
+          "rect": {
+            "x": 13,
+            "y": 0,
+            "w": 7,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d9bd90",
+              "b": "#cab084",
+              "line": "rgba(130,105,70,.16)",
+              "grout": "rgba(255,245,225,.15)"
+            }
+          }
+        },
+        {
+          "id": "living",
+          "name": "客厅",
+          "rect": {
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 9
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
+          }
+        },
+        {
+          "id": "kitchen",
+          "name": "厨房",
+          "rect": {
+            "x": 12,
+            "y": 5,
+            "w": 8,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
+          }
+        },
+        {
+          "id": "bath",
+          "name": "卫浴",
+          "rect": {
+            "x": 12,
+            "y": 9,
+            "w": 8,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#dde9f2",
+              "b": "#c8d8e6",
+              "line": "rgba(90,115,140,.24)",
+              "grout": "rgba(120,140,165,.34)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "house.villa.court",
+      "name": "中庭别墅",
+      "type": "villa",
+      "price": 46000,
+      "footprint": {
+        "w": 24,
+        "h": 16
+      },
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "walls": [],
+      "note": "客厅居中、四周环绕房间。进门一眼看到整个家，厨房餐厅在南侧一整排。",
+      "zones": [
+        {
+          "id": "master",
+          "name": "主卧",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "bed2",
+          "name": "次卧",
+          "rect": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "study",
+          "name": "书房",
+          "rect": {
+            "x": 0,
+            "y": 4,
+            "w": 4,
+            "h": 8
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#b88a54",
+              "b": "#a87a46",
+              "line": "rgba(80,52,24,.26)",
+              "grout": "rgba(255,235,200,.14)"
+            }
+          }
+        },
+        {
+          "id": "living",
+          "name": "中庭客厅",
+          "rect": {
+            "x": 4,
+            "y": 4,
+            "w": 16,
+            "h": 8
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
+          }
+        },
+        {
+          "id": "closet",
+          "name": "衣帽间",
+          "rect": {
+            "x": 20,
+            "y": 4,
+            "w": 4,
+            "h": 8
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d9bd90",
+              "b": "#cab084",
+              "line": "rgba(130,105,70,.16)",
+              "grout": "rgba(255,245,225,.15)"
+            }
+          }
+        },
+        {
+          "id": "kitchen",
+          "name": "厨房",
+          "rect": {
+            "x": 0,
+            "y": 12,
+            "w": 12,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
+          }
+        },
+        {
+          "id": "dining",
+          "name": "餐厅",
+          "rect": {
+            "x": 12,
+            "y": 12,
+            "w": 12,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#e3c896",
+              "b": "#d6b880",
+              "line": "rgba(140,105,60,.16)",
+              "grout": "rgba(255,250,230,.16)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "house.villa.loft",
+      "name": "横厅独栋",
+      "type": "villa",
+      "price": 58000,
+      "footprint": {
+        "w": 26,
+        "h": 16
+      },
+      "door": {
+        "edge": "bottom",
+        "offset": "center"
+      },
+      "walls": [],
+      "note": "北侧一整面 26 格宽的横厅，进门就是全屋最长的视野；南侧分成主卧、书房+卫浴、厨房餐厅三段。",
+      "zones": [
+        {
+          "id": "living",
+          "name": "横厅",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 26,
+            "h": 8
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#efe3c8",
+              "b": "#e4d4b4",
+              "line": "rgba(150,120,80,.14)",
+              "grout": "rgba(255,255,255,.20)"
+            }
+          }
+        },
+        {
+          "id": "master",
+          "name": "主卧",
+          "rect": {
+            "x": 0,
+            "y": 8,
+            "w": 10,
+            "h": 8
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#d8b07e",
+              "b": "#c99e6a",
+              "line": "rgba(120,85,45,.20)",
+              "grout": "rgba(255,240,215,.14)"
+            }
+          }
+        },
+        {
+          "id": "study",
+          "name": "书房",
+          "rect": {
+            "x": 10,
+            "y": 8,
+            "w": 8,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#b88a54",
+              "b": "#a87a46",
+              "line": "rgba(80,52,24,.26)",
+              "grout": "rgba(255,235,200,.14)"
+            }
+          }
+        },
+        {
+          "id": "bath2",
+          "name": "卫浴",
+          "rect": {
+            "x": 10,
+            "y": 12,
+            "w": 8,
+            "h": 4
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#d6e8e0",
+              "b": "#c2d8ce",
+              "line": "rgba(90,125,110,.24)",
+              "grout": "rgba(120,155,140,.32)"
+            }
+          }
+        },
+        {
+          "id": "kitchen",
+          "name": "厨房",
+          "rect": {
+            "x": 18,
+            "y": 8,
+            "w": 8,
+            "h": 5
+          },
+          "floor": {
+            "pattern": "tile",
+            "palette": {
+              "a": "#f4ede0",
+              "b": "#e6dcc8",
+              "line": "rgba(120,110,95,.20)",
+              "grout": "rgba(155,145,128,.30)"
+            }
+          }
+        },
+        {
+          "id": "dining",
+          "name": "餐厅",
+          "rect": {
+            "x": 18,
+            "y": 13,
+            "w": 8,
+            "h": 3
+          },
+          "floor": {
+            "pattern": "plank",
+            "palette": {
+              "a": "#e3c896",
+              "b": "#d6b880",
+              "line": "rgba(140,105,60,.16)",
+              "grout": "rgba(255,250,230,.16)"
+            }
+          }
+        }
+      ]
     }
   ]
 }

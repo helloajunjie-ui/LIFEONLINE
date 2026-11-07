@@ -2,7 +2,7 @@
   "schema": "residence/1",
   "id": "residence.default",
   "community": "幸福小区",
-  "note": "住址体系：独栋（villa）地址就是楼号；公寓（apartment）是「楼栋 + 楼层 + 房号」，1803 = 18 层 03 号。玩家的住址在首次建档时按 uid 散列分配，之后随存档走，不再变化。",
+  "note": "住址体系：独栋（villa）地址就是楼号；公寓（apartment）是「楼栋 + 楼层 + 房号」，1803 = 18 层 03 号。玩家的住址在首次建档时按 uid 散列分配，之后随存档走，不再变化。 独栋（villa）12-16 栋是可购买的别墅：每栋按楼号散列绑定一个别墅户型，所以同样一栋楼在谁的机器上都是同一种布局。",
   "buildings": [
     {
       "id": "house.公寓楼",
@@ -15,6 +15,26 @@
       "id": "house.12栋",
       "kind": "villa",
       "label": "12栋"
+    },
+    {
+      "id": "house.13栋",
+      "kind": "villa",
+      "label": "13栋"
+    },
+    {
+      "id": "house.14栋",
+      "kind": "villa",
+      "label": "14栋"
+    },
+    {
+      "id": "house.15栋",
+      "kind": "villa",
+      "label": "15栋"
+    },
+    {
+      "id": "house.16栋",
+      "kind": "villa",
+      "label": "16栋"
     }
   ],
   "assign": {

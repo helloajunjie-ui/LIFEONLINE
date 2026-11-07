@@ -1199,6 +1199,36 @@ let DOOR_YARD  = {gx: 1, gy: HOME_H - 1};
 let DOOR_HOME  = {gx: DOOR_YARD.gx, gy: DOOR_YARD.gy};
 /* 应用当前房型等级：重算网格尺寸 / 门位 / 隔墙 / 院子树，并迁移冲突家具。
  * 返回因新隔墙被收回仓库的家具数量。 */
+/* HOUSE_TYPE_HERE 房型分两类：
+ *   apartment —— 公寓楼里的一套（1803 这种）
+ *   villa     —— 公寓楼外面的独栋
+ * 两类互不升级：住公寓不能"花钱变成别墅户型"，那是另一类房子。
+ * 老存档的 houseLevel 都落在公寓段（0..4），所以索引不用迁移。 */
+function houseTypeOf(idx){
+  const lv = HOUSE_LEVELS[idx];
+  return (lv && lv.type) || 'apartment';
+}
+function houseTypeLabel(type){ return type === 'villa' ? '别墅' : '公寓'; }
+/** 同类型里的下一档；没有就返回 -1 */
+function nextHouseLevelOf(idx){
+  const type = houseTypeOf(idx);
+  for (let i = idx + 1; i < HOUSE_LEVELS.length; i++){
+    if (houseTypeOf(i) === type) return i;
+  }
+  return -1;
+}
+/** 某类型的全部档位索引 */
+function houseLevelsOfType(type){
+  const out = [];
+  for (let i = 0; i < HOUSE_LEVELS.length; i++) if (houseTypeOf(i) === type) out.push(i);
+  return out;
+}
+/** 该类型最低一档（搬进新房子时用） */
+function firstHouseLevelOf(type){
+  for (let i = 0; i < HOUSE_LEVELS.length; i++) if (houseTypeOf(i) === type) return i;
+  return 0;
+}
+
 function applyHouseLevel(fromUpgrade){
   markDirty();
   _puddles = null; _eaveCells = null;   // 房型变了，积水与屋檐格要重算
@@ -1223,9 +1253,9 @@ function applyHouseLevel(fromUpgrade){
   if (innerWalls.length){
     const keep = [];
     for (const f of placed){
-      const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
-      const w = d ? d.w : 1, h = d ? d.h : 1;
-      const hit = innerWalls.some(wl => wl.gx>=f.gx && wl.gx<f.gx+w && wl.gy>=f.gy && wl.gy<f.gy+h);
+      /* 换过向的家具占地是 w/h 互换的，这里必须走 footOfFurn，否则墙压在哪儿算错 */
+      const fs = footOfFurn(f);
+      const hit = innerWalls.some(wl => wl.gx>=f.gx && wl.gx<f.gx+fs.w && wl.gy>=f.gy && wl.gy<f.gy+fs.h);
       if (hit){ invAdd(f.catalogId); moved++; }
       else keep.push(f);
     }
@@ -1268,7 +1298,15 @@ function floorAt(gx, gy){
     if (custom) return custom;
   }
   const z = zoneOf(gx, gy);
-  return (z && z.floor) ? z.floor : curFloor();
+  /* 分区地板的 palette 是嵌套的（{pattern, palette:{a,b,line,grout}}），
+   * 而 drawFloorTile 要的是扁平结构（st.a / st.b / st.line）。
+   * 以前直接把嵌套对象递出去，st.a 全是 undefined——分区配色其实一次都没生效过，
+   * 地面颜色一直是上一笔 fillStyle 的残留。 */
+  if (z && z.floor){
+    const pal = z.floor.palette || {};
+    return { pattern: z.floor.pattern || 'plank', a: pal.a, b: pal.b, line: pal.line, grout: pal.grout };
+  }
+  return curFloor();
 }
 
 /* ---------- 数值与时间（参数来自 content/rules/survival.json） ---------- */
@@ -2218,12 +2256,23 @@ function drawDiamond(gx, gy, fill){
   ctx.fill();
 }
 /* 室内地板格：按当前地板风格绘制底色 + 纹理 */
+/* ZONE_TINT_HERE 同一类房间（主卧/次卧/衣帽间）配色是一样的，
+ * 只靠边界线还是糊在一起。按 zone id 做 ±5% 的稳定明度抖动：
+ * 同一间房里每格都一样（不会花），不同房间之间有细微差别（能数清有几间）。 */
+function zoneTintOf(gx, gy){
+  const z = zoneOf(gx, gy);
+  if (!z) return 1;
+  const h = unitHash(String(z.id), z.x || 0, z.y || 0) % 7;   // 0..6
+  return 1 + (h - 3) * 0.018;                                  // 0.946 .. 1.054
+}
 function drawFloorTile(gx, gy){
   const st = floorAt(gx, gy);
   const c = tileCenter(gx, gy);
   const w2 = TILE_W/2, h2 = TILE_H/2;
   const even = ((gx+gy) % 2 === 0);
-  drawDiamond(gx, gy, even ? st.a : st.b);
+  const base = even ? st.a : st.b;
+  const tint = zoneTintOf(gx, gy);
+  drawDiamond(gx, gy, tint === 1 ? base : shade(base, tint));
 
   if (st.pattern === 'plank'){
     // 平行于一条棱的木纹/板缝
@@ -2376,6 +2425,35 @@ function rebuildFloorLayer(){
         drawDiamond(gx, gy, ((gx+gy) % 2 === 0) ? gs[0] : gs[1]);
       }
     }
+  }
+  /* ZONE_EDGE_HERE 分区边界。
+   * 光靠地板配色分不清房间：卧室米色 / 客厅米白，一片 20x14 的客厅铺开就是"一整块"。
+   * 相邻两格属于不同分区时描一条细线，房间轮廓立刻出来了。
+   * 一幅菱形只有两条边需要检查：东邻居共享「南→东」，南邻居共享「西→南」。 */
+  {
+    const zidOf = (x, y) => { const z = zoneOf(x, y); return z ? z.id : ''; };
+    const w2 = halfW, h2 = halfH;
+    ctx.strokeStyle = 'rgba(96,66,36,.46)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let gy = 0; gy < HOME_H; gy++){
+      for (let gx = 0; gx < HOME_W; gx++){
+        const indoor = gx > HOUSE_X && gx < HOUSE_X + HOUSE_W + 1 && gy > HOUSE_Y && gy < HOUSE_Y + HOUSE_H + 1;
+        if (!indoor) continue;
+        if (isWall(gx, gy) || isHouseWall(gx, gy)) continue;
+        const here = zidOf(gx, gy);
+        const c = tileCenter(gx, gy);
+        if (gx + 1 <= HOUSE_X + HOUSE_W && here !== zidOf(gx + 1, gy)){
+          ctx.moveTo(c.x, c.y + h2);
+          ctx.lineTo(c.x + w2, c.y);
+        }
+        if (gy + 1 <= HOUSE_Y + HOUSE_H && here !== zidOf(gx, gy + 1)){
+          ctx.moveTo(c.x - w2, c.y);
+          ctx.lineTo(c.x, c.y + h2);
+        }
+      }
+    }
+    ctx.stroke();
   }
   ctx = prevCtx; cam.x = prevCamX; cam.y = prevCamY;
   _floorKey = floorLayerKey();
@@ -7719,6 +7797,55 @@ function unitMoveCost(floor, st){
  *   · 自住那套不能卖（否则会变成无家可归）；卖自有房回收 resaleRatio，退租不退押金 */
 const ESTATE_CAP = Math.max(1, Math.min(6, Number(UNIT_DEF.maxPerUser) || 3));
 const RESALE_RATIO = Math.max(0, Math.min(1, Number(UNIT_DEF.resaleRatio ?? 0.7)));
+/* VILLA_BUY_HERE 独栋别墅。
+ * 每栋按楼号做稳定散列绑定一个别墅户型——同一栋楼在谁的机器上都是同一种布局，
+ * 不会出现"我这栋是中庭、你那栋也是中庭但长得不一样"。 */
+function villaBuildings(){
+  return RES_BUILDINGS.filter(b => b.kind === 'villa');
+}
+function villaPlanOf(bid){
+  const list = houseLevelsOfType('villa');
+  if (!list.length) return -1;
+  return list[unitHash(String(bid), 0, 0) % list.length];
+}
+function villaPlanOfBuilding(bid){
+  const idx = villaPlanOf(bid);
+  return idx >= 0 ? HOUSE_LEVELS[idx] : null;
+}
+function villaPriceOf(bid){
+  const lv = villaPlanOfBuilding(bid);
+  return lv ? (Number(lv.price) || 0) : 0;
+}
+function villaOwned(bid){ return !!estateOf(bid, 0, 0); }
+/** 买下一整栋。返回是否成功 */
+function buyVilla(bid){
+  const b = resBuilding(bid);
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  if (!b || b.kind !== 'villa') return false;
+  if (villaOwned(bid)){ showFloat('这栋已经是你的了', px, py); return false; }
+  if (estateFull()){ showFloat('房产已满（' + ESTATE_CAP + ' 套），先卖掉一套', px, py); SND.err(); return false; }
+  const plan = villaPlanOf(bid);
+  const price = villaPriceOf(bid);
+  if (!plan || !price){ showFloat('这栋暂时不卖', px, py); SND.err(); return false; }
+  if (MONEY < price){
+    showFloat('还差 ¥' + Math.round(price - MONEY) + ' 才能买下 ' + (b.label || bid), px, py);
+    SND.err(); return false;
+  }
+  debit(price, 'estate', '买下 ' + (b.label || bid) + '（独栋）');
+  ESTATES.push({ buildingId: bid, floor: 0, room: 0, mode: 'owned', paid: price });
+  RESIDENCE = { buildingId: bid, floor: 0, room: 0 };
+  ADDRESS = residenceAddress();
+  /* 搬进别墅就换成这栋对应的户型；原来公寓的家具能放的留下，放不下的回仓库 */
+  houseLevel = plan;
+  const moved = applyHouseLevel(false);
+  SND.build();
+  showFloat('搬进 ' + (b.label || bid) + ' · ' + HOUSE_LEVELS[plan].name, px, py);
+  if (moved > 0) showFloat('有 ' + moved + ' 件家具因新隔墙收回了仓库', px, py - 1);
+  spawnParticles(PLAYER.fx, PLAYER.fy, '#f4d35e', 14);
+  updateHUD(); saveGame();
+  if (typeof renderBuilding === 'function') renderBuilding();
+  return true;
+}
 let ESTATES = [];              // [{buildingId, floor, room, mode:'owned'|'rented', paid}]
 
 function estateKey(bid, floor, room){ return String(bid) + '|' + (floor | 0) + '|' + (room | 0); }
@@ -8923,14 +9050,23 @@ document.getElementById('upClose').addEventListener('click', ()=> upBackdrop.cla
 upBackdrop.addEventListener('click', (e)=>{ if (e.target === upBackdrop) upBackdrop.classList.remove('show'); });
 expandBtn.addEventListener('click', ()=>{
   if (scene !== 'home'){ showFloat('只能给自己家扩建', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); return; }
-  const cur = HOUSE_LEVELS[houseLevel], next = HOUSE_LEVELS[houseLevel+1];
+  const cur = HOUSE_LEVELS[houseLevel];
+  const curType = houseTypeOf(houseLevel);
+  const ni = nextHouseLevelOf(houseLevel);
+  const next = ni >= 0 ? HOUSE_LEVELS[ni] : null;
+  const zonesOf = (lv) => (lv.zones ? lv.zones.length : 0);
+  const head = '当前：<b>' + cur.name + '</b>（' + houseTypeLabel(curType) +
+    ' · 室内 ' + cur.w + '×' + cur.h + ' · ' + zonesOf(cur) + ' 个分区）<br>';
   if (!next){
-    upBody.innerHTML = '当前房型：<b>' + cur.name + '</b>（室内 ' + cur.w + '×' + cur.h + '）<br>已经是最大的房型啦，住得舒舒服服～';
+    upBody.innerHTML = head +
+      '已经是' + houseTypeLabel(curType) + '里最大的房型啦～' +
+      (curType === 'apartment'
+        ? '<br><span style="color:#9a8a6a;font-size:12px;">想住更宽松的，得搬到小区里的独栋别墅。</span>'
+        : '');
     upGo.style.display = 'none';
   } else {
-    upBody.innerHTML =
-      '当前房型：<b>' + cur.name + '</b>（室内 ' + cur.w + '×' + cur.h + '）<br>' +
-      '升级到：<b>' + next.name + '</b>（室内 ' + next.w + '×' + next.h + '，地面分区、房间更多）<br>' +
+    upBody.innerHTML = head +
+      '升级到：<b>' + next.name + '</b>（室内 ' + next.w + '×' + next.h + ' · ' + zonesOf(next) + ' 个分区）<br>' +
       '费用：<b style="color:#d2691e;">¥' + next.price + '</b> · 现有 ¥' + Math.round(MONEY) + '<br>' +
       '<span style="color:#9a8a6a;font-size:12px;">左上角固定、向右下扩建，已摆放的家具会原样保留</span>';
     upGo.style.display = '';
@@ -8940,10 +9076,12 @@ expandBtn.addEventListener('click', ()=>{
   upBackdrop.classList.add('show');
 });
 upGo.addEventListener('click', ()=>{
-  const next = HOUSE_LEVELS[houseLevel+1];
-  if (!next || MONEY < next.price) return;
+  const ni = nextHouseLevelOf(houseLevel);
+  if (ni < 0) return;
+  const next = HOUSE_LEVELS[ni];
+  if (MONEY < next.price) return;
   debit(next.price, 'decor', '房型 ' + (next.name || ''));
-  houseLevel++;
+  houseLevel = ni;
   const moved = applyHouseLevel(true);
   upBackdrop.classList.remove('show');
   showFloat('扩建完成！' + HOUSE_LEVELS[houseLevel].name, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
@@ -10032,6 +10170,8 @@ if (buildingEl){
   if (bx) bx.addEventListener('click', ()=>toggleBuilding(false));
 
   buildingList.addEventListener('click', (ev)=>{
+    const vb = ev.target.closest('button[data-vbuy]');
+    if (vb && !vb.disabled){ buyVilla(vb.getAttribute('data-vbuy')); return; }
     const cell = ev.target.closest('[data-unit]');
     if (!cell) return;
     if (cell.getAttribute('data-mine') === '1'){
@@ -10150,6 +10290,28 @@ function paintBuilding(){
       }
     }
     out.push('</div></div>');
+  }
+  /* 小区里的独栋：公寓目录下面单独一块，买下就搬过去 */
+  {
+    const vs = villaBuildings();
+    if (vs.length){
+      out.push('<div class="sgroup">小区独栋（买下整栋就能搬过去）</div>');
+      for (const v of vs){
+        const plan = villaPlanOfBuilding(v.id);
+        const price = villaPriceOf(v.id);
+        const mine = villaOwned(v.id);
+        const here = RESIDENCE && RESIDENCE.buildingId === v.id;
+        const can = !mine && !here && MONEY >= price && !estateFull();
+        const btnTxt = here ? '已住' : (mine ? '已拥有' : (MONEY < price ? '差 ¥' + Math.round(price - MONEY) : '买下'));
+        out.push('<div class="fitem" style="margin:0 2px 7px">' +
+          '<div class="fb"><div class="fn2">' + (v.label || v.id) + (here ? ' · 现居' : '') + '</div>' +
+          '<div class="fd">独栋 · ' + (plan ? plan.name + ' · 室内 ' + plan.w + '×' + plan.h +
+            ' · ' + (plan.zones ? plan.zones.length : 0) + ' 个分区' : '暂无户型') + '</div></div>' +
+          '<button class="fbtn' + (can ? '' : ' ghost') + '" data-vbuy="' + v.id + '"' + (can ? '' : ' disabled') + '>' +
+            btnTxt + '</button>' +
+          '</div>');
+      }
+    }
   }
   buildingList.innerHTML = out.join('');
   if (buildingBal){
