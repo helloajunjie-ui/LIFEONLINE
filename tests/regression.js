@@ -2770,7 +2770,7 @@
 
       const old = migrateSave({ schema: 14 });
       P('PT13 migration fills pets for schema14',
-        old.schema === 15 && old.pets.food === 0 && old.pets.list.length === 0);
+        old.schema === CLIENT_VERSION.saveSchema && old.pets.food === 0 && old.pets.list.length === 0);
 
       let panelOk = false;
       try { renderPetShop(); panelOk = petshopList.innerHTML.length > 0; } catch (e) {}
@@ -3046,6 +3046,110 @@
         SHIFT.taskLabel = bakS.label; SHIFT.done = bakS.done; SHIFT.auto = bakS.auto;
         interacting = bakI; PLAYER.target = bakT;
         try { renderWork(); } catch(e){}
+      }
+
+      // AG 组：家具换向 180°
+      {
+        const bakP = placed.slice();
+        const bakMode = buildMode, bakPid = placingId, bakProt = placingRot, bakEdit = editingFurn;
+
+        // AG1 换向 = 占地 w/h 互换（等距投影下镜像等价于转置）
+        {
+          const bed = FURN_BY_ID['bed'];
+          const a = footOf('bed', 0), b = footOf('bed', 1);
+          const ok = a.w === bed.w && a.h === bed.h && b.w === bed.h && b.h === bed.w &&
+                     a.w !== b.w;
+          P('AG1 footOf swaps w/h after flip', ok,
+            'orig=' + a.w + 'x' + a.h + ' flip=' + b.w + 'x' + b.h);
+        }
+
+        // AG2 放置校验真的用了新占地：挡住旧占地的那格，换向后就能放了
+        {
+          const bed = FURN_BY_ID['bed'];
+          const gx = HOUSE_X + 2, gy = HOUSE_Y + 2;
+          placed = [];
+          const lampId = 'lamp';
+          const lamp = FURN_BY_ID[lampId];
+          const freeBoth = canPlace('bed', gx, gy, 0) && canPlace('bed', gx, gy, 1);
+          placed = [{ catalogId: lampId, gx: gx + bed.w - 1, gy, rot: 0 }];
+          const blocked = canPlace('bed', gx, gy, 0);
+          const allowed = canPlace('bed', gx, gy, 1);
+          P('AG2 canPlace honours rotation', freeBoth && blocked === false && allowed === true,
+            'free=' + freeBoth + ' rot0=' + blocked + ' rot1=' + allowed +
+            ' lampAt=' + (gx + bed.w - 1) + ',' + gy);
+          placed = [];
+        }
+
+        // AG3 放置模式里按换向：状态与提示都跟着变
+        {
+          placed = [];
+          enterPlace('bed');
+          const before = bbMsg.textContent;
+          const r1 = rotatePlacing();
+          const after = bbMsg.textContent;
+          const r2 = rotatePlacing();
+          const ok = r1 && r2 && before.indexOf('2×1') >= 0 && after.indexOf('1×2') >= 0 &&
+                     after.indexOf('换向') >= 0 && placingRot === 0 &&
+                     bbRotate && bbRotate.style.display !== 'none';
+          P('AG3 rotate while placing updates footprint text', ok,
+            'before=[' + before + '] after=[' + after + '] rot=' + placingRot);
+          cancelBuild();
+        }
+
+        // AG4 已摆好的家具能原地换向；碍硅挡着就拒绝
+        {
+          const bed = FURN_BY_ID['bed'];
+          const gx = HOUSE_X + 2, gy = HOUSE_Y + 2;
+          placed = [{ catalogId: 'bed', gx, gy, rot: 0 }];
+          const f = placed[0];
+          enterEdit(f);
+          const ok1 = rotatePlacing();
+          const rotAfter = f.rot;
+          // 再掉一次应回到 0
+          const ok2 = rotatePlacing();
+          P('AG4 flip in place works and toggles', ok1 && ok2 && rotAfter === 1 && f.rot === 0,
+            'rot1=' + rotAfter + ' rot2=' + f.rot);
+
+          // 挡住新占地的那格 → 应该拒绝
+          placed = [{ catalogId: 'bed', gx, gy, rot: 0 },
+                    { catalogId: 'lamp', gx, gy: gy + bed.h, rot: 0 }];
+          const g = placed[0];
+          enterEdit(g);
+          const refused = rotatePlacing() === true && g.rot === 0;
+          P('AG4b flip refuses when the new footprint is blocked', refused, 'rot=' + g.rot);
+          cancelBuild();
+          placed = [];
+        }
+
+        // AG5 脏存档不能造出家具，rot 只收 0/1
+        {
+          const dirty = [
+            { catalogId: 'bed', gx: 6, gy: 6, rot: 7 },
+            { catalogId: '不存在', gx: 1, gy: 1 },
+            { catalogId: 'lamp', gx: 'x', gy: 2 },
+            null,
+            { catalogId: 'tv', gx: 8, gy: 8, rot: 1 }
+          ];
+          const out = normalizePlaced(dirty);
+          const ok = out.length === 2 && out[0].catalogId === 'bed' && out[0].rot === 1 &&
+                     out[1].catalogId === 'tv' && out[1].rot === 1 &&
+                     out.every(x => x.rot === 0 || x.rot === 1);
+          P('AG5 normalizePlaced sanitises dirty saves', ok, JSON.stringify(out));
+        }
+
+        // AG6 老存档迁移到最新 schema，家具补上 rot
+        {
+          const mig = migrateSave({ schema: 15, placed: [{ catalogId: 'bed', gx: 5, gy: 5 }] });
+          const ok = mig.schema === CLIENT_VERSION.saveSchema &&
+                     Array.isArray(mig.placed) && mig.placed[0].rot === 0;
+          P('AG6 migration adds rot to old furniture', ok,
+            'schema=' + mig.schema + ' rot=' + (mig.placed && mig.placed[0] ? mig.placed[0].rot : '-'));
+        }
+
+        placed = bakP;
+        buildMode = bakMode; placingId = bakPid; placingRot = bakProt; editingFurn = bakEdit;
+        try { cancelBuild(); } catch(e){}
+        dirtyPlaced = true; markDirty();
       }
 
       // 还原

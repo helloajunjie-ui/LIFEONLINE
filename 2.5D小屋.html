@@ -830,6 +830,7 @@
   <div id="buildBar">
     <span>放置 <b class="bname" id="bbName">—</b></span>
     <span class="bmsg" id="bbMsg">点空地放置</span>
+    <button id="bbRotate" title="换个朝向（按 R）">» 换向</button>
     <button id="bbCancel">取消</button>
   </div>
 
@@ -3948,6 +3949,27 @@ function drawWalker(gx, gy, app, moving, animT, dir){
  * cozy = 装修度（舒适值）：摆在家里即可累积，决定睡觉/晨间的心情加成
  * walk = 可走装饰（地毯），不阻挡行走，家具可以压在上面 */
 const FURNITURE_CATALOG = HomeCore.content.toLegacyCatalog();
+/* 按 id 取家具定义。占地判断每帧都在跑，不能每次都 find 一遍全表 */
+const FURN_BY_ID = {};
+for (const _d of FURNITURE_CATALOG) FURN_BY_ID[_d.id] = _d;
+
+/* ROTATE_DOC_FIXED 家具的真实占地。
+ * 换向（rot=1）在屏幕上是"水平镜像"，但等距下这不等于绕竖轴转 180°
+ * （那个在屏幕上是点对称，x 和 y 都要反，家具会倒过来）。
+ * 它是沿对角线镜像：(gx,gy) 投到屏幕是 ((gx-gy)*32, (gx+gy)*16)，
+ * x 取反就等于把 gx/gy 对调——所以占地从 w×h 真的变成 h×w。
+ * 家具的立面仍然向上，水平轮廓沿对角换了方向，水平上看就是"换个朝向"。
+ * 所以所有占地判断都必须走这里，不能直接拿 catalog 的 w/h。 */
+function footOf(id, rot){
+  const d = FURN_BY_ID[id];
+  if (!d) return { w: 1, h: 1, walk: false };
+  return rot
+    ? { w: d.h, h: d.w, walk: !!d.walk }
+    : { w: d.w, h: d.h, walk: !!d.walk };
+}
+function footOfFurn(f){
+  return footOf(f && f.catalogId, f && f.rot ? 1 : 0);
+}
 
 // 已放置的家具实例：{catalogId, gx, gy}
 let placed = [];
@@ -3968,9 +3990,10 @@ function invRemove(catalogId){
 const placedAt = (gx, gy) => {
   let soft = null;                       // 地毯这类可走装饰，作为兜底
   for (const f of placed){
-    const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
+    const d = FURN_BY_ID[f.catalogId];
     if (!d) continue;
-    const hit = gx>=f.gx && gx<f.gx+d.w && gy>=f.gy && gy<f.gy+d.h;
+    const s2 = footOfFurn(f);
+    const hit = gx>=f.gx && gx<f.gx+s2.w && gy>=f.gy && gy<f.gy+s2.h;
     if (!hit) continue;
     if (!d.walk) return f;               // 实体家具立刻返回
     if (!soft) soft = f;
@@ -3980,19 +4003,20 @@ const placedAt = (gx, gy) => {
 const isOccupied = (gx, gy) => {
   if (isWall(gx, gy)) return true;
   return !!placed.find(f => {
-    const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
+    const d = FURN_BY_ID[f.catalogId];
     if (!d) return false;
     if (d.walk) return false;                 // 地毯等可走装饰不阻挡
-    const w = d.w, h = d.h;
-    return gx>=f.gx && gx<f.gx+w && gy>=f.gy && gy<f.gy+h;
+    const s2 = footOfFurn(f);
+    return gx>=f.gx && gx<f.gx+s2.w && gy>=f.gy && gy<f.gy+s2.h;
   });
 };
 /* 某格是否踩在可走装饰（地毯）上 */
 function rugAt(gx, gy){
   return placed.find(f => {
-    const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
+    const d = FURN_BY_ID[f.catalogId];
     if (!d || !d.walk) return false;
-    return gx>=f.gx && gx<f.gx+d.w && gy>=f.gy && gy<f.gy+d.h;
+    const s2 = footOfFurn(f);
+    return gx>=f.gx && gx<f.gx+s2.w && gy>=f.gy && gy<f.gy+s2.h;
   }) || null;
 }
 /* 装修度：已摆家具的舒适值总和 */
@@ -4273,12 +4297,22 @@ function drawFurnitureItem(f){
   const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
   if (!d) return;
   // 占地真实中心（= 四角 tile 中心均值）：w×h 家具取 (w-1)/2，2 格宽家具不再偏移半格
-  const c = tileCenter(f.gx + (d.w-1)/2, f.gy + (d.h-1)/2);
+  const fs = footOfFurn(f);
+  const c = tileCenter(f.gx + (fs.w-1)/2, f.gy + (fs.h-1)/2);
   // 优先 SVG 素材：锚点对齐占地中心格的地面点
   const img = svgImage(d.id);
   if (img){
     const rec = FURN_SVG[d.id];
-    ctx.drawImage(img, c.x - rec.ax, c.y - rec.ay, rec.w, rec.h);
+    if (f.rot){
+      /* 换向：水平镜像。对称轴就是占地中心，所以平移到中心再翻转即可 */
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, -rec.ax, -rec.ay, rec.w, rec.h);
+      ctx.restore();
+    } else {
+      ctx.drawImage(img, c.x - rec.ax, c.y - rec.ay, rec.w, rec.h);
+    }
     return;
   }
   /* 素材还在栅格化的那一瞬间，原来会画程序化兜底——那是个又扁又方的盒子，
@@ -4295,6 +4329,7 @@ function drawFurnitureItem(f){
   // 真加载失败（比如浏览器禁了 data URI）才退回程序化形状，至少还能看见东西
   ctx.save();
   ctx.translate(c.x, c.y);
+  if (f.rot) ctx.scale(-1, 1);
   drawFurnitureShape(d, f);
   ctx.restore();
 }
@@ -4541,13 +4576,14 @@ function renderWorld(){
   // 家具（以其占地中心格的深度参与排序）
   const RUG_LIFT = 2.6;      // 站在地毯上的实体抬高一层深度，避免被地毯盖住
   for (const f of placed){
-    const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
-    const cx = f.gx + (d? d.w/2 : 0.5) - 0.5;
-    const cy = f.gy + (d? d.h/2 : 0.5) - 0.5;
+    const d = FURN_BY_ID[f.catalogId];
+    const fs = footOfFurn(f);
+    const cx = f.gx + fs.w/2 - 0.5;
+    const cy = f.gy + fs.h/2 - 0.5;
     let depth = cx + cy;
     if (d && d.walk){
       // 平铺装饰：必须画在自己占地的所有地板格之后
-      depth = (f.gx + d.w - 1) + (f.gy + d.h - 1) + 0.55;
+      depth = (f.gx + fs.w - 1) + (f.gy + fs.h - 1) + 0.55;
     } else if (rugAt(f.gx, f.gy)){
       depth += RUG_LIFT;
     }
@@ -5168,7 +5204,8 @@ function renderVisit(){
   for (const f of r.furn){
     const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
     if (!d) continue;
-    const cx = f.gx + (d.w-1)/2, cy = f.gy + (d.h-1)/2;
+    const _fs = footOfFurn(f);
+    const cx = f.gx + (_fs.w-1)/2, cy = f.gy + (_fs.h-1)/2;
     drawables.push({depth: cx+cy, fn:()=>drawFurnitureItem(f)});
   }
   // 主人（站桩 + 头顶名牌）
@@ -5210,18 +5247,16 @@ function highlightTile(gx, gy, color){
 function drawBuildHint(){
   if (scene !== 'home') return;
   if (buildMode === 'placing' && placingId && hoverTile){
-    const d = FURNITURE_CATALOG.find(x=>x.id===placingId);
-    if (!d) return;
-    const ok = canPlace(placingId, hoverTile.gx, hoverTile.gy);
-    for (let y=hoverTile.gy; y<hoverTile.gy+d.h; y++)
-      for (let x=hoverTile.gx; x<hoverTile.gx+d.w; x++)
+    const fs = footOf(placingId, placingRot);
+    const ok = canPlace(placingId, hoverTile.gx, hoverTile.gy, placingRot);
+    for (let y=hoverTile.gy; y<hoverTile.gy+fs.h; y++)
+      for (let x=hoverTile.gx; x<hoverTile.gx+fs.w; x++)
         highlightTile(x, y, ok ? 'rgba(95,174,98,.4)' : 'rgba(192,57,43,.4)');
   } else if (buildMode === 'editing' && editingFurn){
-    const d = FURNITURE_CATALOG.find(x=>x.id===editingFurn.catalogId);
-    if (d)
-      for (let y=editingFurn.gy; y<editingFurn.gy+d.h; y++)
-        for (let x=editingFurn.gx; x<editingFurn.gx+d.w; x++)
-          highlightTile(x, y, 'rgba(80,140,220,.35)');
+    const fs = footOfFurn(editingFurn);
+    for (let y=editingFurn.gy; y<editingFurn.gy+fs.h; y++)
+      for (let x=editingFurn.gx; x<editingFurn.gx+fs.w; x++)
+        highlightTile(x, y, 'rgba(80,140,220,.35)');
   }
 }
 /* 昼夜氛围：夜晚冷蓝、黄昏暖橙（叠加在场景上，不影响 HUD 和浮动文字） */
@@ -6289,9 +6324,8 @@ function clickHandler(e){
     }
     // 点家具 → 看看就好
     const vf = r.furn.find(f=>{
-      const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
-      const ww = d?d.w:1, hh = d?d.h:1;
-      return gx>=f.gx && gx<f.gx+ww && gy>=f.gy && gy<f.gy+hh;
+      const fs = footOfFurn(f);
+      return gx>=f.gx && gx<f.gx+fs.w && gy>=f.gy && gy<f.gy+fs.h;
     });
     if (vf){
       showFloat('这是' + (r.owner ? r.owner.name : '主人') + '的家当，看看就好', gx, gy);
@@ -6422,7 +6456,7 @@ function clickHandler(e){
 
   // 放置模式：手持家具，点空地放置（canPlace 内部校验边界与占用）
   if (buildMode === 'placing'){
-    if (applyPlace(placingId, gx, gy, null)){
+    if (applyPlace(placingId, gx, gy, null, placingRot)){
       invRemove(placingId);        // 进入放置时没扣，放好了才扣库存
       placingId = null;            // 先清空，避免 cancelBuild 把"已放好"当成"取消"退回
       cancelBuild();
@@ -6455,8 +6489,8 @@ function clickHandler(e){
     // 尝试移动到目标格：临时移开以允许原地重放
     const cur = editingFurn;
     placed = placed.filter(x=>x!==cur);
-    if (canPlace(cur.catalogId, gx, gy)){
-      placed.push({catalogId: cur.catalogId, gx, gy});
+    if (canPlace(cur.catalogId, gx, gy, cur.rot)){
+      placed.push({catalogId: cur.catalogId, gx, gy, rot: cur.rot || 0});
       interacting = null;
       dirtyPlaced = true; markDirty(); cancelBuild(); updateHUD();
     } else {
@@ -6533,8 +6567,8 @@ function pickTargetAt(gx, gy){
     if (f){
       const d = FURNITURE_CATALOG.find(c => c.id === f.catalogId) || {};
       return {
-        key: 'f|' + f.catalogId + '|' + f.gx + ',' + f.gy,
-        gx: f.gx, gy: f.gy, w: d.w || 1, h: d.h || 1,
+        key: 'f|' + f.catalogId + '|' + f.gx + ',' + f.gy + '|' + (f.rot || 0),
+        gx: f.gx, gy: f.gy, w: footOfFurn(f).w, h: footOfFurn(f).h,
         name: d.name || furnName(f.catalogId),
         hasAct: !!d.action,
         hint: d.walk ? '可踩上去' : (d.action ? '点击交互' : '装饰 · 无操作'),
@@ -6565,8 +6599,8 @@ function pickTargetAt(gx, gy){
     const pf = placedAt(gx, gy);
     if (pf){
       const d = FURNITURE_CATALOG.find(c => c.id === pf.catalogId) || {};
-      return { key: 'fp|' + pf.catalogId + '|' + pf.gx + ',' + pf.gy,
-               gx: pf.gx, gy: pf.gy, w: d.w || 1, h: d.h || 1,
+      return { key: 'fp|' + pf.catalogId + '|' + pf.gx + ',' + pf.gy + '|' + (pf.rot || 0),
+               gx: pf.gx, gy: pf.gy, w: footOfFurn(pf).w, h: footOfFurn(pf).h,
                name: d.name || '家具', hasAct: false, hint: '别人的家当',
                target: { kind: 'furniture', furn: pf, gx: pf.gx, gy: pf.gy, name: d.name || '家具' } };
     }
@@ -6714,6 +6748,13 @@ document.addEventListener('keydown', (e)=>{
    * 两份监听同时存在，按一次 Esc 会连关两层（还漏了银行/股市/彩票等后加的面板）。
    * 现在这里直接放行，只负责方向键。 */
   if (e.key === 'Escape') return;
+  /* R：摆放/整理时换向。只在建造模式下抢键，平时不占 */
+  if ((e.code === 'KeyR' || e.key === 'r' || e.key === 'R') &&
+      typeof buildMode !== 'undefined' && buildMode !== 'normal'){
+    e.preventDefault();
+    if (typeof rotatePlacing === 'function') rotatePlacing();
+    return;
+  }
   if (!KEY_DIRS[e.code]) return;
   e.preventDefault();
   keysHeld.add(e.code);
@@ -6899,9 +6940,8 @@ function visitBlocked(gx, gy){
   if (gx<=0 || gy<=0 || gx>=r.w-1 || gy>=r.h-1) return true;
   if (gx===r.ownerPos.gx && gy===r.ownerPos.gy) return true;
   return r.furn.some(f=>{
-    const d = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
-    const w = d ? d.w : 1, h = d ? d.h : 1;
-    return gx>=f.gx && gx<f.gx+w && gy>=f.gy && gy<f.gy+h;
+    const fs = footOfFurn(f);
+    return gx>=f.gx && gx<f.gx+fs.w && gy>=f.gy && gy<f.gy+fs.h;
   });
 }
 // 在主人家聊天（比街上聊更开心）
@@ -8239,35 +8279,95 @@ const buildBar = document.getElementById('buildBar');
 const bbName = document.getElementById('bbName');
 const bbMsg = document.getElementById('bbMsg');
 const bbCancel = document.getElementById('bbCancel');
+const bbRotate = document.getElementById('bbRotate');
 // 模式：normal / placing / editing
 let buildMode = 'normal';
 let placingId = null;     // 待放置的家具 catalogId
+let placingRot = 0;       // 0 = 原朝向，1 = 换向（占地 w/h 互换）
 let editingFurn = null;   // 正在编辑的家具实例
 let dirtyPlaced = false;  // 用于存档标记
 
 function enterPlace(id){
-  buildMode = 'placing'; placingId = id; editingFurn = null;
-  const d = FURNITURE_CATALOG.find(x=>x.id===id);
+  buildMode = 'placing'; placingId = id; editingFurn = null; placingRot = 0;
+  const d = FURN_BY_ID[id];
   bbName.textContent = d.name;
   bbMsg.textContent = '点空地放置 · 取消会留在仓库 · 占地 ' + d.w + '×' + d.h;
   buildBar.classList.add('show');
+  syncRotateBtn();
 }
 function enterEdit(f){
   buildMode = 'editing'; editingFurn = f; placingId = null;
-  const d = FURNITURE_CATALOG.find(x=>x.id===f.catalogId);
+  const d = FURN_BY_ID[f.catalogId];
   bbName.textContent = d.name + '（编辑中）';
-  bbMsg.textContent = '点空地移动 · 再次点击同一件收回';
+  bbMsg.textContent = '点空地移动 · 按 R 换向 · 再点一次收回';
   buildBar.classList.add('show');
   editBtn.textContent = '退出整理';
+  syncRotateBtn();
 }
 /* 退出建造模式。家具在进入放置前就已经在仓库里，取消不需要退款也不会丢
  * （曾经是"点摆放先扣库存、取消就吞掉"，这个坑已经修掉了）。 */
 function cancelBuild(){
-  buildMode = 'normal'; placingId = null; editingFurn = null;
+  buildMode = 'normal'; placingId = null; editingFurn = null; placingRot = 0;
+  if (bbRotate) bbRotate.style.display = 'none';
   buildBar.classList.remove('show');
   editBtn.textContent = '整理';
 }
 bbCancel.addEventListener('click', cancelBuild);
+
+/* ROTATE_UI_HERE 换向
+ * 只能翻转一次（两个朝向）：家具素材是一件一图，
+ * 水平镜像 + 占地 w/h 互换恰好等价于"沿对角换方向"，不用重画。
+ * 再多要四个方向，就得每件家具出四套素材（172 个 SVG）。 */
+function syncRotateBtn(){
+  if (!bbRotate) return;
+  const show = (buildMode === 'placing' && !!placingId) || (buildMode === 'editing' && !!editingFurn);
+  bbRotate.style.display = show ? '' : 'none';
+  if (!show) return;
+  const rot = (buildMode === 'placing') ? placingRot : (editingFurn.rot ? 1 : 0);
+  bbRotate.textContent = rot ? '« 换向' : '» 换向';
+}
+/** 已摆放家具原地换向：占地会换方向，得先把占位挪开重新校验 */
+function flipPlacedFurn(f){
+  const next = f.rot ? 0 : 1;
+  const backup = placed;
+  placed = placed.filter(x => x !== f);
+  const ok = canPlace(f.catalogId, f.gx, f.gy, next);
+  placed = backup;
+  if (!ok) return false;
+  f.rot = next;
+  dirtyPlaced = true;
+  markDirty();
+  return true;
+}
+function rotatePlacing(){
+  if (buildMode === 'placing' && placingId){
+    placingRot = placingRot ? 0 : 1;
+    const fs = footOf(placingId, placingRot);
+    bbMsg.textContent = '点空地放置 · 取消会留在仓库 · 占地 ' + fs.w + '×' + fs.h +
+      (placingRot ? ' · 已换向' : '');
+    syncRotateBtn();
+    SND.pickup();
+    markDirty();
+    return true;
+  }
+  if (buildMode === 'editing' && editingFurn){
+    const f = editingFurn;
+    if (flipPlacedFurn(f)){
+      const fs = footOfFurn(f);
+      bbMsg.textContent = '已换向 · 占地 ' + fs.w + '×' + fs.h + ' · 点空地移动';
+      syncRotateBtn();
+      SND.place();
+      updateHUD();
+      saveGame();
+    } else {
+      bbMsg.textContent = '这里换不了方向（旁边挡着），先挪一下';
+      SND.err();
+    }
+    return true;
+  }
+  return false;
+}
+if (bbRotate) bbRotate.addEventListener('click', rotatePlacing);
 
 /* 买家具：先进仓库，再直接进放置模式。
  * 先进仓库是为了"中途关页面也不会钱花了、家具没了"——存档是自动的，不能在放置间隙丢东西。 */
@@ -8287,9 +8387,11 @@ function buyFurniture(d){
 }
 
 // 检查某位置可否放置某家具
-function canPlace(id, gx, gy){
-  const d = FURNITURE_CATALOG.find(x=>x.id===id);
-  const w = d.w, h = d.h;
+function canPlace(id, gx, gy, rot){
+  const d = FURN_BY_ID[id];
+  if (!d) return false;
+  const s2 = footOf(id, rot ? 1 : 0);
+  const w = s2.w, h = s2.h;
   // 家具只能放在房子内部（外墙以内）
   if (gx<=HOUSE_X || gy<=HOUSE_Y || gx+w-1>=HOUSE_X+HOUSE_W+1 || gy+h-1>=HOUSE_Y+HOUSE_H+1) return false;
   for (let y=gy; y<gy+h; y++){
@@ -8298,9 +8400,8 @@ function canPlace(id, gx, gy){
       if (d.walk){
         // 地毯：不能盖在别的家具/地毯上（避免叠放穿模），但家具可以后来压在地毯上
         if (placed.some(f=>{
-          const fd = FURNITURE_CATALOG.find(c=>c.id===f.catalogId);
-          if (!fd) return false;
-          return x>=f.gx && x<f.gx+fd.w && y>=f.gy && y<f.gy+fd.h;
+          const fs = footOfFurn(f);
+          return x>=f.gx && x<f.gx+fs.w && y>=f.gy && y<f.gy+fs.h;
         })) return false;
       } else {
         if (isOccupied(x,y)) return false;
@@ -8310,12 +8411,13 @@ function canPlace(id, gx, gy){
   return true;
 }
 // 把家具放置（或移动）到 (gx,gy)；返回是否成功
-function applyPlace(id, gx, gy, existing){
-  if (!canPlace(id, gx, gy)) return false;
+function applyPlace(id, gx, gy, existing, rot){
+  if (!canPlace(id, gx, gy, rot)) return false;
   if (existing){
     existing.gx = gx; existing.gy = gy;
+    if (rot !== undefined) existing.rot = rot ? 1 : 0;
   } else {
-    placed.push({catalogId: id, gx, gy});
+    placed.push({catalogId: id, gx, gy, rot: rot ? 1 : 0});
   }
   spawnParticles(gx, gy, '#9dbf80', 7);
   SND.place();
@@ -8330,7 +8432,7 @@ let interacting = null;   // {furn, timer, wait}
 const INTERACT_TIME = 2;  // 交互时长（秒）
 const furnName = id => { const d = FURNITURE_CATALOG.find(c=>c.id===id); return d ? d.name : '家具'; };
 function furnFootprint(f){
-  return FURNITURE_CATALOG.find(x=>x.id===f.catalogId) || {w:1, h:1};
+  return footOfFurn(f);
 }
 /* 找家具占地旁最近的空格（角色站位） */
 function bestAdjacentFree(f){
@@ -9094,6 +9196,11 @@ function migrateSave(d){
       d.pets.food = Math.max(0, Math.floor(Number(d.pets.food) || 0));
       d.pets.list = Array.isArray(d.pets.list) ? d.pets.list : [];
     }
+    if (schema === 15){
+      // v16：家具可以换向。老存档全部按原朝向（rot=0），不动玩家的摆法
+      d.placed = Array.isArray(d.placed) ? d.placed : [];
+      for (const f of d.placed){ if (f && typeof f === 'object' && f.rot === undefined) f.rot = 0; }
+    }
     schema++;
   }
   d.schema = schema;
@@ -9116,12 +9223,12 @@ function applySave(d){
   if (typeof d.wallStyle === 'number'  && ownedWalls.includes(d.wallStyle))   wallStyle = d.wallStyle;
   if (d.stats) Object.assign(STATS, d.stats);
   if (d.person) Object.assign(PERSON, d.person);
-  placed = d.placed || [];
+  placed = normalizePlaced(d.placed);
   inventory = d.inventory || [];
   // 旧版存档坐标迁移：旧室内(1..12)→新房内部(+3)。检测到任一坐标<4 视为旧档
   const legacy = placed.some(f => f.gx<4 || f.gy<4);
   if (legacy){
-    placed = placed.map(f => ({catalogId: f.catalogId, gx: f.gx+3, gy: f.gy+3}));
+    placed = placed.map(f => ({catalogId: f.catalogId, gx: f.gx+3, gy: f.gy+3, rot: f.rot || 0}));
   }
   if (d.appearance) Object.assign(APPEARANCE, d.appearance);
   // 职业进度：只认已知岗位、只接受非负整数，防止脏存档把等级刷满
@@ -9411,6 +9518,19 @@ function applySave(d){
 /** applySave 在 pantryMax() 之前就可能被调用，这里做个不依赖 FOOD_DEF 的兜底 */
 function pantryMaxSafe(){ return Math.max(0, Number(FOOD_DEF && FOOD_DEF.max) || 40); }
 
+/** 存档里的家具：只认目录里有的、坐标是整数的，rot 只收 0/1。
+ *  脏存档不能凭空变出家具，也不能把 rot 塞成 7 让渲染去猜。 */
+function normalizePlaced(list){
+  const out = [];
+  if (!Array.isArray(list)) return out;
+  for (const f of list){
+    if (!f || !FURN_BY_ID[f.catalogId]) continue;
+    const gx = Math.round(Number(f.gx)), gy = Math.round(Number(f.gy));
+    if (!isFinite(gx) || !isFinite(gy)) continue;
+    out.push({ catalogId: f.catalogId, gx, gy, rot: f.rot ? 1 : 0 });
+  }
+  return out;
+}
 function loadGame(){
   let raw = null;
   try { raw = localStorage.getItem(SAVE_KEY); } catch(e){}
@@ -12194,7 +12314,7 @@ function enterPeer(room){
   houseLevel = Math.max(0, Math.min(room.houseLevel | 0, HOUSE_LEVELS.length - 1));
   floorStyle = Math.max(0, Math.min(room.floorStyle | 0, FLOOR_STYLES.length - 1));
   wallStyle  = Math.max(0, Math.min(room.wallStyle | 0, WALL_STYLES.length - 1));
-  placed = (room.placed || []).map(f => ({ catalogId: f.catalogId, gx: f.gx, gy: f.gy }));
+  placed = normalizePlaced(room.placed);
   // 隔离仓库：applyHouseLevel 会把"压在新隔墙上的家具"收回仓库，
   // 参观时那是对方的家具，绝不能掉进我的仓库
   {
@@ -12439,7 +12559,7 @@ function initDefaultHome(){
   ];
   for (const d of defs){
     const cat = FURNITURE_CATALOG.find(x=>x.id===d.catalogId);
-    if (canPlace(d.catalogId, d.gx, d.gy)) placed.push({catalogId:d.catalogId, gx:d.gx, gy:d.gy});
+    if (canPlace(d.catalogId, d.gx, d.gy)) placed.push({catalogId:d.catalogId, gx:d.gx, gy:d.gy, rot:0});
   }
 }
 if (!loadGame()) initDefaultHome();
