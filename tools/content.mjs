@@ -1184,6 +1184,49 @@ function validate(){
     }
   }
 
+  /* V4.19 店员：每家店上班时间得有人在，而且站得住。
+   * 写错 zoneId 不会报错，只会"这家店永远没人"——玩家不会察觉，但街会变空。 */
+  {
+    const pk = packs['characters/npcs.neighbors.json'];
+    const clerks = (pk && pk.clerks) || [];
+    if (pk && !clerks.length) problems.push('[店员] 一个店员都没有，商业街会空荡荡');
+    /* 地图里所有 shop / civic 分区 */
+    const buildings = new Set();
+    for (const [rel, m] of Object.entries(packs)){
+      if (!rel.startsWith('maps/') || !m || !Array.isArray(m.zones)) continue;
+      for (const z of m.zones) if (z.kind === 'shop' || z.kind === 'civic') buildings.add(z.id);
+    }
+    const seenId = new Set(), covered = new Set();
+    for (const c of clerks){
+      if (!c.id) { problems.push('[店员] 有店员缺少 id'); continue; }
+      if (seenId.has(c.id)) problems.push('[店员] id 重复: ' + c.id);
+      seenId.add(c.id);
+      if (!c.name) problems.push('[店员] ' + c.id + ' 缺少 name');
+      if (!c.zoneId) problems.push('[店员] ' + c.id + ' 缺少 zoneId');
+      else if (!buildings.has(c.zoneId)) problems.push('[店员] ' + c.id + ' 的 zoneId「' + c.zoneId + '」不是商铺/公共建筑');
+      else covered.add(c.zoneId);
+      const h = c.hours;
+      if (!Array.isArray(h) || h.length !== 2 || !h.every(v => Number(v) >= 0 && Number(v) <= 24)){
+        problems.push('[店员] ' + c.id + ' hours 必须是 [开,关] 两个 0..24 的数字');
+      } else if (Number(h[0]) === Number(h[1])){
+        problems.push('[店员] ' + c.id + ' hours 开工和收工同一时刻，等于永不上班');
+      }
+      for (const pool of ['hello', 'tip']){
+        const arr = (c.lines || {})[pool];
+        if (!Array.isArray(arr) || !arr.length || !arr.every(x => typeof x === 'string' && x.trim())){
+          problems.push('[店员] ' + c.id + ' 的 lines.' + pool + ' 至少要有 1 句有效台词');
+        }
+      }
+      const ap = c.appearance || {};
+      for (const k of ['skin', 'hair', 'top', 'bottom']){
+        if (!ap[k]) problems.push('[店员] ' + c.id + ' 外观缺少 ' + k);
+      }
+    }
+    for (const b of buildings){
+      if (!covered.has(b)) problems.push('[店员]「' + b + '」没有店员，这家店会一直是空的');
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

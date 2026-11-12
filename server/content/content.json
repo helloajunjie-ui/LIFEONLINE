@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-12T09:22:37.021Z",
+  "generatedAt": "2026-11-12T09:52:16.492Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -44,9 +44,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "characters/npcs.neighbors.json": {
-      "version": 8,
-      "hash": "e157ff88acad",
-      "updatedAt": "2026-11-12T08:10:29.122Z"
+      "version": 10,
+      "hash": "9c58bee71595",
+      "updatedAt": "2026-11-12T09:52:16.484Z"
     },
     "characters/palettes.json": {
       "version": 1,
@@ -59,9 +59,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "environment/ambient.json": {
-      "version": 4,
-      "hash": "77fd8e8154a2",
-      "updatedAt": "2026-11-12T08:42:18.664Z"
+      "version": 5,
+      "hash": "089ad64b6a33",
+      "updatedAt": "2026-11-12T09:52:04.721Z"
     },
     "environment/climate.json": {
       "version": 4,
@@ -104,9 +104,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "maps/street.map.json": {
-      "version": 22,
-      "hash": "e45eab60b29d",
-      "updatedAt": "2026-11-12T09:22:26.124Z"
+      "version": 23,
+      "hash": "e73a869d9694",
+      "updatedAt": "2026-11-12T09:52:04.723Z"
     },
     "pets/pets.json": {
       "version": 1,

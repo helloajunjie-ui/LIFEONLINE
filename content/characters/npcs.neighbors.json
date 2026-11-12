@@ -338,5 +338,472 @@
         }
       }
     }
-  ]
+  ],
+  "clerks": [
+    {
+      "id": "clerk.shop1",
+      "name": "王小雨",
+      "zoneId": "shop1",
+      "hours": [
+        0,
+        24
+      ],
+      "appearance": {
+        "skin": "#f0c090",
+        "hair": "#2f2a26",
+        "top": "#e2703a",
+        "bottom": "#3f4a6a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 2,
+        "faceStyle": 1
+      },
+      "lines": {
+        "hello": [
+          "夜宵在第二排，热的。",
+          "这么晚还出来转？",
+          "关东煮刚上，要不要来一串。"
+        ],
+        "tip": [
+          "货架上的饭团和便当点一下就能吃，比下馆子省事。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop2",
+      "name": "阿哲",
+      "zoneId": "shop2",
+      "hours": [
+        8,
+        21
+      ],
+      "appearance": {
+        "skin": "#e8b088",
+        "hair": "#3c2f28",
+        "top": "#4a5a4a",
+        "bottom": "#2f3340",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 1,
+        "faceStyle": 0
+      },
+      "lines": {
+        "hello": [
+          "……要喝什么。",
+          "坐着吧，不急。",
+          "今天豆子换了。"
+        ],
+        "tip": [
+          "点柜台能选；坐一会儿情绪会好些。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop3",
+      "name": "张婶",
+      "zoneId": "shop3",
+      "hours": [
+        6,
+        19
+      ],
+      "appearance": {
+        "skin": "#e8a878",
+        "hair": "#4a3a2c",
+        "top": "#c85a5a",
+        "bottom": "#4a4a5e",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 3,
+        "faceStyle": 2
+      },
+      "lines": {
+        "hello": [
+          "今早的青菜水灵！",
+          "来点啥？给你挑好的。",
+          "自己做饭才划算，别老吃外头。"
+        ],
+        "tip": [
+          "买食材回家开火，比下馆子便宜一半还多。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop4",
+      "name": "小陈",
+      "zoneId": "shop4",
+      "hours": [
+        8,
+        20
+      ],
+      "appearance": {
+        "skin": "#eab48c",
+        "hair": "#22201e",
+        "top": "#3f6fa8",
+        "bottom": "#33384a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 1,
+        "faceStyle": 1
+      },
+      "lines": {
+        "hello": [
+          "稍等，这批件马上就分完。",
+          "包裹都在这儿，报房号就行。",
+          "一天跑三十趟，腿都不是自己的了。"
+        ],
+        "tip": [
+          "点柜台就能寄取；东西多的时候记得先清仓库。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop5",
+      "name": "圆圆",
+      "zoneId": "shop5",
+      "hours": [
+        10,
+        22
+      ],
+      "appearance": {
+        "skin": "#f4c8a0",
+        "hair": "#5a3a2a",
+        "top": "#f2d06b",
+        "bottom": "#8a5a7a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 4,
+        "faceStyle": 1
+      },
+      "lines": {
+        "hello": [
+          "三分糖还是五分？",
+          "今天第二杯半价——开玩笑的。",
+          "学生证没有优惠哦。"
+        ],
+        "tip": [
+          "奶茶能顶一会儿饿，但别当饭吃。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop_restaurant",
+      "name": "老张",
+      "zoneId": "shop_restaurant",
+      "hours": [
+        10,
+        22
+      ],
+      "appearance": {
+        "skin": "#e0a070",
+        "hair": "#4a4038",
+        "top": "#e8e2d4",
+        "bottom": "#3a3a48",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 0,
+        "faceStyle": 2
+      },
+      "lines": {
+        "hello": [
+          "吃点什么？锅还热着。",
+          "一个人？里面随便坐。",
+          "今天的汤熬了两个钟头。"
+        ],
+        "tip": [
+          "不用自己开火，就是比自己做饭贵点。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop_super",
+      "name": "刘姐",
+      "zoneId": "shop_super",
+      "hours": [
+        7,
+        22
+      ],
+      "appearance": {
+        "skin": "#eeb890",
+        "hair": "#3a2e2a",
+        "top": "#5fae62",
+        "bottom": "#43485a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 2,
+        "faceStyle": 0
+      },
+      "lines": {
+        "hello": [
+          "袋子要吗？",
+          "米面油都在最里头那排。",
+          "一次买够几天，省得来回跑。"
+        ],
+        "tip": [
+          "日常吃用这儿最全，囤一点能省不少趟腿。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop_bank",
+      "name": "周敏",
+      "zoneId": "shop_bank",
+      "hours": [
+        9,
+        17
+      ],
+      "appearance": {
+        "skin": "#f2c49c",
+        "hair": "#2a2422",
+        "top": "#2f3a55",
+        "bottom": "#2a2e3a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 1,
+        "faceStyle": 1
+      },
+      "lines": {
+        "hello": [
+          "办什么业务？",
+          "利率牌在右边墙上。",
+          "定期没到期取出来会损失利息。"
+        ],
+        "tip": [
+          "活期随时能取；定期锁 90 天，到期利息高得多。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop_lottery",
+      "name": "老宋",
+      "zoneId": "shop_lottery",
+      "hours": [
+        9,
+        21
+      ],
+      "appearance": {
+        "skin": "#e8b088",
+        "hair": "#6a6a6a",
+        "top": "#8a6a3a",
+        "bottom": "#3a3a4a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 0,
+        "faceStyle": 2
+      },
+      "lines": {
+        "hello": [
+          "两块钱买个念想。",
+          "中了别忘了我。",
+          "概率这东西，写着呢。"
+        ],
+        "tip": [
+          "中奖概率很低，当个乐子就行，别上头。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop_stock",
+      "name": "方磊",
+      "zoneId": "shop_stock",
+      "hours": [
+        9,
+        15
+      ],
+      "appearance": {
+        "skin": "#e6ae84",
+        "hair": "#2a2622",
+        "top": "#384a63",
+        "bottom": "#2c303c",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 1,
+        "faceStyle": 1
+      },
+      "lines": {
+        "tip": [
+          "浮盈要卖掉才算钱；拿着的时候只是账面数字。"
+        ],
+        "hello": [
+          "今天走势还行。",
+          "别追高，跌下来再买。",
+          "账面浮盈浮亏，别当现金。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop_car",
+      "name": "小林",
+      "zoneId": "shop_car",
+      "hours": [
+        9,
+        18
+      ],
+      "appearance": {
+        "skin": "#f0c49c",
+        "hair": "#33291f",
+        "top": "#3f4a55",
+        "bottom": "#33384a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 2,
+        "faceStyle": 1
+      },
+      "lines": {
+        "hello": [
+          "看车？哪台都行，能试。",
+          "买了就能开，比走路快多了。",
+          "停车位就在楼下。"
+        ],
+        "tip": [
+          "买了车点自己就能上车，开起来比走路快。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.shop_pet",
+      "name": "阿May",
+      "zoneId": "shop_pet",
+      "hours": [
+        9,
+        20
+      ],
+      "appearance": {
+        "skin": "#f2c8a4",
+        "hair": "#402a20",
+        "top": "#c98aa0",
+        "bottom": "#4a4450",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 3,
+        "faceStyle": 1
+      },
+      "lines": {
+        "hello": [
+          "想养点什么？",
+          "先想清楚，养了就得管它。",
+          "猫粮狗粮在左边架子。"
+        ],
+        "tip": [
+          "先把粮备好再接它回家，不然它会饿。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.hospital",
+      "name": "小何",
+      "zoneId": "hospital",
+      "hours": [
+        8,
+        20
+      ],
+      "appearance": {
+        "skin": "#f4ccaa",
+        "hair": "#241f1c",
+        "top": "#f2f4f6",
+        "bottom": "#4a5568",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 1,
+        "faceStyle": 0
+      },
+      "lines": {
+        "hello": [
+          "哪里不舒服？",
+          "别硬扛，坐下说。",
+          "最近降温，多穿点。"
+        ],
+        "tip": [
+          "累到没状态就来看一趟，能缓过来。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.police",
+      "name": "老赵",
+      "zoneId": "police",
+      "hours": [
+        0,
+        24
+      ],
+      "appearance": {
+        "skin": "#e2a878",
+        "hair": "#4a4a4a",
+        "top": "#2f3a55",
+        "bottom": "#2a2e3a",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 0,
+        "faceStyle": 2
+      },
+      "lines": {
+        "hello": [
+          "有事说事。",
+          "门别忘锁。",
+          "这小区挺太平的。"
+        ],
+        "tip": [
+          "丢了东西来这儿问一声，多半有人捡到送来。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.property",
+      "name": "孙姐",
+      "zoneId": "property",
+      "hours": [
+        9,
+        18
+      ],
+      "appearance": {
+        "skin": "#eeb08a",
+        "hair": "#3a2e28",
+        "top": "#5a7a9a",
+        "bottom": "#3f4450",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 2,
+        "faceStyle": 1
+      },
+      "lines": {
+        "hello": [
+          "交费在窗口。",
+          "电梯又坏了？我记一下。",
+          "房租水电按时交，省得催。"
+        ],
+        "tip": [
+          "账单会自动扣，余额不够就会欠费，留意着点。"
+        ]
+      }
+    },
+    {
+      "id": "clerk.school",
+      "name": "老马",
+      "zoneId": "school",
+      "hours": [
+        7,
+        17
+      ],
+      "appearance": {
+        "skin": "#dfa074",
+        "hair": "#8a8a8a",
+        "top": "#4a5a4a",
+        "bottom": "#3a3a48",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 0,
+        "faceStyle": 2
+      },
+      "lines": {
+        "hello": [
+          "接孩子？还没放学。",
+          "上课呢，别在门口站着。",
+          "铃一响就都跑出来了。"
+        ],
+        "tip": [
+          "放学那阵子最热闹，路口车也多。"
+        ]
+      }
+    }
+  ],
+  "clerksNote": "店员：站在自己门口，按 hours（24 小时制，含头不含尾）上下班。lines.hello 是打招呼，lines.tip 是\"这家店怎么用\"，新手不知道柜台能点的时候，问一句话比翻说明快。 便利店 24 小时（[0,24]），深夜也有人。 便利店 24 小时（[0,24]），深夜也有人。"
 }

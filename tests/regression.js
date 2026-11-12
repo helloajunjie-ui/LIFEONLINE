@@ -4105,6 +4105,47 @@
             MONEY = bak.money; PLAYER.fx = bak.fx; PLAYER.fy = bak.fy; scene = bak.scene; busRide = null;
           }
 
+          // ---------- AZ：店员 ----------
+          {
+            CLERKS.forEach(c => clerkSpotFor(c));
+            const unplaced = CLERKS.filter(c => !c.spot).map(c => c.name);
+            const badSpot = CLERKS.filter(c => c.spot &&
+              (isStreetObstacle(c.fx, c.fy) || streetZoneKindShallow(c.fx, c.fy) === 'road'));
+            const shops = STREET_ZONES.filter(z => z.kind === 'shop' || z.kind === 'civic');
+            const covered = new Set(CLERKS.map(c => c.zoneId));
+            const missing = shops.filter(z => !covered.has(z.id)).map(z => z.label);
+            P('AZ1 every building has a clerk standing on walkable ground',
+              CLERKS.length >= 10 && !unplaced.length && !badSpot.length && !missing.length,
+              'clerks=' + CLERKS.length + ' unplaced=' + unplaced.join(',') +
+              ' badSpot=' + badSpot.length + ' missing=' + missing.join(','));
+
+            /* 上班时间：银行 9-17，凌晨三点不该在；便利店 7-23，凌晨也在 */
+            const bank = CLERKS.find(c => c.zoneId === 'shop_bank');
+            const mart = CLERKS.find(c => c.zoneId === 'shop1');
+            const at = (c, h) => clerkOnDuty(c, h * 60);
+            P('AZ2 clerks keep their own hours',
+              bank && mart && at(bank, 3) === false && at(bank, 12) === true &&
+              at(bank, 18) === false && at(mart, 3) === true && at(mart, 23.5) === true,
+              'bank@3=' + at(bank, 3) + ' bank@12=' + at(bank, 12) +
+              ' mart@3=' + at(mart, 3) + ' mart@23.5=' + at(mart, 23.5));
+
+            /* 点人说话：名字在前、台词非空，且两次不会连着重复 */
+            const bak = { floats: floats.length };
+            const c0 = CLERKS[0];
+            floats.length = 0;
+            VERB_HOOKS.clerkHello({ npc: c0, effects: { emotion: 6 } });
+            const greet = floats.length ? floats[floats.length - 1].text : '';
+            VERB_HOOKS.clerkTip({ npc: c0, effects: { emotion: 2 } });
+            const tip = floats.length ? floats[floats.length - 1].text : '';
+            const seen = new Set();
+            for (let i = 0; i < 20; i++) seen.add(clerkLine(c0, 'hello'));
+            P('AZ3 clerks greet you and explain their own shop',
+              greet.indexOf(c0.name) === 0 && greet.length > c0.name.length + 3 &&
+              tip.indexOf(c0.name) === 0 && tip.length > c0.name.length + 3 && seen.size >= 2,
+              'greet=' + greet.slice(0, 20) + ' | tip=' + tip.slice(0, 20) + ' | distinct=' + seen.size);
+            floats.length = bak.floats;
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

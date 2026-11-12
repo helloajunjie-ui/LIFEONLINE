@@ -5587,6 +5587,14 @@ function renderStreet(){
     drawables.push({depth: Math.round(n.fx)+Math.round(n.fy),
                     fn:()=>drawWalker(n.fx, n.fy, n.appearance, n.moving, n.animT, n.dir)});
   }
+  /* 店员：站门口等客，到点就下班（不游走，商业街人多会乱） */
+  for (const c of CLERKS){
+    clerkSpotFor(c);
+    if (!c.spot || !clerkOnDuty(c)) continue;
+    if (!tileOnScreen(c.fx, c.fy, 200)) continue;
+    drawables.push({depth: Math.round(c.fx)+Math.round(c.fy),
+                    fn:()=>drawWalker(c.fx, c.fy, c.appearance, false, c.animT, c.dir)});
+  }
   // 红绿灯杆：跟着物件层排序，站在杆后面会被挡住
   for (const c of STREET_CROSSINGS){
     if (!tileOnScreen(c.box.x + c.box.w / 2, c.box.y + c.box.h / 2, 240)) continue;
@@ -5601,6 +5609,7 @@ function renderStreet(){
     _trafficLastMs = nowMs;
     const peds = [{ gx: PLAYER.fx, gy: PLAYER.fy }];
     for (const n of NEIGHBORS) peds.push({ gx: n.fx, gy: n.fy });
+    for (const c of CLERKS) if (c.spot && clerkOnDuty(c)) peds.push({ gx: c.fx, gy: c.fy });
     TRAFFIC_CARS = trafficStep(dt, nowMs / 1000, peds);
   }
   for (const car of TRAFFIC_CARS){
@@ -5751,6 +5760,75 @@ function finishBusRide(){
   spawnParticles(to.gx, to.gy, '#8fb4d8', 8);
   SND.door();
   updateHUD(); saveGame(); markDirty();
+}
+
+/* ---------- 店员 ----------
+ * 16 家店原来一个人都没有：门口冷冷清清，"逛商业街"这件事就只有点面板。
+ * 现在每家上班时间有个人站在门口，能打招呼、能问"这家店怎么用"——
+ * 新手不知道柜台能点的时候，问一句话比翻说明快。
+ * 只站不游走：商业街人一多，走来走去反而乱。 */
+const CLERK_ACTS = [
+  { verb: 'greet', label: '打个招呼', durationSec: 0, sfx: 'talk', hook: 'clerkHello',
+    effects: { emotion: 6 }, order: 0 },
+  { verb: 'tip', label: '问问这家店', durationSec: 0, sfx: 'talk', hook: 'clerkTip',
+    effects: { emotion: 2 }, order: 1 },
+  { verb: 'news', label: '聊聊小区', durationSec: 0, sfx: 'talk', hook: 'npcAskNews',
+    effects: { emotion: 3 }, order: 2 }
+];
+const CLERKS = (HomeCore.content.clerks() || []).map(c => ({
+  id: String(c.id || ('clerk.' + c.zoneId)).replace(/^clerk\./, ''),
+  name: c.name || '店员',
+  zoneId: c.zoneId || '',
+  hours: (Array.isArray(c.hours) && c.hours.length === 2) ? c.hours : [9, 18],
+  appearance: c.appearance || {},
+  lines: c.lines || {},
+  acts: CLERK_ACTS,
+  fx: 0, fy: 0, spot: false, dir: 1, animT: 0, moving: false, _lastLine: -1
+}));
+
+/** 上不上班：hours=[开,关]，含头不含尾；写成 [0,24] 就是通宵 */
+function clerkOnDuty(c, minute){
+  const h = (minute == null ? MINUTE : minute) / 60;
+  const a = Number(c.hours[0]) || 0, b = Number(c.hours[1]) || 0;
+  if (b <= a) return h >= a || h < b;      // 跨零点
+  return h >= a && h < b;
+}
+
+/** 站门口：优先正门，其次左右一格，再其次门外一格（门口被占时不会消失） */
+function clerkSpotFor(c){
+  if (c.spot) return c;
+  const z = STREET_ZONES.find(q => q.id === c.zoneId);
+  if (!z) return c;
+  const cx = z.x + Math.floor(z.w / 2);
+  const cands = [[cx, z.y + z.h], [cx + 1, z.y + z.h], [cx - 1, z.y + z.h], [cx, z.y + z.h + 1]];
+  for (const q of cands){
+    if (isStreetObstacle(q[0], q[1])) continue;
+    if (streetZoneKindShallow(q[0], q[1]) === 'road') continue;
+    c.fx = q[0]; c.fy = q[1]; c.spot = true; c.dir = (q[0] >= cx) ? 1 : -1;
+    break;
+  }
+  return c;
+}
+
+/** 点名：走到格子上的店员（没上班的不认） */
+function clerkAt(gx, gy){
+  for (const c of CLERKS){
+    clerkSpotFor(c);
+    if (!c.spot || !clerkOnDuty(c)) continue;
+    if (Math.round(c.fx) === gx && Math.round(c.fy) === gy) return c;
+  }
+  return null;
+}
+
+/** 抽一句台词，尽量不和上一句重复 */
+function clerkLine(c, pool){
+  const arr = (c.lines && c.lines[pool]) || [];
+  if (!arr.length) return '……';
+  if (arr.length === 1) return arr[0];
+  let i = Math.floor(Math.random() * arr.length);
+  if (i === c._lastLine) i = (i + 1) % arr.length;
+  c._lastLine = i;
+  return arr[i];
 }
 
 /** 车上的自己：画公交不画人，车窗里点一个头，证明"我在车上" */
@@ -7137,6 +7215,12 @@ function clickHandler(e){
         return;
       }
     }
+    // 点店员（先于邻居判断：店员站位固定，不会和游走的邻居抢同一格）
+    const ck = clerkAt(gx, gy);
+    if (ck){
+      interactTarget({ kind:'actor', npc:ck, gx, gy, name:ck.name });
+      return;
+    }
     // 点邻居 → 统一交互入口（人也是"目标 + 动作组"，与他人共用同一套菜单/条件判定）
     const n = NEIGHBORS.find(nn=>Math.round(nn.fx)===gx && Math.round(nn.fy)===gy);
     if (n){
@@ -7347,6 +7431,11 @@ function pickTargetAt(gx, gy){
     if (MY_CAR && !IN_CAR && Math.round(MY_CAR.gx) === gx && Math.round(MY_CAR.gy) === gy){
       return { key: 'car', gx: gx, gy: gy, w: 1, h: 1, name: '我的车',
                hasAct: true, hint: '点击上车', target: { kind: 'car', gx: gx, gy: gy } };
+    }
+    const ck = clerkAt(gx, gy);
+    if (ck){
+      return { key: 'clerk|' + ck.id, gx: gx, gy: gy, w: 1, h: 1, name: ck.name,
+               hasAct: true, hint: '点击交谈', target: { kind: 'actor', npc: ck, gx: gx, gy: gy, name: ck.name } };
     }
     const n = NEIGHBORS.find(nn => Math.round(nn.fx) === gx && Math.round(nn.fy) === gy);
     if (n){
@@ -9603,6 +9692,24 @@ const VERB_HOOKS = {
     /* 不再瞬移：交给过场沿路开过去，玩家能看见外面的车和楼 */
     startBusRide(st, to);
     updateHUD();
+  },
+
+  /** 店员打招呼 */
+  clerkHello(ctx){
+    const c = ctx.npc;
+    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 6));
+    showFloat(c.name + '："' + clerkLine(c, 'hello') + '"', c.fx, c.fy, 3.4);
+    SND.talk();
+    c.appearance.faceStyle = 1;
+  },
+
+  /** 问这家店怎么用：把"柜台能点什么"用一句话讲清楚 */
+  clerkTip(ctx){
+    const c = ctx.npc;
+    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 2));
+    showFloat(c.name + '："' + clerkLine(c, 'tip') + '"', c.fx, c.fy, 3.8);
+    SND.talk();
+    c.appearance.faceStyle = 0;
   },
 
   /** 打听工作：今天上过班就说别硬撑，没上过就报两家正在招人的店 */

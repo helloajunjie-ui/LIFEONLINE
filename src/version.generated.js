@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.57.0",
+  "appVersion": "1.58.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
-  "contentHash": "a7a86b6cd22d",
-  "builtAt": "2026-11-12T09:48:48.128Z",
+  "contentHash": "39cb468b293b",
+  "builtAt": "2026-11-12T09:53:01.440Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -40,8 +40,8 @@ export const BUILD = {
       "hash": "f4800b19fb18"
     },
     "content/characters/npcs.neighbors.json": {
-      "version": 8,
-      "hash": "e157ff88acad"
+      "version": 10,
+      "hash": "9c58bee71595"
     },
     "content/characters/palettes.json": {
       "version": 1,
@@ -52,8 +52,8 @@ export const BUILD = {
       "hash": "1b632f4c14f5"
     },
     "content/environment/ambient.json": {
-      "version": 4,
-      "hash": "77fd8e8154a2"
+      "version": 5,
+      "hash": "089ad64b6a33"
     },
     "content/environment/climate.json": {
       "version": 4,
@@ -88,8 +88,8 @@ export const BUILD = {
       "hash": "fa7263c09f78"
     },
     "content/maps/street.map.json": {
-      "version": 22,
-      "hash": "e45eab60b29d"
+      "version": 23,
+      "hash": "e73a869d9694"
     },
     "content/pets/pets.json": {
       "version": 1,
@@ -121,7 +121,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "a7a86b6cd22d"
+      "hash": "39cb468b293b"
     },
     "src/core/clock.js": {
       "version": null,
@@ -129,7 +129,7 @@ export const BUILD = {
     },
     "src/core/content.js": {
       "version": null,
-      "hash": "bc15680f2ea4"
+      "hash": "4a9db8d2fc20"
     },
     "src/core/environment.js": {
       "version": null,
