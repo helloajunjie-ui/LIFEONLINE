@@ -60,20 +60,31 @@ node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 **量一下再改**：想动架构先看状态清单，别凭印象重构。
 
 ```bash
+node tools/statemap.mjs --check   # 状态登记表是否完整、口径是否自洽（新增顶层 let 必须登记）
 node tools/statemap.mjs           # 顶层可变状态：谁写了多少次、有没有入档
 node tools/statemap.mjs --top 15  # 只看写入最多的（"上帝状态"候选）
 ```
+
+当前登记 210 个：**domain 43**（玩法状态，其中 38 个入档、5 个刻意不存并写明原因）/
+**derived 53**（从内容或常量推导）/ **session 81**（瞬态）/ **cache 33**（可重建）。
+新增一个顶层 `let` 忘了登记，`--check` 会直接报出来。
 
 **量一下再改**：想动架构先看状态清单，别凭印象重构。
 
 ```bash
+node tools/statemap.mjs --check   # 状态登记表是否完整、口径是否自洽（新增顶层 let 必须登记）
 node tools/statemap.mjs           # 顶层可变状态：谁写了多少次、有没有入档
 node tools/statemap.mjs --top 15  # 只看写入最多的（"上帝状态"候选）
 ```
 
+当前登记 210 个：**domain 43**（玩法状态，其中 38 个入档、5 个刻意不存并写明原因）/
+**derived 53**（从内容或常量推导）/ **session 81**（瞬态）/ **cache 33**（可重建）。
+新增一个顶层 `let` 忘了登记，`--check` 会直接报出来。
+
 **跑门禁**（提交前一套）：
 
 ```bash
+node tools/statemap.mjs --check   # 状态登记表：新增顶层状态必须登记，domain 必须写清是否入档
 node tools/guard.mjs              # 提交前体检：行尾被翻、行数暴涨、同一行重复 8 次以上
 node tools/doccheck.mjs           # 文档数字对账：README 写的包数/家具/人物…和内容包实算是否一致
 node tools/dupcheck.mjs           # 重复的顶层函数 / 测试分组；三处年龄枚举是否一致

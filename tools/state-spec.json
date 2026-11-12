@@ -1,0 +1,765 @@
+{
+  "note": "顶层可变状态登记表。domain = 玩法状态（saved 必须明确）；derived = 从内容/常量推导；session = 会话内瞬态（刷新即丢）；cache = 可重建缓存（约定 _ 开头）。新增顶层状态后跑 node tools/genstatespec.mjs --enrich 登记，再跑 node tools/statemap.mjs --check 验证。",
+  "counts": {
+    "domain": 43,
+    "derived": 53,
+    "session": 81,
+    "cache": 33
+  },
+  "states": {
+    "_billTickDay": {
+      "kind": "cache"
+    },
+    "_buildingSvgCache": {
+      "kind": "cache"
+    },
+    "_charCache": {
+      "kind": "cache"
+    },
+    "_chatLastTopic": {
+      "kind": "cache"
+    },
+    "_chatNext": {
+      "kind": "cache"
+    },
+    "_chatTick": {
+      "kind": "cache"
+    },
+    "_eaveCells": {
+      "kind": "cache"
+    },
+    "_fade": {
+      "kind": "cache"
+    },
+    "_floorCv": {
+      "kind": "cache"
+    },
+    "_floorOX": {
+      "kind": "cache"
+    },
+    "_glowSprite": {
+      "kind": "cache"
+    },
+    "_histCache": {
+      "kind": "cache"
+    },
+    "_jobTable": {
+      "kind": "cache"
+    },
+    "_lastSceneTag": {
+      "kind": "cache"
+    },
+    "_lightCur": {
+      "kind": "cache"
+    },
+    "_lightPass": {
+      "kind": "cache"
+    },
+    "_newsDay": {
+      "kind": "cache"
+    },
+    "_orderDraft": {
+      "kind": "cache"
+    },
+    "_orderUid": {
+      "kind": "cache"
+    },
+    "_parcelNoticeDay": {
+      "kind": "cache"
+    },
+    "_puddles": {
+      "kind": "cache"
+    },
+    "_realDayStamp": {
+      "kind": "cache"
+    },
+    "_seasonCur": {
+      "kind": "cache"
+    },
+    "_sndKicked": {
+      "kind": "cache"
+    },
+    "_stockDay": {
+      "kind": "cache"
+    },
+    "_svgCache": {
+      "kind": "cache"
+    },
+    "_talkCache": {
+      "kind": "cache"
+    },
+    "_tempCur": {
+      "kind": "cache"
+    },
+    "_trafficLastMs": {
+      "kind": "cache"
+    },
+    "_trafficRareSlots": {
+      "kind": "cache"
+    },
+    "_weatherCur": {
+      "kind": "cache"
+    },
+    "_worldDayInit": {
+      "kind": "cache"
+    },
+    "_zoneChunksBuilt": {
+      "kind": "cache"
+    },
+    "ACC_PAL": {
+      "kind": "derived"
+    },
+    "ACH": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "achievement",
+      "note": "成就解锁 + 首次看到的事件标签（met./clerk. 都在 events 里）"
+    },
+    "ACH_BY_ID": {
+      "kind": "derived"
+    },
+    "achOpen": {
+      "kind": "session"
+    },
+    "achTimer": {
+      "kind": "session"
+    },
+    "actMenuTarget": {
+      "kind": "session"
+    },
+    "ADDRESS": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "住址的显示文本，由 RESIDENCE 派生后缓存"
+    },
+    "AGE_STAGE_LEGACY": {
+      "kind": "derived"
+    },
+    "AGE_STAGE_NAME": {
+      "kind": "derived"
+    },
+    "AGE_STAGES": {
+      "kind": "derived"
+    },
+    "APPEARANCE": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "person",
+      "note": "外观与身份三件套 age/sex/job；改它要同步重画立绘"
+    },
+    "BAG": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "food",
+      "note": "随身背包份数，回家自动进冰箱"
+    },
+    "BANK": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "bank",
+      "note": "存款/定期/贷款/逾期统计"
+    },
+    "bankOpen": {
+      "kind": "session"
+    },
+    "BILL_CURSOR": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "bills",
+      "note": "账单轮转游标，避免每次只生成同一种账单"
+    },
+    "BILL_LATE_DAY": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "bills",
+      "note": "逾期起始日；逾期只扣情绪，不没收房产"
+    },
+    "BILL_LATE_TOTAL": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "bills",
+      "note": "累计逾期次数，全部结清后归零"
+    },
+    "BILLS": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "bills",
+      "note": "账单列表 + 逾期进度；付清后惩罚计数归零"
+    },
+    "BIZ_FOCUS": {
+      "kind": "session"
+    },
+    "BIZ_LAST_DAY": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "business",
+      "note": "上次承包结算的游戏日"
+    },
+    "BIZ_LAST_INCOME": {
+      "kind": "domain",
+      "saved": false,
+      "note": "昨天承包结算的金额，面板展示用，能重算"
+    },
+    "BIZ_LIST": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "business",
+      "note": "我承包的门面（服务端 businesses 表才是独占的真相）"
+    },
+    "BIZ_LOADING": {
+      "kind": "session"
+    },
+    "BIZ_REMOTE": {
+      "kind": "session"
+    },
+    "BIZ_TERM_PICK": {
+      "kind": "session"
+    },
+    "bizOpen": {
+      "kind": "session"
+    },
+    "BOTTOM_COLORS": {
+      "kind": "derived"
+    },
+    "BUILDING_SVG": {
+      "kind": "derived"
+    },
+    "buildingOpen": {
+      "kind": "session"
+    },
+    "buildingRoomsCache": {
+      "kind": "session"
+    },
+    "buildingSelected": {
+      "kind": "session"
+    },
+    "buildMode": {
+      "kind": "session"
+    },
+    "busRide": {
+      "kind": "session"
+    },
+    "cam": {
+      "kind": "session"
+    },
+    "camDrawnX": {
+      "kind": "session"
+    },
+    "camReady": {
+      "kind": "session"
+    },
+    "CAR_MODEL_BY_ID": {
+      "kind": "derived"
+    },
+    "CAREER": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "career",
+      "note": "各班次的累计（等级由班次推导，不单独存等级）"
+    },
+    "carshopOpen": {
+      "kind": "session"
+    },
+    "charOpen": {
+      "kind": "session"
+    },
+    "CHATTER": {
+      "kind": "session"
+    },
+    "CLERK_ACTS": {
+      "kind": "derived"
+    },
+    "CLERKS": {
+      "kind": "derived"
+    },
+    "clinicOpen": {
+      "kind": "session"
+    },
+    "CLOUD_TEXT": {
+      "kind": "derived"
+    },
+    "CN_DIGIT": {
+      "kind": "derived"
+    },
+    "COUNTER_ZONE": {
+      "kind": "session"
+    },
+    "counterOpen": {
+      "kind": "session"
+    },
+    "cozyTierSeen": {
+      "kind": "domain",
+      "saved": false,
+      "note": "上次看到的装修度星级，只用于\"升星了\"提示一次；刷新重提示一次，不影响玩法"
+    },
+    "CTX_OPTS": {
+      "kind": "derived"
+    },
+    "DAY": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "clock",
+      "note": "游戏日，账期与\"每天一班\"都挂在它上面"
+    },
+    "DEFAULT_NPC_ACTS": {
+      "kind": "derived"
+    },
+    "dirtyPlaced": {
+      "kind": "session"
+    },
+    "DOOR_HOME": {
+      "kind": "derived"
+    },
+    "DOOR_INNER": {
+      "kind": "derived"
+    },
+    "DOOR_STREET": {
+      "kind": "derived"
+    },
+    "DOOR_YARD": {
+      "kind": "derived"
+    },
+    "DPR": {
+      "kind": "session"
+    },
+    "DRIP": {
+      "kind": "session"
+    },
+    "editingFurn": {
+      "kind": "session"
+    },
+    "ESTATES": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "名下房产（最多 3 套），每套带自己的 deco"
+    },
+    "FACE_STYLES": {
+      "kind": "derived"
+    },
+    "FAVOR": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "favor",
+      "note": "熟客好感，按店铺记（键是 zoneId，不是店员 id）"
+    },
+    "floats": {
+      "kind": "session"
+    },
+    "floorStyle": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "当前地板样式索引"
+    },
+    "FOOD_VERB": {
+      "kind": "derived"
+    },
+    "FURN_BY_ID": {
+      "kind": "derived"
+    },
+    "FURN_SVG": {
+      "kind": "derived"
+    },
+    "GUARANTEED_TRAFFIC": {
+      "kind": "derived"
+    },
+    "HAIR_COLORS": {
+      "kind": "derived"
+    },
+    "HAIR_STYLES": {
+      "kind": "derived"
+    },
+    "HINT_BUCKETS": {
+      "kind": "derived"
+    },
+    "HOME": {
+      "kind": "derived"
+    },
+    "HOME_H": {
+      "kind": "derived"
+    },
+    "HOME_W": {
+      "kind": "derived"
+    },
+    "HOUSE_W": {
+      "kind": "derived"
+    },
+    "houseLevel": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "当前房型等级索引，指向 content/house/levels.json"
+    },
+    "hoverTarget": {
+      "kind": "session"
+    },
+    "hoverTile": {
+      "kind": "session"
+    },
+    "HUD_STAT_IDS": {
+      "kind": "derived"
+    },
+    "IN_CAR": {
+      "kind": "session"
+    },
+    "innerWalls": {
+      "kind": "session"
+    },
+    "interacting": {
+      "kind": "session"
+    },
+    "inventory": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "仓库（家具库存），与房屋装修分开"
+    },
+    "invOpen": {
+      "kind": "session"
+    },
+    "JOB_BY_ID": {
+      "kind": "derived"
+    },
+    "JOB_BY_ZONE": {
+      "kind": "derived"
+    },
+    "KEY_DIRS": {
+      "kind": "derived"
+    },
+    "LAST_SHIFT_DAY": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "career",
+      "note": "今天上过班的日期，防止一天刷两班"
+    },
+    "LAST_SHIFT_JOB": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "career"
+    },
+    "lastBlockedTip": {
+      "kind": "session"
+    },
+    "lastDrawAt": {
+      "kind": "session"
+    },
+    "lastDrawRev": {
+      "kind": "session"
+    },
+    "lastFrameMs": {
+      "kind": "session"
+    },
+    "LEDGER": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "ledger",
+      "note": "账本：30 天汇总 + 60 条流水，资产转移类不计入净额"
+    },
+    "LEDGER_CATS": {
+      "kind": "derived"
+    },
+    "LEDGER_XFER": {
+      "kind": "derived"
+    },
+    "ledgerOpen": {
+      "kind": "session"
+    },
+    "lookOpen": {
+      "kind": "session"
+    },
+    "LOTTERY_LOG": {
+      "kind": "session"
+    },
+    "LOTTERY_STATS": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "lottery",
+      "note": "彩票战绩，只用于面板展示"
+    },
+    "lotteryOpen": {
+      "kind": "session"
+    },
+    "MAILBOX_CELL": {
+      "kind": "derived"
+    },
+    "mailboxOpen": {
+      "kind": "session"
+    },
+    "MED_LAST_MINUTE": {
+      "kind": "domain",
+      "saved": false,
+      "note": "诊所买药冷却（游戏分钟）。不入档 → 刷新页面可以重算冷却，已知漏洞，先记着"
+    },
+    "MINUTE": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "clock",
+      "note": "游戏内分钟；会跨天归零，读时钟请用 worldNow"
+    },
+    "MONEY": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "economy",
+      "note": "现金（所有收支走 credit/debit，别直接加减）"
+    },
+    "MY_CAR": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "vehicle",
+      "note": "名下的车与停车位置；车不是家具"
+    },
+    "MY_PETS": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "pets",
+      "note": "宠物列表；uid 由 petUidSeq 分配，读档时按最大值恢复"
+    },
+    "ownedFloors": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "已解锁的地板样式（账号级，卖房不会失去）"
+    },
+    "PANTRY": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "food",
+      "note": "冰箱里的食材份数（做饭/吃饭都扣它）"
+    },
+    "PARCELS": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "shop",
+      "note": "网购包裹；到没到由 readyDay 与 DAY 比较算出，不存状态机"
+    },
+    "particles": {
+      "kind": "session"
+    },
+    "peerRoom": {
+      "kind": "session"
+    },
+    "peerSnapshot": {
+      "kind": "session"
+    },
+    "pendingPet": {
+      "kind": "session"
+    },
+    "pendingTalk": {
+      "kind": "session"
+    },
+    "pendingVisit": {
+      "kind": "session"
+    },
+    "PERSON": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "person",
+      "note": "档案卡：名字/性别/身份/婚否（身份→职业映射见 jobs[].playerRole）"
+    },
+    "PET_DEF_BY_ID": {
+      "kind": "derived"
+    },
+    "PETFOOD": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "pets",
+      "note": "宠物粮份数"
+    },
+    "petshopOpen": {
+      "kind": "session"
+    },
+    "petUidSeq": {
+      "kind": "domain",
+      "saved": false,
+      "note": "宠物自增号。读档时按已有宠物最大号 +1 恢复，不必单独存"
+    },
+    "placed": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "当前这套房子摆的家具（家具属于房子，不属于人）"
+    },
+    "placingId": {
+      "kind": "session"
+    },
+    "placingRot": {
+      "kind": "session"
+    },
+    "PLAYER": {
+      "kind": "session"
+    },
+    "pStats": {
+      "kind": "derived"
+    },
+    "REAL_DATE": {
+      "kind": "session"
+    },
+    "REAL_MONTH": {
+      "kind": "session"
+    },
+    "REAL_WEEKDAY": {
+      "kind": "session"
+    },
+    "RENDER_STATS": {
+      "kind": "session"
+    },
+    "renderRev": {
+      "kind": "session"
+    },
+    "RENT_LAST_DAY": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "rent",
+      "note": "上次交房租的游戏日，用来推下一次账期"
+    },
+    "RESIDENCE": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "house",
+      "note": "当前住址 {buildingId,floor,room}；公寓才有楼层房号"
+    },
+    "scene": {
+      "kind": "session"
+    },
+    "SEASON_FALLBACK": {
+      "kind": "derived"
+    },
+    "SEX_ID": {
+      "kind": "derived"
+    },
+    "SHIFT": {
+      "kind": "domain",
+      "saved": false,
+      "note": "进行中的那一班。不入档 → 刷新即作废，代价是不拿钱也不扣体力，可接受"
+    },
+    "SHOE_COLORS": {
+      "kind": "derived"
+    },
+    "shopCat": {
+      "kind": "session"
+    },
+    "shopMode": {
+      "kind": "session"
+    },
+    "shopOpen": {
+      "kind": "session"
+    },
+    "shopQuery": {
+      "kind": "session"
+    },
+    "shopSort": {
+      "kind": "session"
+    },
+    "SIM_MIN_LAST": {
+      "kind": "session"
+    },
+    "SKIN_TONES": {
+      "kind": "derived"
+    },
+    "socialFeed": {
+      "kind": "session"
+    },
+    "socialOpen": {
+      "kind": "session"
+    },
+    "SPEED": {
+      "kind": "session"
+    },
+    "SPEED_LABEL": {
+      "kind": "derived"
+    },
+    "STATS": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "survival",
+      "note": "饥饿/口渴/情绪三条，值域由 rules/survival.json 定义"
+    },
+    "statsEl": {
+      "kind": "derived"
+    },
+    "STICK": {
+      "kind": "session"
+    },
+    "STOCK_HOLD": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "stock",
+      "note": "持仓（股数 + 成本）；股价本身不存，按\"编号+日期\"推导"
+    },
+    "STOCK_ORDERS": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "stock",
+      "note": "挂单队列，需先于持仓结算"
+    },
+    "stockSel": {
+      "kind": "session"
+    },
+    "suppressCanvasClick": {
+      "kind": "session"
+    },
+    "T": {
+      "kind": "session"
+    },
+    "TALK_DEFAULT": {
+      "kind": "derived",
+      "owner": "talk"
+    },
+    "talkCool": {
+      "kind": "session"
+    },
+    "TOP_COLORS": {
+      "kind": "derived"
+    },
+    "TRAFFIC_CARS": {
+      "kind": "session"
+    },
+    "TRAFFIC_PALETTE": {
+      "kind": "derived"
+    },
+    "TRAFFIC_TYPE_BY_ID": {
+      "kind": "derived"
+    },
+    "VERB_HOOKS": {
+      "kind": "derived"
+    },
+    "viewW": {
+      "kind": "session"
+    },
+    "VISIT_LINES": {
+      "kind": "derived"
+    },
+    "visitRoom": {
+      "kind": "session"
+    },
+    "wasAnimating": {
+      "kind": "session"
+    },
+    "WEEK_CN": {
+      "kind": "derived"
+    },
+    "work": {
+      "kind": "session"
+    },
+    "workOpen": {
+      "kind": "session"
+    },
+    "WORLD": {
+      "kind": "domain",
+      "saved": true,
+      "owner": "clock",
+      "note": "世界时钟锚点 {total, rate}；联网时以服务端为准"
+    },
+    "WX": {
+      "kind": "session"
+    },
+    "YARD_DECOR": {
+      "kind": "derived"
+    },
+    "yardTrees": {
+      "kind": "session"
+    }
+  }
+}
