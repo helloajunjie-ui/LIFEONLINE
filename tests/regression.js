@@ -4545,6 +4545,41 @@
               charKey(Object.assign({}, base0, { uniform: 'office' }), 'idle') !== charKey(base0, 'idle'),
               'keys differ');
 
+            /* 11 种发型：每一种都真的不一样，而且都画在画布内。
+             * 这条是量出来的——上一版麻花辫的扎结把 cx 写成了 "13,40.8"，
+             * XML 照样能解析，只是那个圆点跑到了画布左下角。 */
+            {
+              const host = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+              host.setAttribute('width', '0'); host.setAttribute('height', '0');
+              host.style.position = 'absolute'; host.style.left = '-9999px';
+              document.body.appendChild(host);
+              const seen = {};
+              const outOf = [];
+              const bad = [];
+              for (let hs = 0; hs <= 10; hs++){
+                const svg = charSVG(Object.assign({}, base0, { hairStyle: hs }), 'idle');
+                if (document.createElementNS) {
+                  const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+                  if (doc.querySelector('parsererror')) { bad.push(hs); continue; }
+                }
+                if (seen[svg]) bad.push('dup' + hs);
+                seen[svg] = 1;
+                host.innerHTML = svg;
+                const bb = host.querySelector('svg').getBBox();
+                if (bb.x < -0.5 || bb.y < -0.5 || bb.x + bb.width > 48.5 || bb.y + bb.height > 68.5){
+                  outOf.push(hs + '(' + [bb.x, bb.y, bb.width, bb.height].map(v => v.toFixed(1)).join(',') + ')');
+                }
+                if (hs === 9){
+                  const iSkin = svg.indexOf('M17.9,20.2'), iEye = svg.indexOf('cy="25.9"');
+                  if (iSkin < 0 || iEye < 0 || iSkin > iEye) bad.push('buzzOrder');
+                }
+              }
+              host.remove();
+              P('AT13 all eleven hairstyles are distinct and stay inside the frame',
+                Object.keys(seen).length === 11 && !bad.length && !outOf.length,
+                'styles=' + Object.keys(seen).length + ' bad=' + bad.join(',') + ' out=' + outOf.join(','));
+            }
+
             P('AT8 characters get a consistent outline',
               noneG.indexOf('stroke="' + ACC_PAL.line + '"') > 0 &&
               (noneG.split('stroke="' + ACC_PAL.line + '"').length - 1) >= 6,

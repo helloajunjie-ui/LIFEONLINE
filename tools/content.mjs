@@ -1358,7 +1358,7 @@ function validate(){
     const AGES = ['kid', 'teen', 'adult', 'elder'];
     const SEXES = ['f', 'm', 'x'];
     const UNIS = ['food', 'office', 'medical', 'uniform', 'delivery'];
-    const HAIRS = [0, 1, 2, 3, 4, 5];
+    const HAIRS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     /* 写错一个字母，那一层就静默不画——人物看不出年龄/职业，界面上不会有任何报错 */
     const check = (who, ap) => {
       if (!ap) return;
@@ -1371,7 +1371,7 @@ function validate(){
       if (ap.uniform != null && !UNIS.includes(ap.uniform))
         problems.push('[人物] ' + who + ' 的 appearance.uniform「' + ap.uniform + '」不在白名单（' + UNIS.join('/') + '）');
       if (ap.hairStyle != null && !HAIRS.includes(ap.hairStyle))
-        problems.push('[人物] ' + who + ' 的 hairStyle 必须在 0~5（现在 ' + ap.hairStyle + '）');
+        problems.push('[人物] ' + who + ' 的 hairStyle 必须在 0~10（现在 ' + ap.hairStyle + '）');
     };
     const pk = packs['characters/npcs.neighbors.json'] || {};
     for (const n of (pk.npcs || [])) check(n.id || n.name, n.appearance);
