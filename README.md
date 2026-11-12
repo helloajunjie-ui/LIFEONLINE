@@ -85,7 +85,7 @@ node tools/statemap.mjs --top 15  # 只看写入最多的（"上帝状态"候选
 
 ```bash
 node tools/statemap.mjs --check   # 状态登记表：新增顶层状态必须登记，domain 必须写清是否入档
-node tools/guard.mjs              # 提交前体检：行尾被翻、行数暴涨、同一行重复 8 次以上
+node tools/guard.mjs              # 提交前体检：行尾/暴涨/重复行/大文件 + 现金与资源是否绕过唯一入口
 node tools/doccheck.mjs           # 文档数字对账：README 写的包数/家具/人物…和内容包实算是否一致
 node tools/dupcheck.mjs           # 重复的顶层函数 / 测试分组；三处年龄枚举是否一致
 node tools/charcheck.mjs          # 撞衫：年龄/性别/制服/配饰/发型五项全同的两个人

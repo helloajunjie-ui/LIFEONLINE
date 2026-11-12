@@ -5123,7 +5123,7 @@ function executePetAction(p, act){
   else if (key==='pet'){
     const c = A.pet || {};
     p.mood = clamp(p.mood + (c.mood||16));
-    STATS.emotion = clampStat('emotion', STATS.emotion + (c.playerEmotion||6));
+    bumpStat('emotion', (c.playerEmotion||6));
     showFloat('撸了撸 '+p.name+' · 心情+'+(c.mood||16), Math.round(p.fx), Math.round(p.fy));
     spawnParticles(Math.round(p.fx), Math.round(p.fy), '#ef9ab0', 6); SND.ok();
   }
@@ -5131,7 +5131,7 @@ function executePetAction(p, act){
     const c = A.play || {};
     p.mood = clamp(p.mood + (c.mood||30));
     p.hunger = clamp(p.hunger + (c.hunger||-6));
-    STATS.emotion = clampStat('emotion', STATS.emotion + (c.playerEmotion||9));
+    bumpStat('emotion', (c.playerEmotion||9));
     showFloat('和 '+p.name+' 玩了一会 · 心情+'+(c.mood||30), Math.round(p.fx), Math.round(p.fy));
     spawnParticles(Math.round(p.fx), Math.round(p.fy), '#9ac0e8', 8); SND.ok();
   }
@@ -5139,7 +5139,7 @@ function executePetAction(p, act){
     const c = A.wash || {};
     p.clean = clamp(p.clean + (c.clean||45));
     p.mood = clamp(p.mood + (c.mood||-6));
-    STATS.emotion = clampStat('emotion', STATS.emotion + (c.playerEmotion||2));
+    bumpStat('emotion', (c.playerEmotion||2));
     showFloat('给 '+p.name+' 洗了澡 · 清洁+'+(c.clean||45), Math.round(p.fx), Math.round(p.fy));
     spawnParticles(Math.round(p.fx), Math.round(p.fy), '#a8d0e8', 8); SND.ok();
   }
@@ -8546,7 +8546,7 @@ function tickWorldClock(){
 function onDayRollover(){
   const mb = Math.round(cozyBonus() * 0.6);
   if (mb > 0){
-    STATS.emotion = clampStat('emotion', STATS.emotion + mb);
+    bumpStat('emotion', mb);
     showFloat('第' + DAY + '天 · 小屋舒适 情绪+' + mb, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   }
   syncWorldClock(true);
@@ -8617,13 +8617,13 @@ function updateSim(dt){
   // 宠物需求衰减与玩家共用同一模拟分钟基准
   SIM_MIN_LAST = simMin;
   // 饥饿/口渴按模拟分钟衰减（与显示时钟解耦，保证"一天吃几顿"的节奏稳定）
-  STATS.hunger = clampStat('hunger', STATS.hunger - DECAY.hunger * simMin);
-  STATS.thirst = clampStat('thirst', STATS.thirst - DECAY.thirst * simMin);
+  bumpStat('hunger', -(DECAY.hunger * simMin));
+  bumpStat('thirst', -(DECAY.thirst * simMin));
   // 情绪随时间缓慢自然下降（靠家具互动/社交恢复）
-  STATS.emotion = clampStat('emotion', STATS.emotion - EMOTION_DECAY * simMin);
+  bumpStat('emotion', -(EMOTION_DECAY * simMin));
   // 天气对情绪的影响：阴雨压心情、雪天反而让人开心一点
   const wEmo = (curWeather().emotionPerHour || 0) * simMin / 60;
-  if (wEmo) STATS.emotion = clampStat('emotion', STATS.emotion + wEmo);
+  if (wEmo) bumpStat('emotion', wEmo);
 
   /* 跨天检查：不管时间是"真实同步"还是"自走钟"，只要 DAY 变了就发一轮账单。
    * 早先只有 game 模式在这里收房租，realtime 下房租其实一次都没扣过——
@@ -9028,8 +9028,8 @@ function updateWork(dt){
     showFloat('发工资 +¥' + WORK_PAY, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f4d35e', 12);
     SND.pay();
-    STATS.hunger = clamp(STATS.hunger - WORK_COST.hunger);
-    STATS.thirst = clamp(STATS.thirst - WORK_COST.thirst);
+    bumpStat('hunger', -WORK_COST.hunger);
+    bumpStat('thirst', -WORK_COST.thirst);
   }
 }
 
@@ -9870,7 +9870,7 @@ function doTalk(n){
   if (talkCool) return;
   talkCool = true;
   setTimeout(()=>{ talkCool = false; }, 1500);
-  STATS.emotion = clamp(STATS.emotion + 10);
+  bumpStat('emotion', 10);
   // 浮动提示（显示在角色头顶）
   showFloat('与 ' + n.name + ' 聊天 · 情绪 +10', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   spawnParticles(Math.round(n.fx), Math.round(n.fy), '#ef7c8e', 6);
@@ -10488,7 +10488,7 @@ function visitTalk(r){
   if (talkCool || !r.owner) return;
   talkCool = true;
   setTimeout(()=>{ talkCool = false; }, 1500);
-  STATS.emotion = clamp(STATS.emotion + 12);
+  bumpStat('emotion', 12);
   const lines = VISIT_LINES[r.owner.id] || ['随便坐～'];
   /* 优先用内容层的 visit 台词池（分时段/天气），内容层没写才回落到写死的几句 */
   let line = npcLine(r.owner, 'visit');
@@ -12362,7 +12362,7 @@ const VERB_HOOKS = {
     const npc = ctx.npc, topicId = ctx.act && ctx.act.topicId;
     if (!npc || !topicId) return;
     const gain = (ctx.effects && ctx.effects.emotion) || 2;
-    STATS.emotion = clampStat('emotion', STATS.emotion + gain);
+    bumpStat('emotion', gain);
     /* 玩家主动搭话，先把路过的闲话收掉，两个气泡不叠 */
     stopChatter();
     /* 有些话题不是"说一句"而是"做一件事"（比如打听哪儿招人，要列岗位）。
@@ -12393,7 +12393,7 @@ const VERB_HOOKS = {
     if (TIME_SOURCE === 'realtime'){
       for (const k in cost) STATS[k] = clampStat(k, (STATS[k] || 0) - cost[k]);
       const cb = Math.max(1, cozyBonus());
-      STATS.emotion = clampStat('emotion', STATS.emotion + cb);
+      bumpStat('emotion', cb);
       showFloat('小憩了一会儿 · 情绪+' + cb + '（时间与北京时间同步）', f.gx, f.gy);
       SND.sleep();
       return;
@@ -12409,7 +12409,7 @@ const VERB_HOOKS = {
     MINUTE = wake;
     for (const k in cost) STATS[k] = clampStat(k, (STATS[k] || 0) - cost[k]);
     const cb = Math.max(1, cozyBonus());
-    STATS.emotion = clampStat('emotion', STATS.emotion + cb);
+    bumpStat('emotion', cb);
     showFloat('一觉睡到早上 7 点 · 情绪+' + cb, f.gx, f.gy);
     SND.sleep();
   },
@@ -12417,7 +12417,7 @@ const VERB_HOOKS = {
   /** 和邻居聊天 */
   npcTalk(ctx){
     const n = ctx.npc;
-    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 10));
+    bumpStat('emotion', (ctx.effects.emotion || 10));
     /* 玩家自己开口了，就把路过听见的那句闲话收掉，两个气泡不会叠在一起 */
     stopChatter();
     /* 台词挂在 NPC 头顶，情绪反馈挂在玩家头上，两个位置分开不打架 */
@@ -12448,7 +12448,7 @@ const VERB_HOOKS = {
   /** 店员打招呼 */
   clerkHello(ctx){
     const c = ctx.npc;
-    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 6));
+    bumpStat('emotion', (ctx.effects.emotion || 6));
     /* 第一次来先说 hello[0]（那句是"初次见面"的口吻），之后就从第二句起抽。
      * 记住这件事靠存档里的事件标签，不用新开字段——上限 40 装得下 16 个店员。 */
     const tag = 'clerk.' + c.id;
@@ -12467,7 +12467,7 @@ const VERB_HOOKS = {
   /** 问这家店怎么用：把"柜台能点什么"用一句话讲清楚 */
   clerkTip(ctx){
     const c = ctx.npc;
-    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 2));
+    bumpStat('emotion', (ctx.effects.emotion || 2));
     try { addFavor(c.zoneId, 1); } catch(e){}
     showFloat(c.name + '："' + clerkLine(c, 'tip', -1) + '"' + favorBadge(c.zoneId), c.fx, c.fy, 3.8);
     SND.talk();
@@ -12477,7 +12477,7 @@ const VERB_HOOKS = {
   /** 打听工作：今天上过班就说别硬撑，没上过就报两家正在招人的店 */
   npcAskJob(ctx){
     const n = ctx.npc;
-    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 4));
+    bumpStat('emotion', (ctx.effects.emotion || 4));
     const taken = (typeof shiftUsedToday === 'function') && shiftUsedToday();
     let line;
     if (taken){
@@ -12497,7 +12497,7 @@ const VERB_HOOKS = {
   /** 打听小区：直接把今天那条广播复述给你——信息能二次利用，才有"街坊"的感觉 */
   npcAskNews(ctx){
     const n = ctx.npc;
-    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 4));
+    bumpStat('emotion', (ctx.effects.emotion || 4));
     const t = (typeof dailyNewsText === 'function') ? dailyNewsText(DAY) : '';
     showFloat(n.name + '："' + (t || '这两天没什么新鲜事。') + '"', n.fx, n.fy, 3.6);
     SND.talk();
@@ -12825,6 +12825,15 @@ function clampStat(id, v){
   const def = STATS_DEF.byId[id];
   const max = (def && def.max) || 100;
   return Math.max(0, Math.min(max, v));
+}
+/** 改一项资源：唯一的入口。
+ * 以前散着二十多处 `STATS.x = clampStat('x', STATS.x + Δ)`，还有 4 处用了只认 0~100 的 clamp()
+ * （资源上限其实是 120 的那几条会被提前截断）。收成一个函数之后：
+ * 要加日志、要加"吃太饱有惩罚"这种规则，只在这里改一次。 */
+function bumpStat(id, delta){
+  if (!STATS_DEF.byId[id]) return STATS[id];
+  STATS[id] = clampStat(id, (Number(STATS[id]) || 0) + (Number(delta) || 0));
+  return STATS[id];
 }
 /* 效果应用：遍历 effects 的键，不再写死 hunger/thirst/emotion 三个分支。
  * 加新资源只要在 rules/survival.json 声明，这里自动生效（含浮字与粒子颜色）。 */
@@ -15385,7 +15394,7 @@ function applyLateEmotion(){
   if (BILL_LATE_TOTAL <= MAIL_CAP) return 0;
   const delta = Math.max(MAIL_CAP - BILL_LATE_TOTAL, MAIL_PER_DAY);
   if (!delta) return 0;
-  STATS.emotion = clampStat('emotion', (STATS.emotion || 0) + delta);
+  bumpStat('emotion', delta);
   BILL_LATE_TOTAL += delta;
   showFloat('有账单逾期了，心里发慌（情绪 ' + delta + '）',
     Math.round(PLAYER.fx), Math.round(PLAYER.fy));
@@ -15421,7 +15430,7 @@ function payBill(key){
   const wasLate = DAY > b.due;
   debit(b.amount, 'bill', b.title);
   b.paid = DAY;
-  if (wasLate) STATS.emotion = clampStat('emotion', (STATS.emotion || 0) + MAIL_BONUS);
+  if (wasLate) bumpStat('emotion', MAIL_BONUS);
   SND.coin();
   showFloat('已付 ' + b.title + ' ¥' + b.amount + (wasLate ? ' · 松了口气（情绪 +' + MAIL_BONUS + '）' : ''), px, py);
   if (!lateCount()) BILL_LATE_TOTAL = 0;      // 不欠了就重置，下次逾期重新开始扣
@@ -15438,7 +15447,7 @@ function payAllBills(){
     const wasLate = DAY > b.due;
     debit(b.amount, 'bill', b.title);
     b.paid = DAY;
-    if (wasLate) STATS.emotion = clampStat('emotion', (STATS.emotion || 0) + MAIL_BONUS);
+    if (wasLate) bumpStat('emotion', MAIL_BONUS);
     paid += b.amount;
   }
   if (paid){
@@ -16505,7 +16514,7 @@ function financeTick(){
     }
   }
   if (lateDays > 0){
-    STATS.emotion = clampStat('emotion', (STATS.emotion || 0) + BANK_LATE_EMO * lateDays);
+    bumpStat('emotion', BANK_LATE_EMO * lateDays);
   }
   if (gained > 0){
     showFloat('银行结息 +¥' + gained, Math.round(PLAYER.fx), Math.round(PLAYER.fy));

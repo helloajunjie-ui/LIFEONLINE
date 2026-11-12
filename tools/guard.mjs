@@ -25,6 +25,7 @@ const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', m
 
 const TEXT_EXT = new Set(['.js', '.mjs', '.json', '.html', '.md', '.css', '.txt', '.go', '.sql', '.svg', '.gitattributes', '']);
 const problems = [];
+const src800 = fs.readFileSync(path.join(ROOT, '2.5D小屋.html'), 'utf8');
 
 /* ---------- 变更清单 ---------- */
 let entries = [];
@@ -132,6 +133,33 @@ for (const e of entries) {
       problems.push(`[不同步] src/content/generated.js 变了但没重建（版本里记的是 ${m[1]}，实际 ${want}）—— 跑 node tools/build.mjs`);
     }
   } catch (e) { /* 首次构建前没有生成物，跳过 */ }
+}
+
+/* ---------- ⑦ 资源必须走唯一入口 ----------
+ * 玩法状态里最容易被绕过的两个：现金与三条生存数值。
+ * 绕过去的那一笔在账本里就是"隐形收支"，玩家对不上账；或者用错 clamp 口径，
+ * 上限 120 的资源被按 100 截断。这条规则以前靠人记，现在靠扫。 */
+{
+  const lines = src800.split('\n');
+  let fn = '';
+  const bad = [];
+  for (let i = 0; i < lines.length; i++){
+    const line = lines[i];
+    const fm = line.match(/^function\s+([A-Za-z_$][\w$]*)\s*\(/);
+    if (fm) fn = fm[1];
+    if (/^\s*(?:if\s*\([^)]*\)\s*)?STATS\.\w+\s*=[^=]/.test(line) &&
+        fn !== 'bumpStat' && fn !== 'applyFx'){
+      bad.push(`第 ${i + 1} 行（${fn || '顶层'}）：${line.trim().slice(0, 60)}`);
+    }
+    if (/^\s*MONEY\s*(?:[-+*/]?=[^=]|\+\+|--)/.test(line) &&
+        !['credit', 'debit', 'applySave', ''].includes(fn)){
+      bad.push(`第 ${i + 1} 行（${fn}）：现金绕过 credit/debit —— ${line.trim().slice(0, 60)}`);
+    }
+  }
+  if (bad.length){
+    problems.push(`[入口] 有 ${bad.length} 处绕过唯一入口：\n      ` + bad.slice(0, 6).join('\n      ') +
+      (bad.length > 6 ? `\n      …还有 ${bad.length - 6} 处` : ''));
+  }
 }
 
 /* ---------- ④ 未跟踪的大文件 ---------- */
