@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.42.0",
+  "appVersion": "1.43.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
-  "contentHash": "827590bc64ba",
-  "builtAt": "2026-11-12T08:06:36.859Z",
+  "contentHash": "57b06b0acc67",
+  "builtAt": "2026-11-12T08:12:25.366Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 3,
@@ -40,8 +40,8 @@ export const BUILD = {
       "hash": "f4800b19fb18"
     },
     "content/characters/npcs.neighbors.json": {
-      "version": 7,
-      "hash": "640df6ad4be5"
+      "version": 8,
+      "hash": "e157ff88acad"
     },
     "content/characters/palettes.json": {
       "version": 1,
@@ -121,7 +121,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "827590bc64ba"
+      "hash": "57b06b0acc67"
     },
     "src/core/clock.js": {
       "version": null,

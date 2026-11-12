@@ -7232,11 +7232,56 @@ function doTalk(n){
   n.appearance.faceStyle = 1;
 }
 /* 浮动文字提示（在指定格上方） */
-function showFloat(text, gx, gy){
+function showFloat(text, gx, gy, life){
   const c = tileCenter(gx, gy);
-  floats.push({text, x:c.x, y:c.y-TILE_H*1.2, life:1.2});
+  /* 对话要留够读的时间：普通数字反馈 1.2 秒够，一句台词不够 */
+  floats.push({text, x:c.x, y:c.y-TILE_H*1.2, life: life || 1.2});
 }
 const floats = [];
+
+/* ---------- 邻居台词 ----------
+ * 内容里一只 NPC 的 dialogues 是 { street: {...}, visit: {...} }，每个场合下面可以写
+ *   any / morning / day / eve / night / rain / first 七个池子。
+ * 老格式（直接给数组）仍然能用，等价于 any。
+ * first 池只在第一次见面说一次，之后靠存档里的 met.<id> 事件记住——这样"初次见面"
+ * 不会被随机的日常台词冲掉，玩家也就记得住每个人第一次说了什么。 */
+function npcLineBucket(){
+  const h = Math.floor((MINUTE % 1440) / 60);
+  if (h < 6 || h >= 21) return 'night';
+  if (h < 11) return 'morning';
+  if (h < 17) return 'day';
+  return 'eve';
+}
+/** 从一个池里抽一句；池子小时避免连着复读同一句 */
+function npcPick(n, pool){
+  if (!pool || !pool.length) return null;
+  let pick = pool[Math.floor(Math.random() * pool.length)];
+  if (pool.length > 1 && n && n._lastLine && n._lastLine === pick){
+    pick = pool[(pool.indexOf(pick) + 1) % pool.length];
+  }
+  if (n) n._lastLine = pick;
+  return pick;
+}
+function npcLine(n, place){
+  const src = n && n.dialogues && n.dialogues[place];
+  if (!src) return null;
+  if (Array.isArray(src)) return npcPick(n, src);
+  const metTag = 'met.' + (n.id || n.name || '?');
+  if (Array.isArray(src.first) && src.first.length && !achEventSeen(metTag)){
+    const line = npcPick(n, src.first);
+    try { firstMark(metTag); } catch(e){}
+    return line;
+  }
+  const out = [];
+  const add = (v) => { if (Array.isArray(v)) for (const s of v) if (typeof s === 'string' && s) out.push(s); };
+  add(src.any);
+  /* 时段池给双份权重：不这么做的话"晚上好"这类应景台词只有三成概率出现，
+   * 玩家听十次有七次是通用句，就会觉得台词没反应 */
+  add(src[npcLineBucket()]);
+  add(src[npcLineBucket()]);
+  if (typeof WX !== 'undefined' && WX.rainOn){ add(src.rain); add(src.rain); }
+  return npcPick(n, out);
+}
 
 /* ---------- 邻居之家（可进门参观） ---------- */
 let visitRoom = null;      // {w,h,base,alt,furn,owner,ownerPos,exit,name}
@@ -7291,9 +7336,11 @@ function visitTalk(r){
   setTimeout(()=>{ talkCool = false; }, 1500);
   STATS.emotion = clamp(STATS.emotion + 12);
   const lines = VISIT_LINES[r.owner.id] || ['随便坐～'];
-  const line = lines[Math.floor(Math.random()*lines.length)];
-  showFloat(r.owner.name + '："'+line+'"', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
-  showFloat('情绪 +12', r.ownerPos.gx, r.ownerPos.gy - 1);
+  /* 优先用内容层的 visit 台词池（分时段/天气），内容层没写才回落到写死的几句 */
+  let line = npcLine(r.owner, 'visit');
+  if (!line) line = lines[Math.floor(Math.random()*lines.length)];
+  showFloat(r.owner.name + '："'+line+'"', r.ownerPos.gx, r.ownerPos.gy - 1, 3.2);
+  showFloat('情绪 +12', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   spawnParticles(r.ownerPos.gx, r.ownerPos.gy, '#ef7c8e', 8);
   SND.talk();
   r.owner.appearance.faceStyle = 1;
@@ -9054,8 +9101,11 @@ const VERB_HOOKS = {
   npcTalk(ctx){
     const n = ctx.npc;
     STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 10));
-    showFloat('与 ' + n.name + ' 聊天 · 情绪+' + (ctx.effects.emotion || 10),
-      Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    /* 台词挂在 NPC 头顶，情绪反馈挂在玩家头上，两个位置分开不打架 */
+    const line = npcLine(n, 'street') || npcLine(n, 'visit');
+    if (line) showFloat(n.name + '："' + line + '"', n.fx, n.fy, 3.2);
+    else showFloat('与 ' + n.name + ' 聊天', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+    showFloat('情绪+' + (ctx.effects.emotion || 10), Math.round(PLAYER.fx), Math.round(PLAYER.fy));
     spawnParticles(Math.round(n.fx), Math.round(n.fy), '#ef7c8e', 6);
     SND.talk();
     n.appearance.faceStyle = 1;

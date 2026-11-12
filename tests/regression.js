@@ -3819,6 +3819,48 @@
             ACH = bak.ach; MONEY = bak.money; BANK = bak.bank;
           }
 
+          // ---------- AQ：NPC 台词（各有各的语气、认时段、初次见面只说一次） ----------
+          {
+            const bak = { min: MINUTE, ach: ACH, rain: WX.rainOn };
+            const all = NEIGHBORS.filter(n => n && n.dialogues);
+            const hasPools = all.length >= 5 && all.every(n => n.dialogues.street && n.dialogues.visit);
+            const sig = all.map(n => JSON.stringify(n.dialogues.street));
+            const distinct = new Set(sig).size === all.length;
+            P('AQ1 every neighbor has its own voice pools', hasPools && distinct,
+              'n=' + all.length + ' distinct=' + new Set(sig).size);
+
+            WX.rainOn = false;
+            MINUTE = 8 * 60;  const bM = npcLineBucket();
+            MINUTE = 14 * 60; const bD = npcLineBucket();
+            MINUTE = 18 * 60; const bE = npcLineBucket();
+            MINUTE = 23 * 60; const bN = npcLineBucket();
+            P('AQ2 time buckets follow the clock',
+              bM === 'morning' && bD === 'day' && bE === 'eve' && bN === 'night',
+              [bM, bD, bE, bN].join(','));
+
+            const n1 = all[0];
+            ACH = { unlocked: {}, visited: [], events: [] };
+            MINUTE = 9 * 60;
+            const l1 = npcLine(n1, 'street');
+            const pool1 = Array.isArray(n1.dialogues.street.first) ? n1.dialogues.street.first : [];
+            const l2 = npcLine(n1, 'street');
+            const okFirst = pool1.indexOf(l1) >= 0 && pool1.indexOf(l2) < 0 && achEventSeen('met.' + n1.id);
+            P('AQ3 first meeting says the first-meeting line exactly once', okFirst,
+              'first=' + l1 + ' / second=' + l2);
+
+            let bad = 0, rep = 0, prev = null;
+            for (let i = 0; i < 40; i++){
+              const L = npcLine(n1, 'visit');
+              if (!L) bad++;
+              if (L && L === prev) rep++;
+              prev = L;
+            }
+            P('AQ4 lines are never empty and never repeat back-to-back', bad === 0 && rep === 0,
+              'empty=' + bad + ' repeat=' + rep);
+
+            MINUTE = bak.min; ACH = bak.ach; WX.rainOn = bak.rain;
+          }
+
           placed = dc.placed; inventory = dc.inv; ESTATES = dc.estates;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;
