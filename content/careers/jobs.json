@@ -418,7 +418,9 @@
         "emotion": -6
       },
       "promoShifts": 3,
-      "require": {}
+      "require": {},
+      "dailyPay": 200,
+      "monthlyPay": 4400
     }
   ],
   "costNote": "costPerTask 是「每单带来的数值变化」，负数=消耗；finish / earlyLeave 同理"

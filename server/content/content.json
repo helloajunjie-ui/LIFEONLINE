@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-12T08:13:16.213Z",
+  "generatedAt": "2026-11-12T08:42:30.331Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -19,9 +19,9 @@
       "updatedAt": "2026-11-05T20:32:27.142Z"
     },
     "careers/jobs.json": {
-      "version": 4,
-      "hash": "a76ea261f47b",
-      "updatedAt": "2026-11-05T19:17:35.955Z"
+      "version": 5,
+      "hash": "09697cdf7cd3",
+      "updatedAt": "2026-11-12T08:42:18.658Z"
     },
     "catalog/categories.json": {
       "version": 1,
@@ -59,9 +59,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "environment/ambient.json": {
-      "version": 3,
-      "hash": "231f68e48694",
-      "updatedAt": "2026-11-05T18:30:04.792Z"
+      "version": 4,
+      "hash": "77fd8e8154a2",
+      "updatedAt": "2026-11-12T08:42:18.664Z"
     },
     "environment/climate.json": {
       "version": 4,

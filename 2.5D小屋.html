@@ -6497,6 +6497,11 @@ function loop(now){
   }
   /* 声景的鸟/虫按"下一次该叫的时间"调度，这里只是每帧看一眼，开销是一次比较 */
   SND.ambientTick();
+  /* 每天第一帧播一条小区广播：跨天时打一次，读档进来也会补当天那条 */
+  if (DAY !== _newsDay){
+    _newsDay = DAY;
+    try { showDailyNews(); } catch(e){}
+  }
   /* 银行利息 / 定期到期 / 贷款扣款：挂在主循环里检测"结算日落后了"，
    * 而不是在三个跨天点各调一次。financeTick 自带游标，重复调用无害。 */
   if (typeof financeTick === 'function' && BANK.lastDay !== DAY) financeTick();
@@ -7318,6 +7323,39 @@ function npcLine(n, place){
   add(src[npcLineBucket()]);
   if (typeof WX !== 'undefined' && WX.rainOn){ add(src.rain); add(src.rain); }
   return npcPick(n, out);
+}
+
+/* ---------- 每日小区广播 ----------
+ * 每天一句"今天有什么不一样"。按游戏日做稳定散列挑，同一天读档重进听到的还是
+ * 同一句（和股票行情同一个道理），所以不用存盘、也不占存档。
+ * 雨天有单独的池子：先按条件筛，再在剩下的里挑。 */
+let _newsDay = 0;
+function dailyNewsPool(){
+  const cfg = (HomeCore.content.ambient && HomeCore.content.ambient()) || {};
+  const lines = (cfg.daily && cfg.daily.lines) || [];
+  const rainy = (typeof WX !== 'undefined' && WX.rainOn);
+  const out = [];
+  for (const l of lines){
+    if (!l || !l.text) continue;
+    const w = l.when || 'any';
+    if (w === 'rain' && !rainy) continue;
+    if (w !== 'any' && w !== 'rain') continue;
+    out.push(String(l.text));
+  }
+  return out;
+}
+function dailyNewsText(day){
+  const pool = dailyNewsPool();
+  if (!pool.length) return '';
+  const seed = Math.max(1, Math.floor(day || DAY || 1));
+  const k = Math.min(pool.length - 1, Math.floor(hashPos(seed, 7, 911) * pool.length));
+  return pool[k] || pool[0];
+}
+function showDailyNews(){
+  const t = dailyNewsText(DAY);
+  if (!t) return false;
+  showFloat('小区广播 · ' + t, Math.round(PLAYER.fx), Math.round(PLAYER.fy), 4.2);
+  return true;
 }
 
 /* ---------- 邻居之家（可进门参观） ---------- */

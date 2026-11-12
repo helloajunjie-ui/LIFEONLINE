@@ -3900,6 +3900,31 @@
             ACH = bak.ach; scene = bak.scene; PLAYER.fx = bak.fx; PLAYER.fy = bak.fy;
           }
 
+          // ---------- AT：每日小区广播 ----------
+          {
+            const bak = { rain: WX.rainOn };
+            WX.rainOn = false;
+            const dry = dailyNewsPool();
+            const dryHasRain = dry.some(t => t.indexOf('下雨') >= 0 || t.indexOf('返潮') >= 0);
+            WX.rainOn = true;
+            const wet = dailyNewsPool();
+            const wetHasRain = wet.some(t => t.indexOf('下雨') >= 0 || t.indexOf('返潮') >= 0);
+            WX.rainOn = false;
+            P('AT1 rain-only lines appear only when it rains',
+              dry.length >= 8 && wet.length > dry.length && !dryHasRain && wetHasRain,
+              'dry=' + dry.length + ' wet=' + wet.length);
+
+            const same = dailyNewsText(11) === dailyNewsText(11);
+            const set = {};
+            for (let d = 1; d <= 30; d++) set[dailyNewsText(d)] = 1;
+            const kinds = Object.keys(set).length;
+            P('AT2 same day gives the same bulletin, different days vary',
+              same && kinds >= 5 && !!dailyNewsText(1),
+              'same=' + same + ' kinds30=' + kinds);
+            WX.rainOn = bak.rain;
+          }
+
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

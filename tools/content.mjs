@@ -650,6 +650,14 @@ function validate(){
       if (!(j.tasks >= 1 && j.tasks <= 24)) problems.push('[职业] ' + j.id + ' tasks 应在 1..24');
       if (!(j.taskSeconds >= 0.5 && j.taskSeconds <= 30)) problems.push('[职业] ' + j.id + ' taskSeconds 应在 0.5..30');
       if (!(j.payPerTask > 0)) problems.push('[职业] ' + j.id + ' payPerTask 必须为正');
+      /* dailyPay 只是给面板/文档看的派生值，但它必须跟公式对得上：
+       * 有一版物业客服漏填了 dailyPay，其它岗位都有，很容易蒙混过去 */
+      if (j.dailyPay != null){
+        const want = j.payPerTask * (j.tasks || 1) + (j.completionBonus || 0);
+        if (Math.abs(Number(j.dailyPay) - want) > 0.5){
+          problems.push('[职业] ' + j.id + ' dailyPay 与公式不符: 写了 ' + j.dailyPay + '，应为 ' + want);
+        }
+      }
       const sh = j.shift || {};
       if (!(sh.startHour >= 0 && sh.startHour < 24 && sh.endHour > sh.startHour && sh.endHour <= 24)){
         problems.push('[职业] ' + j.id + ' 班次非法: ' + sh.startHour + '–' + sh.endHour);
