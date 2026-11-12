@@ -35,9 +35,9 @@
   ],
   "modules": {
     "achievements/achievements.json": {
-      "version": 3,
-      "hash": "8eb4c9f2494a",
-      "updatedAt": "2026-11-12T08:04:27.784Z"
+      "version": 4,
+      "hash": "7c1e700a25c3",
+      "updatedAt": "2026-11-12T08:13:03.207Z"
     },
     "bank/bank.json": {
       "version": 2,

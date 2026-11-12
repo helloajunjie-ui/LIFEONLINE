@@ -6326,9 +6326,11 @@ function achProgress(a){
     case 'jobShifts':   raw = careerShifts(g.job); break;
     case 'careerLevel': raw = achMaxCareerLevel(); break;
     case 'visits':      raw = achVisitedCount(); break;
-    /* 引导链专用：存款 / 房产套数 / 一次性事件 */
+    /* 引导链专用：存款 / 房产套数 / 宠物 / 股票浮盈 / 一次性事件 */
     case 'savings':     raw = (BANK && Number(BANK.savings)) || 0; break;
     case 'estates':     raw = (typeof estateCount === 'function') ? estateCount() : 0; break;
+    case 'pets':        raw = (typeof MY_PETS !== 'undefined' && MY_PETS) ? MY_PETS.length : 0; break;
+    case 'stockProfit': raw = (typeof stockPnl === 'function' && stockPnl() > 0) ? 1 : 0; break;
     case 'event':       raw = achEventSeen(g.value) ? 1 : 0; break;
   }
   const goalTarget = (g.kind === 'event') ? 1 : Math.max(1, g.value || 1);
@@ -10609,6 +10611,7 @@ function sellEstate(floor, room, withFitout){
   SND.coin();
   showFloat((e.mode === 'rented' ? '退租' : (keepFitout ? '带装修卖出' : '卖出')) + ' ¥' + refund + ' · 房 ' +
     estateCount() + '/' + ESTATE_CAP, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  if (e.mode === 'owned'){ try { firstMark('soldEstate'); } catch(err){} }
   if (back) showFloat('屋里 ' + back + ' 件家具收进了仓库', Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
   if (keepFitout && e.deco && e.deco.placed.length){
     showFloat('屋里 ' + e.deco.placed.length + ' 件家具跟着房子一起交付了', Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
@@ -11705,6 +11708,7 @@ function eatDish(id){
   applyFx({ hunger: d.hunger, thirst: d.thirst, emotion: d.emotion }, { gx: px, gy: py });
   showFloat(d.name + ' · ¥' + d.price, px, py);
   try { firstMark('meal'); } catch(e){}
+  try { firstMark('restaurant'); } catch(e){}
   SND.coin();
   updateHUD(); saveGame(); renderCounter();
   return true;

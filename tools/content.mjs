@@ -670,9 +670,9 @@ function validate(){
   const careersPack = packs['careers/jobs.json'];
   if (achPack){
     const KINDS = ['day', 'money', 'cozy', 'houseLevel', 'placed', 'shifts', 'jobShifts', 'careerLevel', 'visits',
-      'savings', 'estates', 'event'];
+      'savings', 'estates', 'pets', 'stockProfit', 'event'];
     /* 事件型目标的标签由客户端 firstMark() 打点，改tag必须两边一起改，所以在这里列白名单 */
-    const KNOWN_EVENTS = ['street', 'meal', 'placed', 'decor'];
+    const KNOWN_EVENTS = ['street', 'meal', 'placed', 'decor', 'restaurant', 'soldEstate'];
     const groupIds = new Set((achPack.groups || []).map(g => g.id));
     const jobIdSet = new Set((careersPack?.jobs || []).map(j => j.id));
     const itemIds = new Set(items.map(i => i.id));

@@ -157,6 +157,78 @@
       }
     },
     {
+      "id": "first.restaurant",
+      "group": "first",
+      "step": 8,
+      "name": "下馆子吃一顿",
+      "desc": "第一次在老张饭馆点菜",
+      "hint": "饭馆在商业街，点一道菜——不用自己开火，贵一点但省事",
+      "goal": {
+        "kind": "event",
+        "value": "restaurant"
+      },
+      "reward": {
+        "money": 30,
+        "effects": {
+          "emotion": 5
+        }
+      }
+    },
+    {
+      "id": "first.pet",
+      "group": "first",
+      "step": 9,
+      "name": "多一个室友",
+      "desc": "第一次养一只小动物",
+      "hint": "宠物店有猫狗仓鼠，买之前记得先备好宠物粮",
+      "goal": {
+        "kind": "pets",
+        "value": 1
+      },
+      "reward": {
+        "money": 60,
+        "effects": {
+          "emotion": 8
+        }
+      }
+    },
+    {
+      "id": "first.sold",
+      "group": "first",
+      "step": 10,
+      "name": "第一次出手",
+      "desc": "卖掉一套房产（自住那套不算）",
+      "hint": "公寓楼目录里选自己另一套房，可以空房卖，也可以带装修一起卖",
+      "goal": {
+        "kind": "event",
+        "value": "soldEstate"
+      },
+      "reward": {
+        "money": 100,
+        "effects": {
+          "emotion": 6
+        }
+      }
+    },
+    {
+      "id": "first.stockwin",
+      "group": "first",
+      "step": 11,
+      "name": "股市里赚到第一笔",
+      "desc": "持仓浮盈第一次转正",
+      "hint": "证券营业部看走势图，跌的时候买、涨的时候卖；浮盈转正就算",
+      "goal": {
+        "kind": "stockProfit",
+        "value": 1
+      },
+      "reward": {
+        "money": 80,
+        "effects": {
+          "emotion": 8
+        }
+      }
+    },
+    {
       "id": "ach.savings_800",
       "group": "life",
       "name": "开始有积蓄",

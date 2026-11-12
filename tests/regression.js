@@ -9,7 +9,7 @@
   try {
     /* 「第一次」奖励会在任意时刻发钱/发情绪，会让"精确金额"类断言飘。
      * 测试期把四个事件都标成已发生 = 冻结这条奖励线；链本身的逻辑由 AP1–AP5 单独验证。 */
-    ACH = { unlocked: {}, visited: [], events: ['street', 'meal', 'placed', 'decor'] };
+    ACH = { unlocked: {}, visited: [], events: ['street', 'meal', 'placed', 'decor', 'restaurant', 'soldEstate'] };
 
     /* 启动快照：小区分区/树木是按区块惰性生成的，这里记下初始状态，
      * 用来证明"没人在开局就把整张地图算完"。 */
@@ -1206,7 +1206,7 @@
         'chain=' + firstChain().length);
 
       // A2 进度由当前状态推导，不读存档
-      ACH = { unlocked: {}, visited: [], events: ['street', 'meal', 'placed', 'decor'] };
+      ACH = { unlocked: {}, visited: [], events: ['street', 'meal', 'placed', 'decor', 'restaurant', 'soldEstate'] };
       MONEY = 1500; DAY = 3;
       const pMoney = achProgress(ACH_BY_ID['ach.saver']);
       const pDay = achProgress(ACH_BY_ID['ach.one_week']);
@@ -3861,7 +3861,29 @@
             MINUTE = bak.min; ACH = bak.ach; WX.rainOn = bak.rain;
           }
 
-          placed = dc.placed; inventory = dc.inv; ESTATES = dc.estates;
+          // ---------- AS：引导链的中期阶梯 ----------
+          {
+            const bak = { pets: MY_PETS, hold: STOCK_HOLD };
+            const chain = firstChain();
+            const petsProbe = { goal: { kind: 'pets', value: 1 } };
+            MY_PETS = [{ uid: 'p1' }];
+            const p1 = achProgress(petsProbe);
+            MY_PETS = [];
+            const p0 = achProgress(petsProbe);
+
+            STOCK_HOLD = [{ id: 'st.conv', shares: 100, cost: 1 }];
+            const sp = achProgress({ goal: { kind: 'stockProfit', value: 1 } });
+            STOCK_HOLD = [];
+
+            const okChain = chain.length >= 11 && chain[chain.length - 1].step === chain.length;
+            P('AS1 mid-game steps and their goal kinds work',
+              okChain && p1.raw === 1 && p0.raw === 0 && sp.target === 1,
+              'chain=' + chain.length + ' pets1=' + p1.raw + ' pets0=' + p0.raw + ' stockTarget=' + sp.target);
+
+            MY_PETS = bak.pets; STOCK_HOLD = bak.hold;
+          }
+
+          placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;
           applyHouseLevel(false);
