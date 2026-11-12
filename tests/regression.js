@@ -4145,6 +4145,27 @@
               'greet=' + greet.slice(0, 20) + ' | tip=' + tip.slice(0, 20) + ' | distinct=' + seen.size);
             floats.length = bak.floats;
 
+            /* 场所 NPC：学校门口 / 球场 / 公园 / 沙地。他们不是店员，
+             * 但同样要站在能走的地方、认自己的作息、且不能站在商铺里 */
+            {
+              const sites = CLERKS.filter(c => c.role === 'site');
+              sites.forEach(c => clerkSpotFor(c));
+              const placed = sites.every(c => c.spot && !isStreetObstacle(c.fx, c.fy) &&
+                streetZoneKindShallow(c.fx, c.fy) !== 'road');
+              const zoneOk = sites.every(c => STREET_ZONES.some(z => z.id === c.zoneId) &&
+                (STREET_ZONES.find(z => z.id === c.zoneId) || {}).kind !== 'shop');
+              const hoursOk = sites.some(c => clerkOnDuty(c, 16 * 60)) && sites.every(c => !clerkOnDuty(c, 3 * 60));
+              P('AZ6 place NPCs stand on walkable ground in their own area',
+                sites.length >= 3 && placed && zoneOk && hoursOk,
+                'sites=' + sites.length + ' placed=' + placed + ' zone=' + zoneOk + ' hours=' + hoursOk);
+            }
+
+            /* 学校门口既有门卫（店员）又有放学的孩子（场所 NPC）：
+             * 招牌必须跟门卫走，不能被小孩那三个小时改写 */
+            P('AZ7 a building with both kinds of NPC keeps its own hours',
+              shopOpenNow('school', 17.5 * 60) === false && shopOpenNow('school', 9 * 60) === true,
+              'school@17:30=' + shopOpenNow('school', 17.5 * 60) + ' @9=' + shopOpenNow('school', 9 * 60));
+
             /* 招牌亮度跟着作息走：银行 3 点该暗、便利店 3 点该亮、没配店员的建筑当常开 */
             P('AZ4 shop signs follow the clerks out the door',
               shopOpenNow('shop_bank', 12 * 60) === true &&

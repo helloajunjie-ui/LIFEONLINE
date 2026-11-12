@@ -6078,16 +6078,23 @@ const CLERK_ACTS = [
   { verb: 'news', label: '聊聊小区', durationSec: 0, sfx: 'talk', hook: 'npcAskNews',
     effects: { emotion: 3 }, order: 2 }
 ];
-const CLERKS = (HomeCore.content.clerks() || []).map(c => ({
-  id: String(c.id || ('clerk.' + c.zoneId)).replace(/^clerk\./, ''),
-  name: c.name || '店员',
+const makePerson = (c, role) => ({
+  id: String(c.id || (role + '.' + c.zoneId)).replace(/^(clerk|site)\./, ''),
+  name: c.name || (role === 'site' ? '街坊' : '店员'),
   zoneId: c.zoneId || '',
+  role,
   hours: (Array.isArray(c.hours) && c.hours.length === 2) ? c.hours : [9, 18],
   appearance: c.appearance || {},
   lines: c.lines || {},
   acts: CLERK_ACTS,
   fx: 0, fy: 0, spot: false, dir: 1, animT: 0, moving: false, _lastLine: -1
-}));
+});
+/* 店员守店；sites 是"这个地方本来就该有的人"（学校门口、球场、公园、沙地）。
+ * 两者共用一套渲染/交互/作息，只差站位规则与上班时间。 */
+const CLERKS = [
+  ...(HomeCore.content.clerks() || []).map(c => makePerson(c, 'clerk')),
+  ...((HomeCore.content.sites && HomeCore.content.sites()) || []).map(c => makePerson(c, 'site'))
+];
 
 /** 上不上班：hours=[开,关]，含头不含尾；写成 [0,24] 就是通宵 */
 function clerkOnDuty(c, minute){
@@ -6108,6 +6115,27 @@ function clerkSpotFor(c){
   if (c.spot) return c;
   const z = STREET_ZONES.find(q => q.id === c.zoneId);
   if (!z) return c;
+  /* 场所 NPC：场地里离中心最近的可走格（球场有篮架、公园有树，
+   * 中心格未必站得住，所以要搜） */
+  if (c.role === 'site'){
+    /* 学校的 zone 就是教学楼本身，里面全是障碍——所以要向外扩两格找。
+     * 场地内的格子优先（公园/球场这种人本来就该站在里面），扩出来的只作兜底。 */
+    const mx = z.x + z.w / 2 - 0.5, my = z.y + z.h / 2 - 0.5;
+    let best = null, bestKey = null;
+    for (let y = z.y - 2; y < z.y + z.h + 2; y++){
+      for (let x = z.x - 2; x < z.x + z.w + 2; x++){
+        if (isStreetObstacle(x, y)) continue;
+        if (streetZoneKindShallow(x, y) === 'road') continue;
+        const inside = (x >= z.x && x < z.x + z.w && y >= z.y && y < z.y + z.h) ? 0 : 1;
+        const key = [inside, Math.abs(x - mx) + Math.abs(y - my)];
+        if (!bestKey || key[0] < bestKey[0] || (key[0] === bestKey[0] && key[1] < bestKey[1])){
+          bestKey = key; best = { gx: x, gy: y };
+        }
+      }
+    }
+    if (best){ c.fx = best.gx; c.fy = best.gy; c.spot = true; c.dir = 1; }
+    return c;
+  }
   const cx = z.x + Math.floor(z.w / 2);
   const cands = [[cx, z.y + z.h], [cx + 1, z.y + z.h], [cx - 1, z.y + z.h], [cx, z.y + z.h + 1]];
   for (const q of cands){
@@ -6131,7 +6159,9 @@ function clerkAt(gx, gy){
 
 /** 这家店现在有没有人：没有配店员的建筑当作一直开着 */
 function shopOpenNow(zoneId, minute){
-  const c = CLERKS.find(q => q.zoneId === zoneId);
+  /* 只认"守店的人"：学校门口既有门卫（店员）又有放学的孩子（场所 NPC），
+   * 招牌该跟着门卫的作息，不能跟着小孩 15:00-18:00 那三个小时 */
+  const c = CLERKS.find(q => q.zoneId === zoneId && q.role !== 'site');
   if (!c) return true;
   return clerkOnDuty(c, minute);
 }

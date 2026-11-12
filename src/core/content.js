@@ -93,10 +93,12 @@ function buildIndex(packs, meta){
 
   const npcs = [];
   const clerks = [];
+  const sites = [];
   for (const [id, pack] of Object.entries(packs)){
     if (!id.startsWith('characters/')) continue;
     if (pack.npcs) npcs.push(...pack.npcs);
     if (Array.isArray(pack.clerks)) clerks.push(...pack.clerks);
+    if (Array.isArray(pack.sites)) sites.push(...pack.sites);
   }
 
   const maps = {};
@@ -172,6 +174,7 @@ function buildIndex(packs, meta){
     rules,
     npcs,
     clerks,
+    sites,
     maps,
     ui: uiPack.strings || {},
     verbs: verbTable,
@@ -263,6 +266,8 @@ export function maps(){ return content.maps; }
 export function npcs(){ return content.npcs; }
 /** 店员：站在自家门口，认上下班时间 */
 export function clerks(){ return content.clerks; }
+/** 场所里的人：学校门口 / 球场 / 公园 / 儿童乐园，只在自己那块地方活动 */
+export function sites(){ return content.sites; }
 
 /** 气候：天气权重 + 一天的光照关键帧 */
 export function climate(){ return content.climate; }

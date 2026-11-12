@@ -905,5 +905,141 @@
   "accNote": "appearance.acc 是剪影配饰：apron 围裙 / band 发带 / bag 挎包 / tote 手提袋 / scarf 围巾 / cane 拐杖。可省略（等于 none）。颜色已经有区分时，配饰负责\"远看也能分出是谁\"——美术规范里要求每个角色一条颜色线索 + 一条剪影线索。",
   "profNote": "appearance 的三层识别：age（kid/teen/adult/elder，改头身比与眼睛大小）、sex（f/m/x，改肩宽与睫毛）、uniform（food/office/medical/uniform/delivery，画制服层）。acc 是剪影配饰，和 uniform 叠加使用：制服管\"是干什么的\"，配饰管\"是谁\"。",
   "hairNote": "hairStyle 0~10：短发 / 中发 / 长发 / 卷发 / 双马尾 / 短刺 / 丸子头 / 齐耳短发 / 高马尾 / 短寸 / 麻花辫。0~5 的刘海在上方，6~10 各自有独立的剪影。",
-  "faceNote": "facial：胡茬 stubble / 小胡子 mustache / 络腮 beard（都不碰眼鼻）；earring：耳垂下一颗小金属点。这两样比再加发型更容易\"一眼认出是谁\"。"
+  "faceNote": "facial：胡茬 stubble / 小胡子 mustache / 络腮 beard（都不碰眼鼻）；earring：耳垂下一颗小金属点。这两样比再加发型更容易\"一眼认出是谁\"。",
+  "sites": [
+    {
+      "id": "site.kid1",
+      "name": "小雨",
+      "zoneId": "school",
+      "hours": [
+        15,
+        18
+      ],
+      "appearance": {
+        "skin": "#f4c8a0",
+        "hair": "#3a2a20",
+        "top": "#8fb9e8",
+        "bottom": "#3a3a4a",
+        "shoes": "#2b2b2b",
+        "face": "#4a3a2a",
+        "hairStyle": 4,
+        "faceStyle": 0,
+        "age": "kid",
+        "sex": "f",
+        "acc": "tote",
+        "uniform": "none"
+      },
+      "lines": {
+        "hello": [
+          "放学啦，别挡门呀。",
+          "今天值日，出来晚了。",
+          "我妈还没来接我。"
+        ],
+        "tip": [
+          "学校后门那条路没车，走那边安全。"
+        ]
+      }
+    },
+    {
+      "id": "site.teen1",
+      "name": "阿凯",
+      "zoneId": "court",
+      "hours": [
+        15,
+        20
+      ],
+      "appearance": {
+        "skin": "#dca878",
+        "hair": "#22201e",
+        "top": "#e2703a",
+        "bottom": "#2f3340",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 5,
+        "faceStyle": 1,
+        "age": "teen",
+        "sex": "m",
+        "uniform": "none",
+        "acc": "none"
+      },
+      "lines": {
+        "hello": [
+          "来一队？少个人。",
+          "刚连投进五个。",
+          "这天打球，出一身汗。"
+        ],
+        "tip": [
+          "球场是小区里唯一能打球的地方，想要这份活儿得去工作面板看。"
+        ]
+      }
+    },
+    {
+      "id": "site.elder1",
+      "name": "陈爷",
+      "zoneId": "park",
+      "hours": [
+        8,
+        18
+      ],
+      "appearance": {
+        "skin": "#dfa074",
+        "hair": "#8a8a8a",
+        "top": "#5a7a5a",
+        "bottom": "#3a3a48",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 0,
+        "faceStyle": 2,
+        "age": "elder",
+        "sex": "m",
+        "uniform": "none",
+        "acc": "cane",
+        "facial": "mustache"
+      },
+      "lines": {
+        "hello": [
+          "坐会儿，别急着走。",
+          "今天棋摊没人来。",
+          "树底下凉快。"
+        ],
+        "tip": [
+          "公园是小区里最安静的地方，转一圈能缓过来。"
+        ]
+      }
+    },
+    {
+      "id": "site.kid2",
+      "name": "小豆",
+      "zoneId": "sand",
+      "hours": [
+        16,
+        19
+      ],
+      "appearance": {
+        "skin": "#f2c49c",
+        "hair": "#2a2422",
+        "top": "#f2d06b",
+        "bottom": "#4a4450",
+        "shoes": "#2b2b2b",
+        "face": "#3b3226",
+        "hairStyle": 3,
+        "faceStyle": 1,
+        "age": "kid",
+        "sex": "m",
+        "uniform": "none",
+        "acc": "none"
+      },
+      "lines": {
+        "hello": [
+          "滑梯是我先来的！",
+          "你别踩，刚堆好的。",
+          "我数到一百就回家。"
+        ],
+        "tip": [
+          "这片沙地是小区给孩子玩的，大人一般不来。"
+        ]
+      }
+    }
+  ],
+  "sitesNote": "sites = 场所里的人（学校门口/球场/公园/儿童乐园）。和 clerk 的区别：他们不守店，只是\"这个地方本来就该有人\"。站位在场地内部找可走格，不做门的逻辑；台词只讲这个场所的实话，不许承诺点不到的功能。"
 }

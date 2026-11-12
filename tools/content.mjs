@@ -1266,6 +1266,35 @@ function validate(){
     const PANEL_ONLY = new Set(['shop_bank', 'shop_stock', 'shop_lottery', 'shop_car', 'shop_pet']);
 
     const pk = packs['characters/npcs.neighbors.json'] || {};
+    /* V4.27 场所 NPC：学校门口/球场/公园/沙地这类"本来就该有人"的地方。
+     * zone 必须是真实存在的地点，而且不能是商铺（商铺该配 clerk，那是有柜台的）。 */
+    {
+      const zones = {};
+      for (const [rel, m] of Object.entries(packs)){
+        if (!rel.startsWith('maps/') || !m || !Array.isArray(m.zones)) continue;
+        for (const z of m.zones) zones[z.id] = z;
+      }
+      const siteIds = new Set();
+      for (const s0 of (pk.sites || [])){
+        if (!s0.id) { problems.push('[场所] 有场所 NPC 缺少 id'); continue; }
+        if (siteIds.has(s0.id)) problems.push('[场所] id 重复: ' + s0.id);
+        siteIds.add(s0.id);
+        const z = zones[s0.zoneId];
+        if (!z) problems.push('[场所] ' + s0.id + ' 的 zoneId「' + s0.zoneId + '」不是地图上的地点');
+        /* 只拦商铺：店里该配 clerk（有柜台、要上班）。
+         * 公共建筑放得下场所 NPC——学校门口等家长的孩子就是这种。 */
+        else if (z.kind === 'shop')
+          problems.push('[场所] ' + s0.id + ' 站在商铺里——店里该配 clerk，场所 NPC 放公共场所');
+        const h = s0.hours;
+        if (!Array.isArray(h) || h.length !== 2 || !h.every(v => Number(v) >= 0 && Number(v) <= 24))
+          problems.push('[场所] ' + s0.id + ' hours 必须是 [开,关] 两个 0..24 的数字');
+        for (const pool of ['hello', 'tip']){
+          const arr = (s0.lines || {})[pool];
+          if (!Array.isArray(arr) || !arr.length)
+            problems.push('[场所] ' + s0.id + ' 的 lines.' + pool + ' 至少要有 1 句');
+        }
+      }
+    }
     for (const c of (pk.clerks || [])){
       const z = c.zoneId;
       if (!z) continue;

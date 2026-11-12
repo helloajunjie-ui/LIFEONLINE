@@ -25,6 +25,7 @@ const doc = JSON.parse(fs.readFileSync(path.join(root, 'content/characters/npcs.
 const people = [];
 for (const n of (doc.npcs || [])) people.push({ id: n.id, name: n.name, kind: '邻居', ap: n.appearance || {} });
 for (const c of (doc.clerks || [])) people.push({ id: c.id, name: c.name, kind: '店员', ap: c.appearance || {} });
+for (const s of (doc.sites || [])) people.push({ id: s.id, name: s.name, kind: '街坊', ap: s.appearance || {} });
 
 function hexToHsl(hex) {
   const h = String(hex || '#888888').replace('#', '');
