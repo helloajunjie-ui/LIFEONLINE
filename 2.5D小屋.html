@@ -8243,6 +8243,7 @@ function topicPack(){
 function topicList(){
   return topicPack().topics.slice().sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 }
+function topicDef(id){ return topicList().find(t => t.id === id) || null; }
 const CN_DIGIT = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
 /** 0~59 转汉字：十点四十，不要写成 10:40 */
 function cnNum(n){
@@ -10636,6 +10637,14 @@ const VERB_HOOKS = {
     STATS.emotion = clampStat('emotion', STATS.emotion + gain);
     /* 玩家主动搭话，先把路过的闲话收掉，两个气泡不叠 */
     stopChatter();
+    /* 有些话题不是"说一句"而是"做一件事"（比如打听哪儿招人，要列岗位）。
+     * 内容里用 engine 指到已有的钩子，别在这里再写一遍选岗位的逻辑。 */
+    const def = topicDef(topicId);
+    if (def && def.engine && VERB_HOOKS[def.engine]){
+      VERB_HOOKS[def.engine]({ npc, act: ctx.act, effects: ctx.effects });
+      markDirty();
+      return;
+    }
     const line = npcAnswer(npc, topicId) || '……';
     startChatter([{ s: 'a', t: line }], { p: npc, name: npc.name }, null);
     spawnParticles(Math.round(npc.fx), Math.round(npc.fy), '#ef7c8e', 5);

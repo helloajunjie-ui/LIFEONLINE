@@ -4134,8 +4134,11 @@
               const list = topicList();
               const people = CLERKS.concat(NEIGHBORS);
               let empty = 0, braces = 0, tooLong = 0, sample = '';
+              let hooks = 0;
               for (const p of people){
                 for (const t of list){
+                  /* 转交钩子的话题（打听工作）由钩子自己说话，没有答案池 */
+                  if (t.engine){ if (typeof VERB_HOOKS[t.engine] === 'function') hooks++; continue; }
                   const a = npcAnswer(p, t.id);
                   if (!a){ empty++; continue; }
                   if (/\{[a-zA-Z]+\}/.test(a)) braces++;
@@ -4143,10 +4146,13 @@
                   if (t.id === 'job' && !sample) sample = a;
                 }
               }
+              const wantHooks = list.filter(t => t.engine).length;
               P('CB13 every NPC can answer every topic without leaking placeholders',
-                list.length >= 5 && people.length >= 20 && !empty && !braces && !tooLong,
+                list.length >= 7 && people.length >= 20 && !empty && !braces && !tooLong &&
+                hooks === wantHooks * people.length,
                 'topics=' + list.length + ' people=' + people.length +
-                ' empty=' + empty + ' braces=' + braces + ' long=' + tooLong + ' e.g. ' + sample);
+                ' empty=' + empty + ' braces=' + braces + ' long=' + tooLong +
+                ' hooks=' + hooks + '/' + (wantHooks * people.length) + ' e.g. ' + sample);
             }
 
             /* 问一句：情绪要涨、气泡里要真出现那句话 */

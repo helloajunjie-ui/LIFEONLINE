@@ -1548,6 +1548,10 @@ function validate(){
           else if (String(t.label).length > 6) problems.push('[话题] ' + t.id + ' 的 label 超过 6 字，菜单会换行: ' + t.label);
           if (t.emotion != null && !(Number(t.emotion) >= 0 && Number(t.emotion) <= 10))
             problems.push('[话题] ' + t.id + ' 的 emotion 应在 0~10');
+          /* engine 指到引擎里已有的钩子（比如打听工作要列岗位），写错就点下去没反应 */
+          const HOOKS = ['npcAskJob', 'npcAskNews'];
+          if (t.engine != null && !HOOKS.includes(t.engine))
+            problems.push('[话题] ' + t.id + ' 的 engine「' + t.engine + '」不是已知钩子（' + HOOKS.join('/') + '）');
         }
         const jobs = (pk.jobs || []).map(j => j.id);
         for (const [tid, entry] of Object.entries(answers)){
@@ -1555,6 +1559,9 @@ function validate(){
           if (typeof entry === 'object' && !Array.isArray(entry)) continue;
         }
         for (const id of ids){
+          /* 转交给引擎钩子的话题（打听工作）自己会说话，不需要答案池 */
+          const def = list.find(x => x.id === id) || {};
+          if (def.engine) continue;
           const entry = answers[id];
           if (!entry || Array.isArray(entry) || !Object.keys(entry).length){
             problems.push('[话题] ' + id + ' 没有任何答案，问下去会很尴尬');

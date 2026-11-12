@@ -2,7 +2,8 @@
 
 > 文件名保留历史称呼。**Vue 最终未采用**（原因见 §1），实际形态是「Go 服务端 + 原生模块化前端 + 单文件产物」。
 > 版本：v2.2（2026-11-05 收尾更新）
-> 现状：`src/` 已模块化 + 单文件构建产物 `dist/2.5D小屋.html`；Go 服务端已落地（SQLite，56 项自测）；内容层 20 个包；回归 201 项
+> 现状（2026-11-13 校对）：`src/` 已模块化 + 单文件构建产物 `dist/2.5D小屋.html`；
+> Go 服务端已落地（SQLite，**67 项自测**）；内容层 **30 个包**；客户端回归 **448 项**
 > 目标：数据落库（服务端为唯一真相）、前端模块化、支持多玩家与跨端同步
 >
 > **读法提醒**：本文 §0–§5 是 2026-11-05 上午的推演稿，部分数字（包数、测试数、M1 状态）已被实现超越；
@@ -31,14 +32,14 @@
 
 | 层 | 落地形态 | 状态 | 怎么验证 |
 |---|---|---|---|
-| 内容层 L1 | `content/` **20 个包**（catalog 19 件 / interaction 13 动词 + 10 预留 / house 3 房型 + 4 地板 + 4 墙面 / maps 2 / characters 3 / rules 2 / environment 3 / careers 11 岗位 / achievements 15 目标 / ui 1） | ✅ 完成 | `node tools/content.mjs validate` |
+| 内容层 L1 | `content/` **30 个包**（catalog 19 件 / interaction 13 动词 + 10 预留 / house 3 房型 + 4 地板 + 4 墙面 / maps 2 / characters 3 / rules 2 / environment 3 / careers 11 岗位 / achievements 15 目标 / ui 1） | ✅ 完成 | `node tools/content.mjs validate` |
 | 玩家存档 L2 | `saves` 一人一行 + `version` 乐观锁 + 服务端 cozy 重算 + 数值夹紧 | ✅ 完成 | `home-server.exe -selftest` |
 | 跨玩家 L3 | `room_snapshots` / `visit_log`，串门只读快照 | ✅ 完成 | 同上 |
 | 审计 L4 | `save_history` 最近 20 版 | ✅ 完成 | 同上 |
-| 服务端 | Go + `modernc.org/sqlite`，16 条路由（health/meta/world/auth/content/content pack/me/save/leaderboard/rooms/visit/**buildings**/**friends**） | ✅ 完成 | 56 项 `httptest` 自测 |
+| 服务端 | Go + `modernc.org/sqlite`，16 条路由（health/meta/world/auth/content/content pack/me/save/leaderboard/rooms/visit/**buildings**/**friends**） | ✅ 完成 | 67 项 `httptest` 自测 |
 | 前端模块化 | `src/core/*`（content/pathfind/rules/version/environment/clock）、`src/net/*`、`src/content/generated.js` | ✅ 主体完成（渲染与 UI 仍在 HTML 内，按需再拆） | `src/README.md` |
-| 云同步 | `src/net/save-provider.js`：本地优先 + 离线队列 + 409 字段级合并 | ✅ 接线完成 | 回归 201 项含云同步用例 |
-| 世界/环境 | 北京时间双时钟、四季光照、确定性天气/车流/生长、68×48 街区、16×16 区块惰性生成 | ✅ 完成 | `node tools/perf.mjs`、`node tools/bench-world.mjs` |
+| 云同步 | `src/net/save-provider.js`：本地优先 + 离线队列 + 409 字段级合并 | ✅ 接线完成 | 回归 448 项含云同步用例 |
+| 世界/环境 | 北京时间双时钟、四季光照、确定性天气/车流/生长、88×48 街区、16×16 区块惰性生成 | ✅ 完成 | `node tools/perf.mjs`、`node tools/bench-world.mjs` |
 | 职业系统 | 11 个岗位绑定分区，打卡/任务/整班/熟练度，班次进度不存档 | ✅ 完成 | 回归 J1–J10 |
 | 生活目标（成就） | `content/achievements` 15 个目标，4 组；进度由状态推导不存档，只记解锁与去过谁家 | ✅ 完成 | 回归 A1–A8 |
 | 好友 | `friendships` 单向关系；社区面板加/删好友、好友置顶、去串门 | ✅ 完成 | 服务端含好友用例；回归 P7–P10 |
@@ -86,7 +87,7 @@
 ┌───────────────────────────────────▼───────────────────────────────────────────────┐
 │                   后端（Go 1.26 + net/http 原生路由 + SQLite）                      │
 │  main.go     路由、鉴权中间件、存档读写与乐观锁、内容下发、世界时间、排行榜、串门       │
-│  selftest*.go 56 项 httptest 自测（进程内，不依赖网络）                              │
+│  selftest*.go 67 项 httptest 自测（进程内，不依赖网络）                              │
 │  schema.sql  users / saves / save_history / room_snapshots / visit_log / world_state │
 │  content/    bundle 产物（前后端共享的唯一数据源，由 tools/content.mjs 生成）          │
 └───────────────────────────────────────────────────────────────────────────────────┘
@@ -320,19 +321,19 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off "$GO" build -o home-server.exe .
 | 🟡 | 服务端不校验脏数据 | 负钱/负天数会污染排行榜列 | `money<0 || day<0` → 400；等级/风格索引按内容层长度夹紧 |
 
 **测试现状（当时 → 现在）**：这一轮结束时服务端 `-selftest` 24 项、客户端回归 40 项；
-**当前是服务端 56 项、客户端 170 项**（dist 与 src 两套各跑一遍，全绿）。
+**当前是服务端 67 项、客户端 448 项**（dist 与 src 两套各跑一遍，全绿）。
 后来新增的用例覆盖：内容包热替换、版本握手、统一世界时间、职业打卡/任务/整班/熟练度（J1–J10）、
 街区布局（M3 门不被遮）、区块惰性生成。
 
 ## 6. 分阶段实施（每阶段结束都能玩，不做"大爆炸重写"）
 | 阶段 | 内容 | 产出 | 状态 |
 |---|---|---|---|
-| **M0 服务端骨架** | `server/`：Go + SQLite（modernc）、schema 建库、游客鉴权、save 读写（乐观锁）、content 下发、排行榜、参观快照、好友 | 数据落库的可用后端，**56 项接口自测全通过** | ✅ 已完成 |
+| **M0 服务端骨架** | `server/`：Go + SQLite（modernc）、schema 建库、游客鉴权、save 读写（乐观锁）、content 下发、排行榜、参观快照、好友 | 数据落库的可用后端，**67 项接口自测全通过** | ✅ 已完成 |
 | **M0.5 内容层** | `content/` **19 个数据包** + `assets/furniture/` 19 个 SVG + `tools/content.mjs`（validate/bundle/all）+ 9 条校验规则（含可达性 BFS、交互/职业/成就完整性） | 内容即数据，**加内容不改代码**；详见《内容数据架构设计.md》 | ✅ 已完成 |
-| **M1 前端模块化** | `src/core/{content,pathfind,rules,version,environment,clock}.js` + `src/net/*` + `src/content/generated.js`；自带迷你打包器（无 npm）与无头回归 | 引擎读内容层、数据不再分散；**dist/src 两套回归各 201 项全绿** | ✅ 核心完成（渲染与 UI 暂留单文件，按需再拆） |
+| **M1 前端模块化** | `src/core/{content,pathfind,rules,version,environment,clock}.js` + `src/net/*` + `src/content/generated.js`；自带迷你打包器（无 npm）与无头回归 | 引擎读内容层、数据不再分散；**dist/src 两套回归各 448 项全绿** | ✅ 核心完成（渲染与 UI 暂留单文件，按需再拆） |
 | **M2 前端接后端** | `src/net/save-provider.js`：本地优先 + 离线队列 + 409 字段级合并；HUD 云同步徽章；`version.generated.js` 版本握手 | 存档真正"置后"；回归含云同步用例，端到端脚本待本机跑 | ✅ 接线完成（E2E 需桌面执行 `tools/verify-cloud.cmd`） |
 | **M3 多人玩法** | `src/net/social.js` + 社区面板（好友 / 排行榜 / 串门）；`enterPeer` 套用对方房型·风格·家具，离开恢复；参观时禁写档 | 能真的去别人家看装修；好友置顶 | ✅ 完成（验收需本机双账号） |
-| **M4 世界与环境** | 双时钟（北京时间 `realtime` / 模拟 `game`）、四季光照、确定性天气·车流·生长、68×48 街区、日夜/温度 HUD | 氛围与"不会每帧乱跳"的确定性生成 | ✅ 完成 |
+| **M4 世界与环境** | 双时钟（北京时间 `realtime` / 模拟 `game`）、四季光照、确定性天气·车流·生长、88×48 街区、日夜/温度 HUD | 氛围与"不会每帧乱跳"的确定性生成 | ✅ 完成 |
 | **M5 职业系统** | `content/careers/jobs.json` 11 岗位绑分区；打卡/单任务/整班/熟练度；`civic` 公共建筑；HUD 徽章与面板 | 地图功能点"能进去上班" | ✅ 完成 |
 | **M6 无限画布** | 16×16 区块惰性生成（分区/树木/楼房）、视野裁剪、外围荒野、相机以玩家为中心 | 启动成本与地图尺寸解耦（20 万格 4.3ms） | 🟡 地基完成（跨区块寻路、街区拆文件未做） |
 
@@ -342,7 +343,7 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off "$GO" build -o home-server.exe .
 E:/QHTML/
 ├─ server/
 │  ├─ main.go          服务端全部逻辑（路由/鉴权/存档/排行榜/世界时间/内容热替换）
-│  ├─ selftest.go      56 项接口自测（httptest，不走网络）
+│  ├─ selftest.go      67 项接口自测（httptest，不走网络）
 │  ├─ schema.sql       7 张表（users/saves/save_history/room_snapshots/visit_log/friendships/world_state）
 │  ├─ content/content.json   bundle 产物（源自 content/，由 tools/content.mjs 生成）
 │  ├─ home-server.exe  15 MB 单文件，直接运行
@@ -352,7 +353,7 @@ E:/QHTML/
 │  ├─ catalog/            家具 15 + 装饰 4 + 分类表（未来 food/pet/seed 同构）
 │  ├─ characters/         色板 / 玩家默认 / NPC 5 个
 │  ├─ house/              房型 3 级 + 地板 4 / 墙面 4
-│  ├─ maps/               家 + 小区（68×48，zones/houses/civic/portals/spawn）
+│  ├─ maps/               家 + 小区（88×48，zones/houses/civic/portals/spawn）
 │  ├─ rules/              生存衰减、经济、cozy 公式、社交数值
 │  ├─ environment/        天气光照、随机物/生长/车流、四季
 │  ├─ careers/            11 个岗位（绑分区、班次、任务、薪酬、晋升）
@@ -362,7 +363,7 @@ E:/QHTML/
 └─ tools/                 content.mjs / build.mjs / test.mjs / perf.mjs / bench-world.mjs
 ```
 
-**自测覆盖（56 项）**：health、版本握手、世界时间、游客鉴权、content ETag 304、单包热替换与版本头、首次写档、
+**自测覆盖（67 项）**：health、版本握手、世界时间、游客鉴权、content ETag 304、单包热替换与版本头、首次写档、
 服务端 cozy 复核、过期版本 409、正确版本递增、负值/未知家具拒写、排行榜排除 flagged、参观快照、串门日志、
 访问不存在房间 404、无 token/假 token 401、好友增删与幂等/加自己/加不存在的人。
 
@@ -376,7 +377,7 @@ E:/QHTML/
 
 | 风险 | 对策 |
 |---|---|
-| 重写导致手感回归（角色穿墙、点击错位、深度排序错乱——这些历史 BUG 都可能复发） | 已把无头功能测试固化成 `tools/test.mjs`（当前 **201 项**，dist/src 双跑）；改逻辑前先跑一遍，红了不提交 |
+| 重写导致手感回归（角色穿墙、点击错位、深度排序错乱——这些历史 BUG 都可能复发） | 已把无头功能测试固化成 `tools/test.mjs`（当前 **448 项**，dist/src 双跑）；改逻辑前先跑一遍，红了不提交 |
 | 失去离线/双击即玩 | 双通道：`Local` provider 永不删除，可以打包一个"离线版"单文件产物（Vite 构建 standalone 配置） |
 | 部署成本 | Go 编译单二进制 + SQLite 文件，一条 `docker run` 就能跑；不需要 Redis/K8s |
 | 数据安全 | token 只存 hash、存档带历史版本、写入限流；不做道具交易就不需要复杂审计 |
@@ -566,7 +567,7 @@ POST /api/v1/shop/buy  { catalogId }
 | `house/residence.json` | 住址体系：公寓（18 层 × 4 户）与独栋两类楼栋、分配规则 | 客户端门牌/住址、串门显示"公寓楼 1803" |
 | `house/styles.json` | 地板 4 / 墙面 4（配色 + 纹理类型） | 客户端渲染 |
 | `maps/home.map.json` | 室内家（网格、家具初始位、门） | 客户端渲染与寻路 |
-| `maps/street.map.json` | 小区 68×48（zones / houses / civic / portals / spawn / treeRules） | 客户端渲染、寻路、职业打卡点 |
+| `maps/street.map.json` | 小区 88×48（zones / houses / civic / portals / spawn / treeRules） | 客户端渲染、寻路、职业打卡点 |
 | `characters/*.json` | 色板、玩家默认外观、5 个 NPC | 客户端渲染、串门名牌 |
 | `interaction/verbs.json` | 13 个在用动词 + 10 个预留（含 hook 白名单） | 点击菜单、校验器 |
 | `rules/*.json` | 生存衰减、经济、cozy 公式与档位、社交数值 | 客户端模拟、服务端校验口径 |
@@ -951,6 +952,10 @@ node tools/perf.mjs --scene stress     # 只跑压测
 
 ## 6.11 小区世界：从 32×20 到 68×48，以及"无限画布"的路
 
+> **时间标注**：这一节记的是"68×48 那次扩图"。地图后来又东扩 20 格到 **88×48**，
+> 分区（zones）与 16×16 惰性生成的机制没变，只是多了东商业街、东公园和篮球场。
+> 下文的具体数字是当时的，别当成现状。
+
 小区地图扩到 **68×48（3264 格）**：三条横路 + 两条纵路切出 9 个街区，24 栋楼（2–4 层）、
 四家店、中心广场 + 喷泉、篮球场、儿童乐园、停车位、带荷花池的街心公园。
 
@@ -1016,7 +1021,7 @@ node tools/perf.mjs --scene stress     # 只跑压测
 | 数据可见性 | 前端能看到自己的存档（必须能渲染），但**看不到别人的**；写入一律服务端复核 | 可见 ≠ 可改，见 §6.6 |
 | 时间基准 | **对标北京时间**（`timeSource: "realtime"`，UTC+8），显示时钟与模拟衰减时钟分离 | 暂停/倍速在实时模式下禁用；睡觉改小憩，见 §6.9.1 |
 | 天气范围 | `climate.scope: local \| global`，默认局部（每个玩家自己的天气），需要"全服一场雨"时切 global | 生成必须是确定性的（seed+天+分钟），不存档 |
-| 未来地图 | **无限画布**，以玩家为中心；当前 68×48 是"一个街区"，不是上限 | 区块惰性生成已铺好路，见 §6.11 |
+| 未来地图 | **无限画布**，以玩家为中心；当前 88×48 是"一个街区"，不是上限 | 区块惰性生成已铺好路，见 §6.11 |
 | 交互形态 | **点击对象弹菜单**（物品与 NPC 同一套动作表，verb 数据驱动） | 加动作只改数据，见内容文档 §6 |
 
 **待办（不影响继续加内容）**：跨区块寻路、街区数据拆文件、WebSocket 实时多人、上线部署。

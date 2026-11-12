@@ -55,9 +55,9 @@
     "updatedAt": "2026-11-05T09:56:34.049Z"
   },
   "characters/topics.json": {
-    "version": 4,
-    "hash": "ca73362389c8",
-    "updatedAt": "2026-11-12T15:50:32.222Z"
+    "version": 5,
+    "hash": "edd58db3643e",
+    "updatedAt": "2026-11-12T16:02:33.884Z"
   },
   "environment/ambient.json": {
     "version": 10,

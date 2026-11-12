@@ -21,28 +21,35 @@
       "order": 2
     },
     {
+      "id": "work",
+      "label": "哪儿招人",
+      "emotion": 2,
+      "order": 3,
+      "engine": "npcAskJob"
+    },
+    {
       "id": "news",
       "label": "打听小区",
       "emotion": 3,
-      "order": 3
+      "order": 4
     },
     {
       "id": "place",
       "label": "附近有什么",
       "emotion": 2,
-      "order": 4
+      "order": 5
     },
     {
       "id": "time",
       "label": "现在几点了",
       "emotion": 1,
-      "order": 5
+      "order": 6
     },
     {
       "id": "bye",
       "label": "先走了",
       "emotion": 1,
-      "order": 6
+      "order": 7
     }
   ],
   "answers": {
