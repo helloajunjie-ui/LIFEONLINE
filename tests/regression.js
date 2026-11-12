@@ -4005,6 +4005,40 @@
               FONT_UI);
           }
 
+          // ---------- AW：车型与街道生态 ----------
+          {
+            const ids = TRAFFIC_TYPES.map(t => t.id);
+            const okShape = TRAFFIC_TYPES.length >= 6 && TRAFFIC_TYPES.every(t =>
+              t.id && t.label && Number(t.weight) >= 1);
+            P('AW1 vehicle types come from content', okShape, ids.join(','));
+
+            /* 每型至少要真的出现在路上：一辆救护车都没有的"车型表"等于没写。
+             * 这类问题不会报错，只会让人觉得"街上怎么老是那几辆车"。 */
+            const seen = {};
+            let busOff = 0, total = 0;
+            for (const lane of TRAFFIC_LANES){
+              for (let i = 0; i < 4; i++){
+                const c = trafficCarAt(lane, i, 120);
+                if (!c) continue;
+                seen[c.kind] = (seen[c.kind] || 0) + 1;
+                total++;
+                if (c.kind === 'car.bus' && !lane.arterial) busOff++;
+              }
+            }
+            const missing = ids.filter(id => !seen[id]);
+            P('AW2 every vehicle type actually appears on the road',
+              missing.length === 0 && total >= 20, 'missing=' + missing.join(',') + ' cars=' + total);
+
+            P('AW3 buses only run on the main avenues', busOff === 0,
+              'busOffArterial=' + busOff + ' bus=' + (seen['car.bus'] || 0));
+
+            /* 速度差要看内容：救护车必须比公交快，公交必须比私家车慢 */
+            const spd = id => (TRAFFIC_TYPE_BY_ID[id] || {}).speedMul || 1;
+            P('AW4 emergency vehicles are faster, buses are slower',
+              spd('car.ambulance') > spd('car.sedan') && spd('car.bus') < spd('car.sedan'),
+              'amb=' + spd('car.ambulance') + ' sedan=' + spd('car.sedan') + ' bus=' + spd('car.bus'));
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

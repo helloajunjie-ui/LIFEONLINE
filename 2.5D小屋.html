@@ -5002,6 +5002,52 @@ const TRAFFIC_PER_LANE = Math.max(0, Math.min(6, Number(TRAFFIC_DEF.carsPerLane)
 const TRAFFIC_KINDS = (TRAFFIC_DEF.kinds && TRAFFIC_DEF.kinds.length) ? TRAFFIC_DEF.kinds : ['car.red'];
 const TRAFFIC_PALETTE = { 'car.red': '#c8553d', 'car.blue': '#4a6fa8', 'car.gray': '#8b8b8b', 'bike': '#d9a441' };
 
+/* 车型表：轿车 / 网约车 / 快递车 / 公交 / 警车 / 救护车 / 环卫车 / 电动车。
+ * 每条都对应小区里真实存在的东西——4S 店卖车、快递站在东商业街、社区医院在旁边，
+ * 所以街上跑什么不是随便配的。weight 是相对权重，where=arterial 只跑主干道。
+ * 老内容只有 kinds 颜色表时退化成"单一私家车"，不会炸。 */
+const TRAFFIC_TYPES = (() => {
+  const raw = (TRAFFIC_DEF.types && TRAFFIC_DEF.types.length) ? TRAFFIC_DEF.types : null;
+  if (raw) return raw.filter(t => t && t.id);
+  const kinds = (TRAFFIC_DEF.kinds && TRAFFIC_DEF.kinds.length) ? TRAFFIC_DEF.kinds : ['car.red'];
+  return kinds.map(k => ({ id: k, label: k, weight: 1, where: 'any', speedMul: 1,
+                           color: TRAFFIC_PALETTE[k] || '#8b8b8b' }));
+})();
+const TRAFFIC_TYPE_BY_ID = {};
+for (const t of TRAFFIC_TYPES) TRAFFIC_TYPE_BY_ID[t.id] = t;
+/* 必须有、且不能靠运气出现的车型 */
+const GUARANTEED_TRAFFIC = ['car.police', 'car.ambulance', 'car.sanitation'];
+function trafficTypeFor(lane, i){
+  /* 车型按 (车道, 车号) 做稳定散列挑：同一辆车每次算出来都是同一型，
+   * 不会开着开着从公交车变成警车。 */
+  /* 公交只跑主干道，而主干道一共就 4 条车道——按权重随机的话很容易一辆都排不上。
+   * 所以主路每条车道的头车固定是公交：公交本来就该有班次，不是碰运气。 */
+  const busType = TRAFFIC_TYPES.find(t => t.id === 'car.bus');
+  if (busType && lane.arterial && i === 0) return busType;
+  /* 罕见车（警车/救护车/环卫车）按权重随机分配时经常会一辆都排不上——
+   * 全场只有三十几辆车，4% 的权重很容易整段落空。这里直接给它们保底槽位：
+   * 头几个车槽轮流坐庄，每种各出现一次，剩下的再按权重铺。
+   * 稀有车"该有就一定会有"，比"理论上 4%"重要。 */
+  const gs = (Number(lane.ordinal) || 0) * 3 + i;
+  if (gs < GUARANTEED_TRAFFIC.length){
+    const gt = TRAFFIC_TYPE_BY_ID[GUARANTEED_TRAFFIC[gs % GUARANTEED_TRAFFIC.length]];
+    if (gt) return gt;
+  }
+  const pool = TRAFFIC_TYPES.filter(t => t.where !== 'arterial' || lane.arterial);
+  if (!pool.length) return TRAFFIC_TYPES[0] || null;
+  const total = pool.reduce((s, t) => s + Math.max(1, Number(t.weight) || 1), 0);
+  /* 黄金比例低差异序列：把 (车道序号, 车号) 铺到 [0,1) 上，
+   * 三十几辆车也能均匀覆盖所有权重区间——用散列做不到，会整段漏掉罕见车型。 */
+  const slot = (Number(lane.ordinal) || 0) * 3 + i;
+  const u = ((slot + 1) * 0.6180339887498949) % 1;
+  let r = u * total;
+  for (const t of pool){
+    r -= Math.max(1, Number(t.weight) || 1);
+    if (r <= 0) return t;
+  }
+  return pool[pool.length - 1];
+}
+
 const TRAFFIC_LANES = (() => {
   const lanes = [];
   const isRoadTile = (gx, gy) => streetZoneKindShallow(gx, gy) === 'road';
@@ -5018,9 +5064,13 @@ const TRAFFIC_LANES = (() => {
       const pushRun = (end) => {
         if (runStart === null) return;
         if (end - runStart + 1 >= 4){
-          lanes.push(horizontal
-            ? { id: z.id + ':' + i + ':' + runStart, axis: 'x', fixed: z.y + i, from: runStart, to: end, dir: i === 0 ? -1 : 1 }
-            : { id: z.id + ':' + i + ':' + runStart, axis: 'y', fixed: z.x + i, from: runStart, to: end, dir: i === 0 ? -1 : 1 });
+          /* ordinal：车型分配要用"第几条车道"做低差异序列的输入，不能靠散列——
+       * 全场只有三十几辆车，散列很容易整段整段地漏掉（救护车一度一辆都没有）。 */
+      lanes.push(horizontal
+            ? { id: z.id + ':' + i + ':' + runStart, axis: 'x', fixed: z.y + i, from: runStart, to: end,
+                dir: i === 0 ? -1 : 1, arterial: z.w >= 60, ordinal: lanes.length }
+            : { id: z.id + ':' + i + ':' + runStart, axis: 'y', fixed: z.x + i, from: runStart, to: end,
+                dir: i === 0 ? -1 : 1, arterial: false, ordinal: lanes.length });
         }
         runStart = null;
       };
@@ -5043,12 +5093,19 @@ function trafficCarAt(lane, i, sec){
   // 短路段少放几辆，否则 4 格挤 3 辆像停车场
   const perLane = Math.max(1, Math.min(TRAFFIC_PER_LANE, Math.round(span / 14)));
   const seed = hashPos(i + 1, lane.fixed, lane.axis === 'x' ? 7 : 11);
-  const phase = (seed + (sec * TRAFFIC_SPEED) / span + i / perLane) % 1;
+  const tp = trafficTypeFor(lane, i);
+  /* 车型自带速度倍率：救护车 1.3、公交 0.8。位置仍然是纯函数——
+   * 只是每辆车用自己的速度推进，读档/换机器算出来一模一样。 */
+  const spd = TRAFFIC_SPEED * (Number(tp && tp.speedMul) || 1);
+  const phase = (seed + (sec * spd) / span + i / perLane) % 1;
   const u = lane.dir > 0 ? phase : 1 - phase;
   return {
     id: lane.id + '#' + i,
     along: lane.from + u * (span - 1),
-    kind: TRAFFIC_KINDS[(i + Math.round(seed * 10)) % TRAFFIC_KINDS.length],
+    kind: (tp && tp.id) || 'car.red',
+    /* tone 是这辆车的"个体色相"，用来在私家车配色里挑一个，以及在闪灯上错开相位；
+     * 必须按 (车号, 车道) 固定，不能按当前位置算，否则车开到半路就会变色 */
+    tone: hashPos(i + 11, lane.fixed, 31),
     perLane: perLane
   };
 }
@@ -5274,8 +5331,18 @@ function drawCar(car){
   const c = tileCenter(car.gx, car.gy);
   if (c.x < -90 || c.x > viewW + 90 || c.y < -90 || c.y > viewH + 90) return;
   const horiz = car.axis === 'x';
+  /* 车型决定"长什么样"：长度/宽度/车身色/车顶色/腰线/警灯。
+   * 这些全在内容层，改车型不用动绘制代码。 */
+  const tp = TRAFFIC_TYPE_BY_ID[car.kind] || null;
   const isBike = car.kind === 'bike';
-  const body = car.color || TRAFFIC_PALETTE[car.kind] || '#8b8b8b';
+  const tone = (typeof car.tone === 'number') ? car.tone : 0.5;
+  const lenMul = Number(tp && tp.len) || 1;
+  const widMul = Number(tp && tp.wid) || 1;
+  const body = car.color ||
+    (tp && Array.isArray(tp.colors) && tp.colors.length
+      ? tp.colors[Math.floor(tone * tp.colors.length) % tp.colors.length]
+      : (tp && tp.color)) ||
+    TRAFFIC_PALETTE[car.kind] || '#8b8b8b';
 
   /* 等距方向向量：+x 方向是 (TILE_W/2, TILE_H/2)，+y 方向是 (-TILE_W/2, TILE_H/2)。
    * 角度必须由方向向量直接算。之前用"基准角 + 90°/180°"拼出来的，
@@ -5284,9 +5351,12 @@ function drawCar(car){
   const sy = horiz ? 0 : (car.dir > 0 ? 1 : -1);
   const ang = Math.atan2((sx + sy) * (TILE_H / 2), (sx - sy) * (TILE_W / 2));
 
-  const Lh = isBike ? 15 : 26;      // 半车长
-  const Wd = isBike ? 5.5 : 11;     // 半车宽
-  const bh = isBike ? 4 : 7;        // 车身离地高度（抬到屏幕上方，不是局部坐标上方）
+  const Lh = (isBike ? 15 : 26) * lenMul;   // 半车长（公交 1.75 倍）
+  const Wd = (isBike ? 5.5 : 11) * widMul;  // 半车宽
+  /* 注意别把 || 和 ?: 混在一行：`a || b ? x : y` 会先算 a||b，
+   * 货车（boxy=1）就会被算成"离地 1px"，车整个贴在地上。 */
+  const isTall = !!(tp && tp.boxy) || lenMul >= 1.5;
+  const bh = isBike ? 4 : (isTall ? 9.5 : 7);
 
   /* 影子贴在地面、沿车向拉长。影子必须在 translate 之前画，
    * 否则会被一起抬起——那正是"车在飘"的一半原因。 */
@@ -5338,13 +5408,39 @@ function drawCar(car){
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(-Lh * 0.34, -Wd * 0.74, Lh * 0.82, Wd * 1.48, 3);
     else ctx.rect(-Lh * 0.34, -Wd * 0.74, Lh * 0.82, Wd * 1.48);
-    ctx.fillStyle = shade(body, 0.84); ctx.fill();
+    ctx.fillStyle = (tp && tp.roofColor) || shade(body, 0.84); ctx.fill();
     // 前挡风：车头那一侧的浅色横带
     ctx.fillStyle = 'rgba(205,228,238,.9)';
     ctx.fillRect(Lh * 0.3, -Wd * 0.8, 5, Wd * 1.6);
     // 后窗
     ctx.fillStyle = 'rgba(205,228,238,.55)';
     ctx.fillRect(-Lh * 0.6, -Wd * 0.66, 4, Wd * 1.32);
+    /* 长车身（公交/货车）多画两扇侧窗：只画一扇的话，两倍长的车会像一块砖 */
+    if (lenMul >= 1.5){
+      ctx.fillStyle = 'rgba(205,228,238,.5)';
+      for (let k = -0.15; k <= 0.55; k += 0.35){
+        ctx.fillRect(-Lh * k - 2, -Wd * 0.78, 6, Wd * 0.55);
+        ctx.fillRect(-Lh * k - 2, Wd * 0.23, 6, Wd * 0.55);
+      }
+    }
+    // 腰线：警车/救护车的识别色
+    if (tp && tp.stripe){
+      ctx.fillStyle = tp.stripe;
+      ctx.fillRect(-Lh * 0.2, -Wd * 1.02, Lh * 0.5, 3);
+      ctx.fillRect(-Lh * 0.2, Wd * 1.02 - 3, Lh * 0.5, 3);
+    }
+    // 车顶灯：出租常亮、警车救护车闪
+    if (tp && tp.beacon){
+      let a = 0.95;
+      if (tp.flash){
+        /* 用全局时钟 T 做相位，再按车的 tone 错开，不然满街警灯同步闪像舞台灯 */
+        a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(T * 7 + tone * 6.283));
+      }
+      ctx.globalAlpha = a;
+      ctx.fillStyle = tp.beacon;
+      ctx.fillRect(-Lh * 0.05, -Wd * 0.34, Lh * 0.16, Wd * 0.68);
+      ctx.globalAlpha = 1;
+    }
   }
 
   // 夜里车灯：车头一团暖光 + 车尾两点红

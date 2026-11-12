@@ -1153,6 +1153,37 @@ function validate(){
     }
   }
 
+  /* V4.18 车流车型：车型表写错不会报错，只会"救护车永远不出现"或者"公交跑到小巷里" */
+  {
+    const amb = packs['environment/ambient.json'] || {};
+    const types = (amb.traffic && amb.traffic.types) || [];
+    if (amb.traffic && !types.length && (amb.traffic.kinds || []).length){
+      problems.push('[车流] 还只有 kinds 颜色表，没有 types 车型表（会退化成单一私家车）');
+    }
+    const ids = new Set();
+    for (const t of types){
+      if (!t.id) { problems.push('[车流] 有车型缺少 id'); continue; }
+      if (ids.has(t.id)) problems.push('[车流] 车型 id 重复: ' + t.id);
+      ids.add(t.id);
+      if (!t.label) problems.push('[车流] ' + t.id + ' 缺少 label');
+      if (!(Number(t.weight) >= 1)) problems.push('[车流] ' + t.id + ' weight 必须 ≥ 1');
+      const w = t.where || 'any';
+      if (!['any', 'arterial'].includes(w)) problems.push('[车流] ' + t.id + ' where 只能是 any / arterial');
+      const sp = Number(t.speedMul == null ? 1 : t.speedMul);
+      if (!(sp >= 0.5 && sp <= 1.6)) problems.push('[车流] ' + t.id + ' speedMul 应在 0.5..1.6（太快会穿过路口，太慢会堵）');
+      for (const k of ['len', 'wid']){
+        if (t[k] != null && !(Number(t[k]) >= 0.8 && Number(t[k]) <= 2))
+          problems.push('[车流] ' + t.id + ' ' + k + ' 应在 0.8..2');
+      }
+      for (const c of [t.color, t.roofColor, t.stripe, t.beacon].filter(Boolean)){
+        if (!/^#[0-9a-fA-F]{3,8}$/.test(c)) problems.push('[车流] ' + t.id + ' 颜色格式不对: ' + c);
+      }
+      for (const c of (t.colors || [])){
+        if (!/^#[0-9a-fA-F]{3,8}$/.test(c)) problems.push('[车流] ' + t.id + ' colors 里有非法色值: ' + c);
+      }
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

@@ -49,20 +49,116 @@
     "waterBonusMinutes": 240
   },
   "traffic": {
-    "note": "车流：位置 = f(当前秒, 车道, 车号)，不需要服务端广播，也不需要存档。speedPerMinute 是游戏分钟口径（很慢，只用于逻辑推演），实际观感用 speedPerSecond。",
+    "note": "车流：位置 = f(当前秒, 车道, 车号)，不需要服务端广播，也不需要存档。speedPerMinute 是游戏分钟口径（很慢，只用于逻辑推演），实际观感用 speedPerSecond。 types 是车型表：weight 是相对权重，where=arterial 只跑主干道（中央大道/南环路），speedMul 是相对速度。",
     "speedPerMinute": 0.08,
     "speedPerSecond": 2.4,
     "carsPerLane": 3,
-    "kinds": [
-      "car.red",
-      "car.blue",
-      "car.gray",
-      "bike"
-    ],
+    "kinds": [],
     "light": {
       "note": "红绿灯：两个相位交替（横绿/纵绿），周期秒数由它决定；车辆在红灯前 0.6 格停车，行人站在斑马线上时两侧都停。",
       "cycleSec": 16
-    }
+    },
+    "types": [
+      {
+        "id": "car.sedan",
+        "label": "私家车",
+        "weight": 34,
+        "where": "any",
+        "speedMul": 1,
+        "colors": [
+          "#c8553d",
+          "#4a6fa8",
+          "#8b8b8b",
+          "#5e7a52",
+          "#b08a5a"
+        ],
+        "note": "街上最多的那种。随机配色，跟 4S 店卖的车区分开（那是玩家自己的车）"
+      },
+      {
+        "id": "car.taxi",
+        "label": "网约车",
+        "weight": 12,
+        "where": "any",
+        "speedMul": 1.05,
+        "color": "#2f6f5a",
+        "roofColor": "#f2ede2",
+        "beacon": "#e8d47a",
+        "note": "绿牌网约车，车顶小灯常亮（不闪，跟警灯区分）"
+      },
+      {
+        "id": "car.van",
+        "label": "快递车",
+        "weight": 12,
+        "where": "any",
+        "speedMul": 0.92,
+        "color": "#f2efe8",
+        "roofColor": "#dcd6c8",
+        "len": 1.25,
+        "wid": 1.06,
+        "boxy": true,
+        "note": "方厢小货车，跑得比轿车慢一点；快递站在东商业街，送货车满街都是才合理"
+      },
+      {
+        "id": "car.bus",
+        "label": "公交车",
+        "weight": 9,
+        "where": "arterial",
+        "speedMul": 0.8,
+        "color": "#3f6fa8",
+        "roofColor": "#e9eef3",
+        "len": 1.75,
+        "wid": 1.08,
+        "stripe": "#f2f6fa",
+        "note": "只跑中央大道和南环路这两条主干道。车长是轿车 1.75 倍——再长路口就拐不过弯了"
+      },
+      {
+        "id": "car.police",
+        "label": "警车",
+        "weight": 4,
+        "where": "any",
+        "speedMul": 1.15,
+        "color": "#f4f4f2",
+        "roofColor": "#2a3a55",
+        "stripe": "#2a3a55",
+        "beacon": "#3a6ee8",
+        "flash": true,
+        "note": "白底蓝条，车顶蓝灯闪。比普通车快一点，但不快过救护车"
+      },
+      {
+        "id": "car.ambulance",
+        "label": "救护车",
+        "weight": 4,
+        "where": "any",
+        "speedMul": 1.3,
+        "color": "#f6f4f0",
+        "roofColor": "#e4e0d8",
+        "stripe": "#c0392b",
+        "beacon": "#e0453a",
+        "flash": true,
+        "note": "白底红条，车顶红灯闪，全场最快——社区医院就在小区里，救护车该跑得急"
+      },
+      {
+        "id": "car.sanitation",
+        "label": "环卫车",
+        "weight": 4,
+        "where": "any",
+        "speedMul": 0.72,
+        "color": "#6d8a5f",
+        "roofColor": "#5a7350",
+        "len": 1.3,
+        "wid": 1.1,
+        "boxy": true,
+        "note": "慢吞吞的扫地车，给街道一点层次，不然满街都是一种车"
+      },
+      {
+        "id": "bike",
+        "label": "电动车",
+        "weight": 11,
+        "where": "any",
+        "speedMul": 0.85,
+        "note": "外卖/通勤电动车，原来就有"
+      }
+    ]
   },
   "daily": {
     "note": "每天一条小区广播：按游戏日做稳定散列挑一句，同一天读档重进还是同一句（和股票行情一个道理，不存盘）。when=any 是无条件池，when=rain 只在雨天参与。写的时候按街坊会说的话来，不要写成系统提示。",
