@@ -1166,7 +1166,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T08:15:09.460Z */
+/* 由 tools/build.mjs 生成：2026-11-12T08:17:08.627Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2659,12 +2659,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.44.0",
+  "appVersion": "1.45.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "f2e4965c34e7",
-  "builtAt": "2026-11-12T08:15:09.452Z",
+  "builtAt": "2026-11-12T08:17:08.615Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -7121,10 +7121,42 @@ function renderStreet(){
   drawDrips();
   ambientTint();
   drawStreetLights(x0, x1, y0, y1);   // 灯光必须在暗化之后，否则会被压暗
+  drawShopSigns();                    // 店招最后画：夜里也要亮着，不能被暗化压掉
 }
 
-/* 邻居之家室内渲染 */
-function renderVisit(){
+/* 店招：走到跟前才从"点开看"认出哪家是哪家，太费劲了。
+ * 关卡规范里这条很明确——关键路径必须一眼读懂，不能靠记忆或小地图。
+ * 只标玩家 8 格内的，远处不标：整屏都是字反而更乱。 */
+function shopVisualTop(p, c){
+  const rec = (typeof BUILDING_SVG !== 'undefined') && BUILDING_SVG[p.zoneId];
+  if (rec && rec.w) return c.y - rec.ay;                 // 有 SVG 素材：用它自己的锚点
+  const wallH = TILE_H * 1.5;                            // 程序化楼体：和 drawShop 同一套算法
+  const halfH = TILE_H * ((p.h || 3) / 4 + 0.12);
+  return c.y - halfH - wallH;
+}
+function drawShopSigns(){
+  if (scene !== 'street') return;
+  const px = PLAYER.fx, py = PLAYER.fy;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 12px sans-serif';
+  for (const p of STREET_PROPS){
+    if (p.kind !== 'shop' && p.kind !== 'civic') continue;
+    const d = Math.max(Math.abs(p.gx - px), Math.abs(p.gy - py));
+    if (d > 8) continue;
+    if (!tileOnScreen(p.gx, p.gy, 340)) continue;
+    const c = tileCenter(p.gx, p.gy);
+    const y = shopVisualTop(p, c) - 6;
+    ctx.globalAlpha = d <= 4 ? 0.96 : 0.55;              // 近处实、远处淡，不抢画面
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,250,240,.9)';
+    ctx.strokeText(p.label, c.x, y);
+    ctx.fillStyle = 'rgba(72,50,28,.95)';
+    ctx.fillText(p.label, c.x, y);
+  }
+  ctx.restore();
+}
+
+/* 邻居之家室内渲染 */function renderVisit(){
   const r = visitRoom; if (!r) return;
   const drawables = [];
   for (let gy=0; gy<r.h; gy++){
