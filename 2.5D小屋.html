@@ -2990,7 +2990,24 @@ function charSVG(app, frame){
             + '<rect x="' + (24-sh+0.8).toFixed(1) + '" y="49.8" width="' + (sh*2-1.6).toFixed(1) + '" height="2.2" rx=".8" fill="#2f3a55"/>',
     delivery: '<rect x="' + (24-sh+1.2).toFixed(1) + '" y="39.6" width="' + (sh*2-2.4).toFixed(1) + '" height="2.4" rx="1" fill="#e8d47a" opacity=".92"/>'
             + '<rect x="' + (24+sh-4.6).toFixed(1) + '" y="35" width="3.4" height="2.2" rx=".7" fill="#e8d47a"/>',
-    food:     ''
+    /* 厨师：双排扣 + 领巾（老张） */
+    chef:     '<path d="M' + (24-sh*0.62).toFixed(1) + ',33.4 L' + (24+sh*0.62).toFixed(1) + ',33.4'
+            + ' L' + (24+sh*0.5).toFixed(1) + ',35 L' + (24-sh*0.5).toFixed(1) + ',35 Z" fill="#f6f2e8"/>'
+            + '<circle cx="' + (24-sh*0.3).toFixed(1) + '" cy="38.6" r=".85" fill="#dcd4c4"/>'
+            + '<circle cx="' + (24+sh*0.3).toFixed(1) + '" cy="38.6" r=".85" fill="#dcd4c4"/>'
+            + '<circle cx="' + (24-sh*0.3).toFixed(1) + '" cy="44.6" r=".85" fill="#dcd4c4"/>'
+            + '<circle cx="' + (24+sh*0.3).toFixed(1) + '" cy="44.6" r=".85" fill="#dcd4c4"/>'
+            + '<path d="M22.6,33.4 L24,36.2 L25.4,33.4 L24,33 Z" fill="#c0392b"/>',
+    /* 店員马甲：两侧竖条 + 下摆（便利店/超市/奶茶） */
+    shop:     '<path d="M' + (24-sh).toFixed(1) + ',33.4 L' + (24-sh+2.4).toFixed(1) + ',33.4'
+            + ' L' + (24-sh+2.4).toFixed(1) + ',53 L' + (24-sh+0.5).toFixed(1) + ',53 Z" fill="' + blouse + '" opacity=".92"/>'
+            + '<path d="M' + (24+sh).toFixed(1) + ',33.4 L' + (24+sh-2.4).toFixed(1) + ',33.4'
+            + ' L' + (24+sh-2.4).toFixed(1) + ',53 L' + (24+sh-0.5).toFixed(1) + ',53 Z" fill="' + blouse + '" opacity=".92"/>'
+            + '<rect x="' + (24+sh*0.1).toFixed(1) + '" y="42" width="3" height="1.9" rx=".6" fill="#f6f2e8" opacity=".9"/>',
+    /* 餐饮零售：胸袋 + 名牌。原来这一档是空字符串，等于"这层什么都没画"，
+     * 结果所有 food 店员在辨识度上被视为完全相同——白占一个维度 */
+    food:     '<rect x="' + (24-sh*0.55).toFixed(1) + '" y="38.2" width="' + (sh*0.7).toFixed(1) + '" height="4.6" rx="1" fill="' + blouse + '" stroke="rgba(70,48,32,.18)" stroke-width=".6"/>'
+            + '<rect x="' + (24+sh*0.18).toFixed(1) + '" y="39.6" width="2.6" height="1.8" rx=".5" fill="#f6f2e8" opacity=".9"/>'
   };
   const uniG = UNI[app.uniform] || '';
 

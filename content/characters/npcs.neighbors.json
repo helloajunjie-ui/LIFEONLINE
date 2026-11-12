@@ -12,7 +12,7 @@
         "bottom": "#3a3a4a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 9,
+        "hairStyle": 0,
         "faceStyle": 2,
         "acc": "band",
         "age": "elder",
@@ -84,7 +84,7 @@
         "bottom": "#4a6b52",
         "shoes": "#8a5a2b",
         "face": "#3b3226",
-        "hairStyle": 7,
+        "hairStyle": 6,
         "faceStyle": 0,
         "acc": "tote",
         "age": "adult",
@@ -155,7 +155,7 @@
         "bottom": "#8a4a4a",
         "shoes": "#f2ede2",
         "face": "#3b3226",
-        "hairStyle": 5,
+        "hairStyle": 1,
         "faceStyle": 1,
         "acc": "scarf",
         "age": "teen",
@@ -226,7 +226,7 @@
         "bottom": "#5d5a78",
         "shoes": "#8a5a2b",
         "face": "#3b3226",
-        "hairStyle": 6,
+        "hairStyle": 2,
         "faceStyle": 0,
         "acc": "apron",
         "age": "elder",
@@ -297,7 +297,7 @@
         "bottom": "#3a3a4a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 0,
+        "hairStyle": 3,
         "faceStyle": 2,
         "acc": "cane",
         "age": "elder",
@@ -375,12 +375,12 @@
         "bottom": "#3f4a6a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 10,
+        "hairStyle": 7,
         "faceStyle": 1,
         "acc": "apron",
         "age": "adult",
         "sex": "f",
-        "uniform": "food"
+        "uniform": "shop"
       },
       "lines": {
         "hello": [
@@ -409,7 +409,7 @@
         "bottom": "#2f3340",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 8,
+        "hairStyle": 5,
         "faceStyle": 0,
         "acc": "apron",
         "age": "adult",
@@ -443,9 +443,9 @@
         "bottom": "#4a4a5e",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 6,
+        "hairStyle": 10,
         "faceStyle": 2,
-        "acc": "apron",
+        "acc": "none",
         "age": "elder",
         "sex": "f",
         "uniform": "food"
@@ -511,12 +511,12 @@
         "bottom": "#8a5a7a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 4,
+        "hairStyle": 0,
         "faceStyle": 1,
-        "acc": "apron",
+        "acc": "none",
         "age": "teen",
         "sex": "f",
-        "uniform": "food",
+        "uniform": "shop",
         "earring": true
       },
       "lines": {
@@ -551,7 +551,7 @@
         "acc": "apron",
         "age": "elder",
         "sex": "m",
-        "uniform": "food",
+        "uniform": "chef",
         "facial": "mustache"
       },
       "lines": {
@@ -580,12 +580,12 @@
         "bottom": "#43485a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 2,
+        "hairStyle": 1,
         "faceStyle": 0,
-        "acc": "apron",
+        "acc": "none",
         "age": "adult",
         "sex": "f",
-        "uniform": "food"
+        "uniform": "shop"
       },
       "lines": {
         "hello": [
@@ -613,7 +613,7 @@
         "bottom": "#2a2e3a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 7,
+        "hairStyle": 2,
         "faceStyle": 1,
         "acc": "bag",
         "age": "adult",
@@ -647,12 +647,13 @@
         "bottom": "#3a3a4a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 0,
+        "hairStyle": 3,
         "faceStyle": 2,
-        "acc": "cane",
+        "acc": "none",
         "age": "elder",
         "sex": "m",
-        "facial": "stubble"
+        "facial": "stubble",
+        "uniform": "shop"
       },
       "lines": {
         "hello": [
@@ -676,13 +677,13 @@
       "appearance": {
         "skin": "#e6ae84",
         "hair": "#2a2622",
-        "top": "#384a63",
+        "top": "#4a5f75",
         "bottom": "#2c303c",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 1,
+        "hairStyle": 0,
         "faceStyle": 1,
-        "acc": "bag",
+        "acc": "none",
         "age": "adult",
         "sex": "m",
         "uniform": "office"
@@ -709,11 +710,11 @@
       "appearance": {
         "skin": "#f0c49c",
         "hair": "#33291f",
-        "top": "#3f4a55",
+        "top": "#6b7488",
         "bottom": "#33384a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 5,
+        "hairStyle": 9,
         "faceStyle": 1,
         "acc": "bag",
         "age": "adult",
@@ -746,12 +747,13 @@
         "bottom": "#4a4450",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 10,
+        "hairStyle": 2,
         "faceStyle": 1,
-        "acc": "tote",
+        "acc": "bag",
         "age": "adult",
         "sex": "f",
-        "earring": true
+        "earring": true,
+        "uniform": "shop"
       },
       "lines": {
         "hello": [
@@ -812,7 +814,7 @@
         "bottom": "#2a2e3a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
-        "hairStyle": 9,
+        "hairStyle": 1,
         "faceStyle": 2,
         "acc": "bag",
         "age": "elder",
@@ -848,7 +850,7 @@
         "face": "#3b3226",
         "hairStyle": 7,
         "faceStyle": 1,
-        "acc": "bag",
+        "acc": "tote",
         "age": "adult",
         "sex": "f",
         "uniform": "office"

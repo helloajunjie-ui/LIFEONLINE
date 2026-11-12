@@ -4534,8 +4534,12 @@
               svgOf({ uniform: 'medical' }).indexOf('#f2f4f6') > 0 &&
               svgOf({ uniform: 'uniform' }).indexOf('#2f3a55') > 0 &&
               svgOf({ uniform: 'delivery' }).indexOf('#e8d47a') > 0 &&
-              svgOf({ uniform: 'food' }) === a && svgOf({ uniform: 'nope' }) === a,
-              'food/unknown = plain');
+              /* chef 双排扣、shop 马甲、food 胸袋——这三档以前是空的，等于白占维度 */
+              svgOf({ uniform: 'chef' }).indexOf('#c0392b') > 0 &&
+              svgOf({ uniform: 'shop' }).length > a.length &&
+              svgOf({ uniform: 'food' }).indexOf('#f6f2e8') > 0 &&
+              svgOf({ uniform: 'nope' }) === a,
+              'chef/shop/food draw, unknown = plain');
 
             /* 拐杖：老人最远的识别线索 */
             P('AT12 the cane accessory draws and cache keys cover every layer',

@@ -1357,7 +1357,7 @@ function validate(){
     const ACC = ['none', 'apron', 'band', 'bag', 'tote', 'scarf', 'cane'];
     const AGES = ['kid', 'teen', 'adult', 'elder'];
     const SEXES = ['f', 'm', 'x'];
-    const UNIS = ['food', 'office', 'medical', 'uniform', 'delivery'];
+    const UNIS = ['food', 'office', 'medical', 'uniform', 'delivery', 'chef', 'shop'];
     const HAIRS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     /* 写错一个字母，那一层就静默不画——人物看不出年龄/职业，界面上不会有任何报错 */
     const check = (who, ap) => {
@@ -1381,6 +1381,22 @@ function validate(){
     const pk = packs['characters/npcs.neighbors.json'] || {};
     for (const n of (pk.npcs || [])) check(n.id || n.name, n.appearance);
     for (const c of (pk.clerks || [])) check(c.id, c.appearance);
+    /* V4.26 撞衫：年龄/性别/制服/配饰/发型 五项全同的两个人，屏幕上只差衣服颜色。
+     * 这是 game-art-prompt-pack 硬规则 4（每个主体唯一识别线索）的机器化版本。
+     * 同一条街上有两个"长得一样"的店员，玩家就会开始怀疑自己记错了。 */
+    {
+      const seen = {};
+      const all = [...(pk.npcs || []), ...(pk.clerks || [])];
+      for (const x of all){
+        const a = x.appearance || {};
+        const k = [a.age || 'adult', a.sex || 'x', a.uniform || '', a.acc || 'none',
+                   String(a.hairStyle == null ? 0 : a.hairStyle)].join('|');
+        if (seen[k]) problems.push('[人物] ' + (x.name || x.id) + ' 与 ' + seen[k] +
+          ' 五项全同（年龄/性别/制服/配饰/发型），屏幕上只差衣服颜色');
+        else seen[k] = (x.name || x.id);
+      }
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');
