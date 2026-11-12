@@ -5766,6 +5766,80 @@ function finishBusRide(){
   updateHUD(); saveGame(); markDirty();
 }
 
+/* ---------- 熟客好感 ----------
+ * 按店铺记（键是 zoneId）：熟的是门面，不是那个人。折扣在柜台上算，
+ * 柜台认的就是 zone，存同一个键就没有中间层会对不上。
+ * 存档只存 {p:点数, d:最后累计的日, g:当天已拿}——日上限靠 d/g 算，不另存标记。 */
+let FAVOR = {};
+function favorCfg(){ return ECON.favor || null; }
+function favorLevels(){
+  const c = favorCfg();
+  const list = (c && Array.isArray(c.levels)) ? c.levels.slice() : [];
+  list.sort((a, b) => (Number(a.at) || 0) - (Number(b.at) || 0));
+  return list.length ? list : [{ at: 0, name: '陌生', discount: 1, hearts: 0 }];
+}
+function favorDailyCap(){
+  const c = favorCfg();
+  return Math.max(1, Math.min(20, Math.round(Number(c && c.dailyCap) || 2)));
+}
+function favorEntry(zoneId, create){
+  if (!zoneId) return null;
+  let e = FAVOR[zoneId];
+  if (!e && create){ e = FAVOR[zoneId] = { p: 0, d: 0, g: 0 }; }
+  return e || null;
+}
+function favorPoints(zoneId){
+  const e = favorEntry(zoneId, false);
+  return e ? Math.max(0, Math.round(Number(e.p) || 0)) : 0;
+}
+/** 当前等级：{ at, name, discount, hearts, next } */
+function favorLevel(zoneId){
+  const pts = favorPoints(zoneId);
+  const list = favorLevels();
+  let cur = list[0];
+  for (const l of list) if (pts >= (Number(l.at) || 0)) cur = l;
+  const next = list.find(l => (Number(l.at) || 0) > pts) || null;
+  return { at: Number(cur.at) || 0, name: cur.name || '陌生',
+           discount: Math.max(0.5, Math.min(1, Number(cur.discount) || 1)),
+           hearts: Math.max(0, Math.min(3, Math.round(Number(cur.hearts) || 0))),
+           next: next ? { at: Number(next.at) || 0, name: next.name } : null };
+}
+/** 爱心串：♥♥♡（聊天浮层里用，不占面板） */
+function favorHearts(zoneId){
+  const lv = favorLevel(zoneId);
+  return '♥'.repeat(lv.hearts) + '♡'.repeat(Math.max(0, 3 - lv.hearts));
+}
+/** 浮层里挂在台词后面的小尾巴：点头之交以上才显示，陌生人别挂三个空心圈 */
+function favorBadge(zoneId){
+  return favorLevel(zoneId).hearts > 0 ? '  ' + favorHearts(zoneId) : '';
+}
+/** 到店价：熟客/朋友打折，网购不走这里 */
+function favorPrice(base, zoneId){
+  const b = Math.max(0, Number(base) || 0);
+  const k = favorLevel(zoneId).discount;
+  return Math.max(1, Math.round(b * k));
+}
+/** 加好感：受每日上限约束，返回真正加上的点数 */
+function addFavor(zoneId, n){
+  if (!zoneId) return 0;
+  const e = favorEntry(zoneId, true);
+  if (e.d !== DAY){ e.d = DAY; e.g = 0; }
+  const room = Math.max(0, favorDailyCap() - Math.max(0, Number(e.g) || 0));
+  const add = Math.max(0, Math.min(room, Math.round(Number(n) || 0)));
+  if (!add) return 0;
+  const before = favorLevel(zoneId).name;
+  e.p = Math.max(0, Number(e.p) || 0) + add;
+  e.g = Math.max(0, Number(e.g) || 0) + add;
+  const after = favorLevel(zoneId);
+  if (after.name !== before && after.discount < 1){
+    const nm = (STREET_ZONES.find(z => z.id === zoneId) || {}).label || '这家店';
+    showFloat(nm + '：' + after.name + '了 · 到店 ' + Math.round(after.discount * 100) + ' 折',
+      Math.round(PLAYER.fx), Math.round(PLAYER.fy), 3.6);
+  }
+  markDirty(); saveGame();
+  return add;
+}
+
 /* ---------- 店员 ----------
  * 16 家店原来一个人都没有：门口冷冷清清，"逛商业街"这件事就只有点面板。
  * 现在每家上班时间有个人站在门口，能打招呼、能问"这家店怎么用"——
@@ -6697,6 +6771,7 @@ function clockIn(job){
   }
   SHIFT.active = true; SHIFT.job = job; SHIFT.done = 0; SHIFT.timer = 0; SHIFT.taskLabel = '';
   LAST_SHIFT_DAY = DAY; LAST_SHIFT_JOB = job.id;      // 当天名额用完，明天才恢复
+  if (job.zone) { try { addFavor(job.zone, 1); } catch(e){} }   // 在人家店里干活，自然更熟
   showFloat('打卡上班 · ' + job.name, px, py);
   spawnParticles(px, py, '#7fb3d5', 8);
   SND.ok(); markDirty(); renderWork(); updateHUD(); saveGame();
@@ -9799,7 +9874,8 @@ const VERB_HOOKS = {
     const first = !achEventSeen(tag);
     const line = first ? ((c.lines.hello || [])[0] || '……') : clerkLine(c, 'hello', 0);
     if (first) { try { firstMark(tag); } catch(e){} }
-    showFloat(c.name + '："' + line + '"', c.fx, c.fy, 3.4);
+    try { addFavor(c.zoneId, 1); } catch(e){}
+    showFloat(c.name + '："' + line + '"' + favorBadge(c.zoneId), c.fx, c.fy, 3.4);
     SND.talk();
     c.appearance.faceStyle = 1;
   },
@@ -9808,7 +9884,8 @@ const VERB_HOOKS = {
   clerkTip(ctx){
     const c = ctx.npc;
     STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 2));
-    showFloat(c.name + '："' + clerkLine(c, 'tip', -1) + '"', c.fx, c.fy, 3.8);
+    try { addFavor(c.zoneId, 1); } catch(e){}
+    showFloat(c.name + '："' + clerkLine(c, 'tip', -1) + '"' + favorBadge(c.zoneId), c.fx, c.fy, 3.8);
     SND.talk();
     c.appearance.faceStyle = 0;
   },
@@ -10457,6 +10534,8 @@ function collectSave(){
     /* 网购包裹：只记"买了什么、付了多少、哪天到"。到没到由 readyDay 与 DAY 相比算出来，
      * 不存状态机——省得存档里出现"到了但标记没翻"这种自相矛盾的档 */
     parcels: PARCELS,
+    /* 熟客好感：{ zoneId: {p:点数, d:最后累计日, g:当天已拿} } */
+    favor: FAVOR,
     pets: {
       food: PETFOOD,
       list: MY_PETS.map(p => ({
@@ -10610,6 +10689,10 @@ function migrateSave(d){
     if (schema === 20){
       // v21：加入网购包裹。老玩家没有在途包裹，空表即可
       d.parcels = Array.isArray(d.parcels) ? d.parcels : [];
+    }
+    if (schema === 21){
+      // v22：熟客好感。老玩家从"陌生"开始，不补发
+      d.favor = (d.favor && typeof d.favor === 'object') ? d.favor : {};
     }
     schema++;
   }
@@ -10846,6 +10929,25 @@ function applySave(d){
     BILL_CURSOR = cur;
     BILL_LATE_DAY = Math.max(0, Math.floor(Number(bd.lateDay) || 0));
     BILL_LATE_TOTAL = Math.min(0, Math.floor(Number(bd.lateTotal) || 0));
+  }
+  /* 熟客好感：键必须是地图上真实存在的商铺/门面，点数夹在 0..999，
+   * 当天已拿不超过上限——脏存档不能直接把自己写成"朋友然后白拿折扣"。 */
+  {
+    const raw = (d.favor && typeof d.favor === 'object') ? d.favor : {};
+    FAVOR = {};
+    const zones = new Set(STREET_ZONES.map(z => z.id));
+    for (const k in raw){
+      if (!zones.has(k)) continue;
+      const e = raw[k];
+      if (!e || typeof e !== 'object') continue;
+      /* 上限压到 99：最高等级是 15 点，99 已经远超，"改档把自己写成朋友"没有额外收益，
+       * 但至少不会在界面里显示 9999 这种数字 */
+      const p = Math.max(0, Math.min(99, Math.round(Number(e.p) || 0)));
+      if (!p) continue;
+      const day = Math.max(0, Math.floor(Number(e.d) || 0));
+      const got = Math.max(0, Math.min(favorDailyCap(), Math.round(Number(e.g) || 0)));
+      FAVOR[k] = { p: p, d: day, g: day === DAY ? got : 0 };
+    }
   }
   /* 包裹：只认目录里存在的家具、到期日数字合法、条数设上限。
    * 脏存档不能靠塞包裹把免费家具领出来——取件时还会再按 id 校验一次。 */
@@ -12248,7 +12350,7 @@ function buyGroceries(zoneId, packs){
   if (!g) return 0;
   if (counterClosed(zoneId)){ showFloat('打烊了，明天再来', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return 0; }
   const n = Math.max(1, Math.min(9, (packs | 0) || 1));
-  const cost = (Number(g.price) || 0) * n;
+  const cost = favorPrice(g.price, zoneId) * n;      // 熟客价：按店铺打折
   const gain = (Number(g.pack) || 0) * n;
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
   /* 买的东西先装背包——背包满了就是拎不动，跟钱够不够、冰箱空不空是两回事 */
@@ -12265,6 +12367,7 @@ function buyGroceries(zoneId, packs){
     SND.err(); return 0;
   }
   debit(cost, 'food', '食材 ' + gain + ' 份');
+  try { addFavor(zoneId, 1); } catch(e){}
   BAG += gain;
   SND.ok();
   showFloat('买了 ' + gain + ' ' + foodUnit() + ' · ¥' + cost + '（背包 ' + BAG + '/' + bagCap() + '）', px, py);
@@ -12363,6 +12466,13 @@ function renderCounter(){
   if (counterTitleEl) counterTitleEl.textContent = z.name;
   const out = [];
   const closed = counterClosed(COUNTER_ZONE);
+  const fav = favorLevel(COUNTER_ZONE);
+  if (fav.hearts > 0 || fav.discount < 1){
+    out.push('<div class="cnote">' + favorHearts(COUNTER_ZONE) + ' ' + fav.name +
+      (fav.discount < 1 ? ' · 到店 ' + Math.round(fav.discount * 100) + ' 折' : '') +
+      (fav.next ? '（再攒 ' + Math.max(0, fav.next.at - favorPoints(COUNTER_ZONE)) + ' 点到「' + fav.next.name + '」）' : '') +
+      '</div>');
+  }
   if (closed){
     const hr = counterHoursText(COUNTER_ZONE);
     out.push('<div class="cnote">已经打烊了' + (hr ? '（' + hr + ' 营业）' : '') +
@@ -12401,41 +12511,44 @@ function renderCounter(){
     out.push('<div class="cnote">' + (z.def.note || '') + '</div>');
     out.push('<div class="sgroup">今日菜单</div>');
     for (const d of (z.def.menu || [])){
-      const can = !closed && MONEY >= (Number(d.price) || 0);
+      const price = favorPrice(d.price, COUNTER_ZONE);
+      const can = !closed && MONEY >= price;
       const food = fxText({ hunger: d.hunger, thirst: d.thirst, emotion: d.emotion });
       out.push('<div class="item"><div class="ib">' +
         '<div class="in">' + d.name + (d.hunger >= 60 ? '<span class="ctag">管饱</span>' : '') + '</div>' +
         '<div class="id">' + (d.desc || '') + '</div>' +
         '<div class="id">' + food + '</div></div>' +
         '<button class="sbtn" data-dish="' + d.id + '"' + (can ? '' : ' disabled') + '>' +
-        (can ? '¥' + d.price : (closed ? '打烊' : '差 ¥' + (d.price - MONEY))) + '</button></div>');
+        (can ? '¥' + price : (closed ? '打烊' : '差 ¥' + (price - MONEY))) + '</button></div>');
     }
     out.push('<div class="cnote">下馆子不消耗冰箱里的食材，贵在人工和房租。吃完直接回数值。</div>');
   } else {
     out.push('<div class="cnote">' + (z.def.note || '') + '</div>');
     out.push('<div class="sgroup">货架</div>');
     for (const g of (z.def.goods || [])){
-      const can = !closed && MONEY >= (Number(g.price) || 0);
+      const price = favorPrice(g.price, COUNTER_ZONE);
+      const can = !closed && MONEY >= price;
       const food = fxText({ hunger: g.hunger, thirst: g.thirst, emotion: g.emotion });
       out.push('<div class="item"><div class="ib">' +
         '<div class="in">' + g.name + '</div>' +
         '<div class="id">' + (g.desc || '') + '</div>' +
         '<div class="id">' + (food || '—') + '</div></div>' +
         '<button class="sbtn" data-good="' + g.id + '"' + (can ? '' : ' disabled') + '>' +
-        (can ? '¥' + g.price : (closed ? '打烊' : '差 ¥' + (g.price - MONEY))) + '</button></div>');
+        (can ? '¥' + price : (closed ? '打烊' : '差 ¥' + (price - MONEY))) + '</button></div>');
     }
     // 超市也卖食材，价格条目来自 groceries（同一份数据，别在两处写两个价）
     const gr = groceryFor(COUNTER_ZONE);
     if (gr){
       out.push('<div class="sgroup">食材 · 背包 ' + BAG + '/' + bagCap() + ' · 冰箱 ' + PANTRY + '/' + pantryMax() + '</div>');
-      const can = !closed && MONEY >= (Number(gr.price) || 0) && bagRoom() >= (Number(gr.pack) || 0);
+      const grPrice = favorPrice(gr.price, COUNTER_ZONE);
+      const can = !closed && MONEY >= grPrice && bagRoom() >= (Number(gr.pack) || 0);
       out.push('<div class="item"><div class="ib">' +
         '<div class="in">' + gr.name + '食材包 · ' + gr.pack + ' ' + foodUnit() + '</div>' +
         '<div class="id">' + (gr.desc || '') + ' · 约 ¥' +
         ((gr.price / gr.pack).toFixed(1)) + '/' + foodUnit() + '</div></div>' +
         '<button class="sbtn" data-grocery="1"' + (can ? '' : ' disabled') + '>' +
-        (closed ? '打烊' : (MONEY < gr.price ? '差 ¥' + (gr.price - MONEY)
-          : (bagRoom() < gr.pack ? '背不动' : '¥' + gr.price))) + '</button></div>');
+        (closed ? '打烊' : (MONEY < grPrice ? '差 ¥' + (grPrice - MONEY)
+          : (bagRoom() < gr.pack ? '背不动' : '¥' + grPrice))) + '</button></div>');
     }
   }
 
@@ -12475,10 +12588,12 @@ function eatDish(id){
   const d = (z.def.menu || []).find(x => x.id === id);
   if (!d) return false;
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
-  if (MONEY < d.price){ showFloat('还差 ¥' + (d.price - MONEY), px, py); SND.err(); return false; }
-  debit(d.price, 'food', d.name);
+  const price = favorPrice(d.price, COUNTER_ZONE);
+  if (MONEY < price){ showFloat('还差 ¥' + (price - MONEY), px, py); SND.err(); return false; }
+  debit(price, 'food', d.name);
   applyFx({ hunger: d.hunger, thirst: d.thirst, emotion: d.emotion }, { gx: px, gy: py });
-  showFloat(d.name + ' · ¥' + d.price, px, py);
+  showFloat(d.name + ' · ¥' + price + (price < d.price ? '（熟客价）' : ''), px, py);
+  try { addFavor(COUNTER_ZONE, 1); } catch(e){}
   try { firstMark('meal'); } catch(e){}
   try { firstMark('restaurant'); } catch(e){}
   SND.coin();
@@ -12494,11 +12609,13 @@ function takeGood(id){
   const g = (z.def.goods || []).find(x => x.id === id);
   if (!g) return false;
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
-  if (MONEY < g.price){ showFloat('还差 ¥' + (g.price - MONEY), px, py); SND.err(); return false; }
-  debit(g.price, 'food', g.name);
+  const price = favorPrice(g.price, COUNTER_ZONE);
+  if (MONEY < price){ showFloat('还差 ¥' + (price - MONEY), px, py); SND.err(); return false; }
+  debit(price, 'food', g.name);
   /* emotion 也要生效：咖啡和奶茶主要是给情绪的 */
   applyFx({ hunger: g.hunger, thirst: g.thirst, emotion: g.emotion }, { gx: px, gy: py });
-  showFloat(g.name + ' · ¥' + g.price, px, py);
+  showFloat(g.name + ' · ¥' + price + (price < g.price ? '（熟客价）' : ''), px, py);
+  try { addFavor(COUNTER_ZONE, 1); } catch(e){}
   if (Number(g.hunger) > 0){ try { firstMark('meal'); } catch(e){} }
   SND.coin();
   updateHUD(); saveGame(); renderCounter();

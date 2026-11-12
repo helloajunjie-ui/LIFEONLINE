@@ -1298,6 +1298,36 @@ function validate(){
     }
   }
 
+  /* V4.22 熟客好感：等级表写歪了不会报错，只会让"熟客"比"朋友"还便宜，或者满级毫无意义 */
+  {
+    const eco = packs['rules/economy.json'] || {};
+    const f = eco.favor;
+    if (!f) problems.push('[好感] 缺少 economy.favor 配置');
+    else {
+      const cap = Number(f.dailyCap);
+      if (!(cap >= 1 && cap <= 10)) problems.push('[好感] dailyCap 应在 1~10（现在 ' + f.dailyCap + '）');
+      const lv = Array.isArray(f.levels) ? f.levels.slice() : [];
+      if (lv.length < 2) problems.push('[好感] levels 至少要有两级');
+      let prevAt = -1, prevDisc = 2, prevName = '';
+      for (const l of lv){
+        const at = Number(l.at);
+        if (!(at >= 0)) problems.push('[好感] 等级 at 必须 ≥ 0');
+        if (at <= prevAt) problems.push('[好感] 等级 at 必须严格递增，且按从小到大的顺序写');
+        const d = Number(l.discount);
+        if (!(d > 0.5 && d <= 1)) problems.push('[好感] ' + (l.name || at) + ' 的 discount 应在 0.5~1');
+        if (d > prevDisc) problems.push('[好感] ' + (l.name || at) + ' 的折扣比上一级还贵——等级不能越升越亏');
+        if (!l.name) problems.push('[好感] 等级缺少 name');
+        else if (l.name === prevName) problems.push('[好感] 等级名重复: ' + l.name);
+        const h = Number(l.hearts);
+        if (!(h >= 0 && h <= 3)) problems.push('[好感] ' + (l.name || at) + ' 的 hearts 应在 0~3');
+        prevAt = at; prevDisc = d; prevName = l.name || '';
+      }
+      if (lv.length && Number(lv[0].at) !== 0) problems.push('[好感] 第一级的 at 必须是 0（否则 0 点没有等级）');
+      const top = lv[lv.length - 1];
+      if (top && Number(top.discount) >= 1) problems.push('[好感] 最高一级没有折扣，攒好感就没有意义');
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

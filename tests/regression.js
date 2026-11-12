@@ -4198,6 +4198,7 @@
             syn.achievements.unlocked[achId] = 123456;
 
             syn.bank = Object.assign({}, syn.bank, { savings: 9000, lastDay: 30 });
+            syn.favor = { shop1: { p: 8, d: 37, g: 1 } };
 
             const stId = (HomeCore.content.stocks && HomeCore.content.stocks()[0])
               ? HomeCore.content.stocks()[0].id : null;
@@ -4225,6 +4226,7 @@
             mark('ach.visited', (got.achievements.visited || []).indexOf('house:x') >= 0);
             mark('ach.unlocked', got.achievements.unlocked[achId] === 123456);
             mark('bank.savings', got.bank.savings === 9000);
+            mark('favor', got.favor && got.favor.shop1 && got.favor.shop1.p === 8);
             if (stId) mark('stock.hold', got.stock.hold.length === 1 &&
               got.stock.hold[0].id === stId && got.stock.hold[0].shares === 200 && got.stock.hold[0].cost === 5);
             mark('pets.food', got.pets.food === syn.pets.food);
@@ -4369,6 +4371,79 @@
             MONEY = bak.money; DAY = bak.day; PARCELS = bak.parcels; shopMode = bak.mode;
             inventory.length = 0; for (const x of bak.inv) inventory.push(x);
             if (PARCELS.length !== was) PARCELS = bak.parcels;
+          }
+
+          // ---------- FV：熟客好感（按店铺记） ----------
+          {
+            const bak = { favor: JSON.parse(JSON.stringify(FAVOR)), day: DAY, money: MONEY, cz: COUNTER_ZONE };
+            const c1 = CLERKS.find(c => c.zoneId === 'shop1');
+            DAY = 5; FAVOR = {};
+
+            /* 每日上限：连打五次招呼只该加 2 点 */
+            for (let i = 0; i < 5; i++) VERB_HOOKS.clerkHello({ npc: c1, effects: { emotion: 6 } });
+            const capped = favorPoints('shop1');
+            DAY = 6;
+            VERB_HOOKS.clerkTip({ npc: c1, effects: { emotion: 2 } });
+            const nextDay = favorPoints('shop1');
+            P('FV1 favor gains are capped per day but resume the next day',
+              capped === 2 && nextDay === 3, 'capped=' + capped + ' next=' + nextDay);
+
+            /* 等级与折扣 */
+            FAVOR = { shop1: { p: 8, d: DAY, g: 0 }, shop2: { p: 15, d: DAY, g: 0 } };
+            const lv1 = favorLevel('shop1'), lv2 = favorLevel('shop2');
+            P('FV2 levels unlock their discounts',
+              lv1.name === '熟客' && Math.abs(lv1.discount - 0.95) < 1e-9 && lv1.hearts === 2 &&
+              lv2.name === '朋友' && Math.abs(lv2.discount - 0.92) < 1e-9 &&
+              favorPrice(100, 'shop1') === 95 && favorPrice(100, 'shop2') === 92 &&
+              favorPrice(100, 'shop3') === 100,
+              'lv1=' + lv1.name + '/' + lv1.discount + ' lv2=' + lv2.name + '/' + lv2.discount);
+
+            /* 折扣只在有交情的店生效，到店消费扣的是折后价 */
+            COUNTER_ZONE = 'shop1'; MONEY = 1000;
+            const goods = counterZoneDef('shop1').def.goods[0];
+            const want = favorPrice(goods.price, 'shop1');
+            const mBefore = MONEY;
+            takeGood(goods.id);
+            const paid = mBefore - MONEY;
+            P('FV3 a regular pays the discounted price in that shop',
+              paid === want, 'list=' + goods.price + ' paid=' + paid + ' want=' + want);
+            const otherPrice = favorPrice(goods.price, 'shop3');
+            P('FV3b other shops keep the list price', otherPrice === goods.price,
+              'shop3=' + otherPrice + ' list=' + goods.price);
+
+            /* 存档往返（买完那一下又加了 1 点，这里重新压成已知值再存） */
+            FAVOR = { shop1: { p: 8, d: DAY, g: 0 }, shop2: { p: 15, d: DAY, g: 0 } };
+            const dump = collectSave();
+            FAVOR = {};
+            applySave(dump);
+            P('FV4 favor survives a save round-trip', favorPoints('shop1') === 8 && favorPoints('shop2') === 15,
+              'shop1=' + favorPoints('shop1') + ' shop2=' + favorPoints('shop2'));
+
+            /* 脏存档：未知店铺键直接丢，点数夹到 99 */
+            applySave(Object.assign({}, dump, {
+              favor: { 'no.such.shop': { p: 99, d: 1, g: 9 }, shop1: { p: 9999, d: 6, g: 99 } }
+            }));
+            P('FV5 unknown shop keys are dropped and points are clamped',
+              !FAVOR['no.such.shop'] && favorPoints('shop1') === 99 &&
+              (FAVOR['shop1'] || {}).g <= favorDailyCap(),
+              'keys=' + Object.keys(FAVOR).join(',') + ' p=' + favorPoints('shop1') +
+              ' g=' + (FAVOR['shop1'] || {}).g);
+
+            /* 网购不吃熟客折扣：两条折扣路径必须互斥，否则 0.88×0.92 会套利 */
+            FAVOR = { shop4: { p: 15, d: DAY, g: 0 } };
+            const anyFurn = FURNITURE_CATALOG[0];
+            const wantOnline = Math.max(1, Math.round(anyFurn.price * 0.88));
+            P('FV7 online orders ignore the regular-customer discount',
+              onlinePriceOf(anyFurn) === wantOnline && favorLevel('shop4').name === '朋友',
+              'online=' + onlinePriceOf(anyFurn) + ' want=' + wantOnline);
+
+            /* 迁移：v21 老档补空表，不是从"朋友"开始 */
+            const mig = migrateSave({ schema: 21, money: 100, day: 3, minute: 600 });
+            P('FV6 a v21 save migrates to an empty favor table',
+              mig.schema === CLIENT_VERSION.saveSchema && mig.favor && typeof mig.favor === 'object' &&
+              Object.keys(mig.favor).length === 0, 'schema=' + mig.schema + ' favor=' + JSON.stringify(mig.favor));
+
+            FAVOR = bak.favor; DAY = bak.day; MONEY = bak.money; COUNTER_ZONE = bak.cz;
           }
 
           placed = dc.placed;
