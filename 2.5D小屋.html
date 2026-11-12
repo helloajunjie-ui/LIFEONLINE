@@ -15144,8 +15144,12 @@ async function checkServerVersion(){
   const cold = [];
   for (const c of changed){
     const id = c.id || '';
+    /* 只有"就地重建得动"的包才允许热更新：
+     *   catalog / house / ui —— 家具表、房型、风格、对话参数都是能整体换掉的数组
+     * characters / maps 不行：店员、邻居、分区、房子都是启动时建成对象图并被各处持有引用，
+     *   换掉内容只会得到"新数据 + 旧对象"的脑裂（走过去还是旧门牌）。这两个包要刷新页面。
+     * 以前这里把 characters/maps 也算进热更新，属于文档跑在实现前面的典型。 */
     if (id.startsWith('content/catalog/') || id.startsWith('content/house/') ||
-        id.startsWith('content/characters/') || id.startsWith('content/maps/') ||
         id.startsWith('content/ui/')) hot.push(c);
     else cold.push(c);
   }
@@ -15198,6 +15202,15 @@ function refreshContentBindings(){
   for (const it of wl) WALL_STYLES.push(it);
   floorStyle = Math.max(0, Math.min(floorStyle, FLOOR_STYLES.length - 1));
   wallStyle = Math.max(0, Math.min(wallStyle, WALL_STYLES.length - 1));
+
+  /* FURN_BY_ID 是启动时建的一次性索引。不重建就会出现脑裂：
+   * 商店列表显示新价，卖家具/买家具却按旧对象算钱。 */
+  for (const k in FURN_BY_ID) delete FURN_BY_ID[k];
+  for (const d of FURNITURE_CATALOG) FURN_BY_ID[d.id] = d;
+
+  /* 懒加载缓存也要失效：对话参数（ui/talk.json）与职业表都是第一次用时建的 */
+  _talkCache = null;
+  _jobTable = null;
 
   applyHouseLevel();
   updateHUD();

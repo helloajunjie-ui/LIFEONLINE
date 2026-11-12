@@ -3900,6 +3900,26 @@
             MINUTE = bak.min; ACH = bak.ach; WX.rainOn = bak.rain;
           }
 
+          // ---------- CB18：内容热更新要连派生索引一起重建 ----------
+          {
+            const packId = 'catalog/furniture.core.json';
+            const store = HomeCore.content.loadedPacks();
+            const original = JSON.parse(JSON.stringify(store[packId]));
+            const bed0 = original.items.find(it => it.id === 'bed');
+            const before = FURN_BY_ID.bed && FURN_BY_ID.bed.price;
+            const patched = JSON.parse(JSON.stringify(original));
+            patched.items.find(it => it.id === 'bed').price = (bed0.price || 0) + 777;
+            HomeCore.content.applyPack(packId, patched);
+            refreshContentBindings();
+            const after = FURN_BY_ID.bed && FURN_BY_ID.bed.price;
+            HomeCore.content.applyPack(packId, original);
+            refreshContentBindings();
+            const restored = FURN_BY_ID.bed && FURN_BY_ID.bed.price;
+            P('CB18 hot content update rebuilds derived indexes',
+              before === bed0.price && after === bed0.price + 777 && restored === bed0.price,
+              'before=' + before + ' after=' + after + ' restored=' + restored);
+          }
+
           // ---------- AS：引导链的中期阶梯 ----------
           {
             const bak = { pets: MY_PETS, hold: STOCK_HOLD };

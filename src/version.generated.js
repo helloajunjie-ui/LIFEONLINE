@@ -4,8 +4,8 @@ export const BUILD = {
   "minAppVersion": "1.6.0",
   "saveSchema": 22,
   "contentVersion": 1,
-  "contentHash": "472617e0c347",
-  "builtAt": "2026-11-12T16:13:34.843Z",
+  "contentHash": "d7deb94bd61f",
+  "builtAt": "2026-11-12T17:24:00.085Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -116,8 +116,8 @@ export const BUILD = {
       "hash": "b628686e5439"
     },
     "content/ui/strings.zh-CN.json": {
-      "version": 2,
-      "hash": "9afa3735c2fe"
+      "version": 3,
+      "hash": "f9aa47123d82"
     },
     "content/ui/talk.json": {
       "version": 1,
@@ -129,7 +129,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "472617e0c347"
+      "hash": "d7deb94bd61f"
     },
     "src/core/clock.js": {
       "version": null,

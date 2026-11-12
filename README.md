@@ -54,6 +54,9 @@ node tools/content.mjs all        # extract → validate → bundle（生成服�
 node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 ```
 
+**热更新范围**：改 `catalog/` `house/` `ui/` 的内容，玩家刷新时会就地替换（不刷新页面）；
+改 `characters/` `maps/` `rules/` 需要重新加载页面——这些在启动时被建成对象图，假热更会"看着新、用着旧"。
+
 **跑门禁**（提交前一套）：
 
 ```bash

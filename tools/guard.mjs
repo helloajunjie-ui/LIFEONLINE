@@ -16,6 +16,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
@@ -90,6 +91,47 @@ for (const e of entries) {
       problems.push(`[重复] ${file}：同一行出现 ${n} 次 —— ${line.slice(0, 48)}…`);
     }
   }
+}
+
+/* ---------- ⑤ 服务端 bundle 与内容包是否同步 ----------
+ * server/content/content.json 是构建产物。改了 content/ 却忘了跑 `content.mjs all`，
+ * 服务端（排行榜、cozy 重算、热更新下发）就会拿旧数据，而客户端一切正常——
+ * 这种"只有别人看到错"的问题最难查。 */
+{
+  try {
+    const versions = JSON.parse(fs.readFileSync(path.join(ROOT, 'content/versions.json'), 'utf8'));
+    const bundlePath = path.join(ROOT, 'server/content/content.json');
+    if (fs.existsSync(bundlePath)) {
+      const bundle = JSON.parse(fs.readFileSync(bundlePath, 'utf8'));
+      const mods = bundle.modules || {};
+      const stale = [];
+      for (const [pack, info] of Object.entries(versions)) {
+        const b = mods[pack];
+        if (!b || b.hash !== info.hash) stale.push(pack);
+      }
+      for (const pack of Object.keys(mods)) if (!(pack in versions)) stale.push(pack + '（bundle 里多出来的）');
+      if (stale.length) {
+        problems.push(`[不同步] server/content/content.json 落后于 content/：${stale.slice(0, 5).join(', ')}` +
+          `${stale.length > 5 ? ' …' : ''} —— 跑 node tools/content.mjs all`);
+      }
+    }
+  } catch (e) { /* 缺文件就不管，构建会自己生成 */ }
+}
+
+/* ---------- ⑥ 客户端内联包是否跟上 content/ ----------
+ * 改了 content 却没跑 build，dist 与 src/content/generated.js 里的还是旧内容：
+ * 客户端能跑、测试也可能过（两套都用旧数据），但玩家看到的是上一版。
+ * build 已把 generated.js 的 sha256 前 12 位写进 version.generated.js，这里对一下即可。 */
+{
+  try {
+    const gen = fs.readFileSync(path.join(ROOT, 'src/content/generated.js'));
+    const want = crypto.createHash('sha256').update(gen).digest('hex').slice(0, 12);
+    const verSrc = fs.readFileSync(path.join(ROOT, 'src/version.generated.js'), 'utf8');
+    const m = verSrc.match(/"contentHash":\s*"([0-9a-f]+)"/);
+    if (m && m[1] !== want) {
+      problems.push(`[不同步] src/content/generated.js 变了但没重建（版本里记的是 ${m[1]}，实际 ${want}）—— 跑 node tools/build.mjs`);
+    }
+  } catch (e) { /* 首次构建前没有生成物，跳过 */ }
 }
 
 /* ---------- ④ 未跟踪的大文件 ---------- */
