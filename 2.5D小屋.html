@@ -2211,8 +2211,13 @@ for (const a of STREET_FENCE_AREAS){
       if (!onRing) continue;
       if (gx < 0 || gy < 0 || gx >= STREET_W || gy >= STREET_H) continue;
       const k = gy * STREET_W + gx;
-      if (gates.has(k)) STREET_FENCE_GATE_CELLS.add(k);
-      else STREET_FENCE_CELLS.set(k, true);
+      if (gates.has(k)){ STREET_FENCE_GATE_CELLS.add(k); continue; }
+      /* 围栏绝不压路：院墙是按矩形外扩一圈生成的，外扩之后很容易落到马路上——
+       * 公共服务区的西墙就正好压在西支路上，把整条竖向街道拦腰截断，
+       * 还把彩票站门口那一小块空地封成了死区（实测寻路走不进去）。
+       * 现实里院墙也不会横穿马路：路从哪儿过，墙就在哪儿断开。 */
+      if (streetZoneKindShallow(gx, gy) === 'road') continue;
+      STREET_FENCE_CELLS.set(k, true);
     }
   }
 }
@@ -4957,10 +4962,23 @@ function drawFenceArea(a){
   if (!tileOnScreen(cx, cy, Math.max(r.w, r.h) * TILE_W + 320)) return;
   const fx0 = r.x - 0.5, fy0 = r.y - 0.5, fx1 = r.x + r.w - 0.5, fy1 = r.y + r.h - 0.5;
   const gates = a.gates.map(g => ({ wx: g.gx, wy: g.gy }));
-  drawFenceRun({wx:fx0, wy:fy0}, {wx:fx1, wy:fy0}, gates, 13);   // 北
-  drawFenceRun({wx:fx1, wy:fy0}, {wx:fx1, wy:fy1}, gates, 13);   // 东
-  drawFenceRun({wx:fx1, wy:fy1}, {wx:fx0, wy:fy1}, gates, 13);   // 南
-  drawFenceRun({wx:fx0, wy:fy1}, {wx:fx0, wy:fy0}, gates, 13);   // 西
+  /* 和碰撞保持同一套判断：哪条边落在道路上，那条边就不画——
+   * 否则会出现"看不见的栏杆挡在马路中间"，或者反过来"墙画着却能穿过去"。 */
+  const sideIsRoad = (sx, sy, ex, ey) => {
+    const n = Math.max(Math.abs(ex - sx), Math.abs(ey - sy)) + 1;
+    let road = 0;
+    for (let i = 0; i < n; i++){
+      const t = n === 1 ? 0 : i / (n - 1);
+      const gx = Math.round(sx + (ex - sx) * t + 0.5);
+      const gy = Math.round(sy + (ey - sy) * t + 0.5);
+      if (streetZoneKindShallow(gx, gy) === 'road') road++;
+    }
+    return road * 2 >= n;
+  };
+  if (!sideIsRoad(fx0, fy0, fx1, fy0)) drawFenceRun({wx:fx0, wy:fy0}, {wx:fx1, wy:fy0}, gates, 13);   // 北
+  if (!sideIsRoad(fx1, fy0, fx1, fy1)) drawFenceRun({wx:fx1, wy:fy0}, {wx:fx1, wy:fy1}, gates, 13);   // 东
+  if (!sideIsRoad(fx1, fy1, fx0, fy1)) drawFenceRun({wx:fx1, wy:fy1}, {wx:fx0, wy:fy1}, gates, 13);   // 南
+  if (!sideIsRoad(fx0, fy1, fx0, fy0)) drawFenceRun({wx:fx0, wy:fy1}, {wx:fx0, wy:fy0}, gates, 13);   // 西
 }
 
 function drawStreetFences(){

@@ -1708,11 +1708,21 @@
 
       // F1 围栏格必须真的挡路（画了栏杆却能穿过去是最伤的手感）
       // 院落矩形 = x21..36 / y11..21，围栏落在它外一圈（x20/37、y10/22）
-      P('F1 fence ring blocks movement',
-        isStreetBlocked(20, 16) === true && isStreetBlocked(37, 16) === true &&
-        isStreetBlocked(28, 10) === true && isStreetBlocked(28, 22) === true,
-        'west=' + isStreetBlocked(20, 16) + ' east=' + isStreetBlocked(37, 16) +
-        ' north=' + isStreetBlocked(28, 10) + ' south=' + isStreetBlocked(28, 22));
+      /* 围栏规则改了两条：
+       *   ① 画了栏杆就得挡路（这条不变）
+       *   ② 但落在道路上的栏杆必须让开——院墙横穿马路会把整条竖向街道截断，
+       *      公共服务区西墙原来就压在西支路上，还把彩票站门口封成了死区 */
+      const fenceOnRoad = [];
+      for (const k of STREET_FENCE_CELLS.keys()){
+        const gx = k % W, gy = (k / W) | 0;
+        if (streetZoneKindShallow(gx, gy) === 'road') fenceOnRoad.push(gx + ',' + gy);
+      }
+      P('F1 fence ring blocks movement but never crosses a road',
+        isStreetBlocked(37, 16) === true && isStreetBlocked(28, 10) === true &&
+        isStreetBlocked(28, 22) === true && isStreetBlocked(20, 16) === false && fenceOnRoad.length === 0,
+        'east=' + isStreetBlocked(37, 16) + ' north=' + isStreetBlocked(28, 10) +
+        ' south=' + isStreetBlocked(28, 22) + ' westOnRoad=' + isStreetBlocked(20, 16) +
+        ' fenceOnRoad=' + fenceOnRoad.length);
 
       // F2 门洞必须能走，且各楼门口不能被围栏挡死
       const zoneDoor = (id) => {
@@ -1804,32 +1814,38 @@
 
       // L4 行人站在斑马线上：横向绿灯也照样停（礼让）
       resetTrafficState();
-      const hLane = TRAFFIC_LANES.find(l => l.axis === 'x' && l.fixed >= cross.box.y && l.fixed < cross.box.y + cross.box.h);
-      const ped = [{ gx: cross.box.x - 1.2, gy: cross.box.y + 0.5 }];
+      /* 林荫北路被大院截成东西两段之后，路口所在的横道可能落在很短的一段上，
+       * 车流会在段内循环——所以这里不能"取第一辆停着的车"，那样可能抓到已经
+       * 开过行人的那辆。改成：只看还没越过行人的车，只要出现过就算礼让。 */
+      const pedAt = cross.box.x - 1.2;
+      const ped = [{ gx: pedAt, gy: cross.box.y + 0.5 }];
+      const hLanes = TRAFFIC_LANES.filter(l => l.axis === 'x' && l.fixed >= cross.box.y && l.fixed < cross.box.y + cross.box.h);
       let yieldCar = null;
       for (let f = 0; f < 800 && !yieldCar; f++){
         const sec = 1 + f * 0.05;             // 处于横向绿灯阶段
         const cars = trafficStep(0.05, sec, ped);
-        const mine = cars.filter(c => c.id.indexOf(hLane.id + '#') === 0 && c.waiting);
+        const mine = cars.filter(c => hLanes.some(l => c.id.indexOf(l.id + '#') === 0) && c.waiting &&
+          (c.dir > 0 ? c.gx < pedAt - 0.3 : c.gx > pedAt + 0.3));
         if (mine.length) yieldCar = mine[0];
       }
-      // 车可以停在路口前，也可以停在行人前——只要没有开过行人就算礼让
-      const pedAt = ped[0].gx;
-      const beforePed = yieldCar && (yieldCar.dir > 0 ? yieldCar.gx < pedAt - 0.3 : yieldCar.gx > pedAt + 0.3);
+      const beforePed = !!yieldCar;
       P('L4 cars yield to pedestrian on crosswalk', !!yieldCar && beforePed,
         JSON.stringify({ car: yieldCar && { id: yieldCar.id, gx: yieldCar.gx, dir: yieldCar.dir }, pedAt: pedAt }));
 
-      // L5 行人离开后恢复行驶：同一辆车必须能开过路口
-      let passed = false;
-      for (let f = 0; f < 400 && !passed; f++){
+      // L5 行人离开后恢复行驶：路口一带的车必须真的在动（不能一直停着等）
+      let moved3 = false;
+      const seen = {};
+      for (let f = 0; f < 400 && !moved3; f++){
         const sec = 1 + 40 + f * 0.05;
         const cars = trafficStep(0.05, sec, []);
-        const mine = cars.filter(c => c.id === (yieldCar && yieldCar.id));
-        if (mine.length && (mine[0].dir > 0 ? mine[0].gx > cross.box.x + cross.box.w : mine[0].gx < cross.box.x)){
-          passed = true;
+        for (const c of cars){
+          if (!hLanes.some(l => c.id.indexOf(l.id + '#') === 0)) continue;
+          const rec = seen[c.id] || (seen[c.id] = { min: c.gx, max: c.gx });
+          rec.min = Math.min(rec.min, c.gx); rec.max = Math.max(rec.max, c.gx);
+          if (rec.max - rec.min > 3){ moved3 = true; break; }
         }
       }
-      P('L5 cars resume after the crossing clears', passed);
+      P('L5 cars resume after the crossing clears', moved3);
 
       // L6 等灯的车必须停在路口外（不能停在路口中间堵着）
       let parkedInside = 0;

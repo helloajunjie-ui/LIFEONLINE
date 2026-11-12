@@ -790,9 +790,9 @@ function validate(){
   {
     /* 历史遗留：以下四处是早期版本就压着路的，挪动会牵动门口的交互点和分区锚点，
      * 得连东半区的商铺行一起重排。先记账，新增的一律拦住。 */
-    const KNOWN_OVERLAPS = {
-      'map.street': ['shop4', 'shop5', 'hospital', 'school']   // 快递站 / 奶茶店 / 社区医院 / 实验小学
-    };
+    /* 目前空：地图重排后已经没有压路的建筑。留着机制是给"临时豁免"用——
+     * 但豁免必须带注释写清原因和打算什么时候清掉，否则就成了永久后门。 */
+    const KNOWN_OVERLAPS = {};
     for (const [rel, m] of Object.entries(packs)){
       if (!rel.startsWith('maps/') || !m || !Array.isArray(m.zones)) continue;
       const roads = m.zones.filter(z => z.kind === 'road');
