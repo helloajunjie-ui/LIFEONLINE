@@ -784,6 +784,33 @@ function validate(){
     }
   }
 
+  /* V4.17 建筑不压路：商铺/公共建筑的矩形不能和道路重叠。
+   * 街区是按矩形手摆的，坐标写错一格就会把楼盖在马路中间——渲染上完全看不出来，
+   * 只有走过去才知道。宠物之家就踩过：同时压在南环路和西支路上。 */
+  {
+    /* 历史遗留：以下四处是早期版本就压着路的，挪动会牵动门口的交互点和分区锚点，
+     * 得连东半区的商铺行一起重排。先记账，新增的一律拦住。 */
+    const KNOWN_OVERLAPS = {
+      'map.street': ['shop4', 'shop5', 'hospital', 'school']   // 快递站 / 奶茶店 / 社区医院 / 实验小学
+    };
+    for (const [rel, m] of Object.entries(packs)){
+      if (!rel.startsWith('maps/') || !m || !Array.isArray(m.zones)) continue;
+      const roads = m.zones.filter(z => z.kind === 'road');
+      const allow = new Set(KNOWN_OVERLAPS[m.id] || []);
+      const hit = (a, b) => !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+      for (const z of m.zones){
+        if (z.kind !== 'shop' && z.kind !== 'civic') continue;
+        for (const r of roads){
+          if (hit(z, r)){
+            if (allow.has(z.id)) continue;
+            problems.push('[地图] ' + rel + ' 的 ' + (z.label || z.id) + ' (' + z.x + ',' + z.y + ') 压在道路「' + (r.label || r.id) + '」上');
+            break;
+          }
+        }
+      }
+    }
+  }
+
   /* V4.10 车款：4S 店卖的车。价格写负/速度写 0 会让"买得起但开不动"或"倒贴钱" */
   for (const [rel, pack] of Object.entries(packs)){
     if (!rel.startsWith('vehicles/')) continue;
