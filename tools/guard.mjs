@@ -162,6 +162,19 @@ for (const e of entries) {
   }
 }
 
+/* ---------- ⑧ 视图与玩法是否分开 ----------
+ * 一个函数既改玩法状态、又写 DOM，说明层次被打穿了：它既是 UI 又是玩法，
+ * 单测测不了（要开浏览器），行为也没法预测（"刷一下界面"顺手改了数据）。
+ * 目标：动作函数写状态、视图函数只读。确实要留的过渡项在 tools/ui-allow.json 登记。 */
+{
+  try {
+    execFileSync(process.execPath, [path.join(ROOT, 'tools', 'uilayers.mjs'), '--check'], { stdio: 'pipe' });
+  } catch (e) {
+    const msg = String((e.stderr || e.stdout || '')).trim().split('\n').slice(0, 5).join('\n      ');
+    problems.push('[分层] 视图与玩法混在一起：\n      ' + msg);
+  }
+}
+
 /* ---------- ④ 未跟踪的大文件 ---------- */
 try {
   const out = git(['ls-files', '--others', '--exclude-standard']);

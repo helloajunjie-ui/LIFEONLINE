@@ -1,10 +1,10 @@
 {
   "note": "顶层可变状态登记表。domain = 玩法状态（saved 必须明确）；derived = 从内容/常量推导；session = 会话内瞬态（刷新即丢）；cache = 可重建缓存（约定 _ 开头）。新增顶层状态后跑 node tools/genstatespec.mjs --enrich 登记，再跑 node tools/statemap.mjs --check 验证。",
   "counts": {
-    "domain": 43,
+    "cache": 34,
     "derived": 53,
-    "session": 81,
-    "cache": 33
+    "domain": 43,
+    "session": 82
   },
   "states": {
     "_billTickDay": {
@@ -99,6 +99,10 @@
     },
     "_weatherCur": {
       "kind": "cache"
+    },
+    "_workBound": {
+      "kind": "cache",
+      "note": "工作面板的委托监听是否挂过；纯运行期标记，刷新重建"
     },
     "_worldDayInit": {
       "kind": "cache"
@@ -721,6 +725,10 @@
     },
     "TRAFFIC_TYPE_BY_ID": {
       "kind": "derived"
+    },
+    "UI_STATS": {
+      "kind": "session",
+      "note": "视图写入/跳过计数，只用于观测与回归断言（查看 DOM 是否真的减少了写）"
     },
     "VERB_HOOKS": {
       "kind": "derived"

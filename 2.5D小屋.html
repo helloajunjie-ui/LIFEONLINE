@@ -7478,6 +7478,10 @@ function loop(now){
   } else {
     RENDER_STATS.skips++;
   }
+  /* 先结算、再渲染：升星提示属于玩法事件，挂在视图里会让视图不可重复执行 */
+  tickCozyTier();
+  /* 先结算、再渲染：升星提示属于玩法事件，挂在视图里会让视图不可重复执行 */
+  tickCozyTier();
   updateHUD();
   if (charOpen) refreshCharStats();
   requestAnimationFrame(loop);
@@ -7507,6 +7511,32 @@ function updatePlayer(dt){
   PLAYER.moving = true;
   if (Math.abs(dx) > 0.05) PLAYER.dir = dx > 0 ? 1 : -1;
   PLAYER.animT += dt;
+}
+
+/* ---------- 摆放相关动作（输入层不该自己改 placed） ----------
+ * clickHandler 是"输入"，它的活是判断点到了什么；改状态属于动作。
+ * 这两个函数以前内联在点击分支里，于是点击函数既是输入又是玩法，
+ * 想单独测"收回一件家具"只能模拟一次点击。 */
+function takeBackFurniture(f, gx, gy){
+  placed = placed.filter(x => x !== f);
+  invAdd(f.catalogId);
+  showFloat('已收回 ' + furnName(f.catalogId), gx, gy);
+  SND.pickup();
+  interacting = null;
+  dirtyPlaced = true; markDirty(); cancelBuild(); updateHUD();
+}
+
+/** 挪一件已摆的家具；先移开再判定，允许原地重放。放不下会原样放回并返回 false */
+function moveFurniture(f, gx, gy){
+  placed = placed.filter(x => x !== f);
+  if (!canPlace(f.catalogId, gx, gy, f.rot)){
+    placed.push(f);            // 恢复
+    return false;
+  }
+  placed.push({ catalogId: f.catalogId, gx, gy, rot: f.rot || 0 });
+  interacting = null;
+  dirtyPlaced = true; markDirty(); cancelBuild(); updateHUD();
+  return true;
 }
 
 /* ---------- 输入：点击（移动 / 放置 / 编辑 / 交互） ---------- */
@@ -7726,27 +7756,9 @@ function clickHandler(e){
       else bbMsg.textContent = '先点选一件要整理的家具';
       return;
     }
-    if (f === editingFurn){          // 再点同一件 → 收回仓库（不扣钱）
-      placed = placed.filter(x=>x!==editingFurn);
-      invAdd(editingFurn.catalogId);
-      showFloat('已收回 ' + furnName(editingFurn.catalogId), gx, gy);
-      SND.pickup();
-      interacting = null;
-      dirtyPlaced = true; markDirty(); cancelBuild(); updateHUD();
-      return;
-    }
+    if (f === editingFurn){ takeBackFurniture(editingFurn, gx, gy); return; }
     if (f){ enterEdit(f); return; }  // 换选另一件
-    // 尝试移动到目标格：临时移开以允许原地重放
-    const cur = editingFurn;
-    placed = placed.filter(x=>x!==cur);
-    if (canPlace(cur.catalogId, gx, gy, cur.rot)){
-      placed.push({catalogId: cur.catalogId, gx, gy, rot: cur.rot || 0});
-      interacting = null;
-      dirtyPlaced = true; markDirty(); cancelBuild(); updateHUD();
-    } else {
-      placed.push(cur);   // 恢复
-      bbMsg.textContent = '这里放不下';
-    }
+    if (!moveFurniture(editingFurn, gx, gy)) bbMsg.textContent = '这里放不下';
     return;
   }
 
@@ -8950,6 +8962,67 @@ function updateTip(){
   if (el.textContent !== t) el.textContent = t;
 }
 
+/* ---------- 视图层：DOM 只在值真的变了才写 ----------
+ * updateHUD 每帧都跑，以前每帧无条件写十几个 textContent（60fps ≈ 上千次/秒），
+ * 每次都触发样式重算。改成"先跟上次的值比、不同才写"之后：
+ *   · 静止画面几乎不写 DOM
+ *   · 视图变成**幂等函数**——同样的状态调两次，第二次零写入，测试可以直接断言
+ * 这不是性能技巧，是分层的前提：视图能反复执行且只依赖状态，才谈得上"UI 为主、逻辑置后"。
+ * 缓存挂在元素自身的 `_ui` 上，元素被重建（innerHTML）时缓存自然失效。 */
+const UI_STATS = { writes: 0, skips: 0 };
+function setProp(el, prop, val){
+  if (!el) return false;
+  const v = (val === undefined || val === null) ? '' : String(val);
+  const c = el._ui || (el._ui = {});
+  if (c[prop] === v){ UI_STATS.skips++; return false; }
+  c[prop] = v;
+  if (prop === 'text') el.textContent = v;
+  else if (prop === 'html') el.innerHTML = v;
+  else el.setAttribute(prop, v);
+  UI_STATS.writes++;
+  return true;
+}
+/** 文本：只在变化时写。所有"每帧刷新"的节点都必须走它 */
+function setText(el, v){ return setProp(el, 'text', v); }
+function setTitle(el, v){ return setProp(el, 'title', v); }
+function setStyle(el, prop, v){
+  if (!el) return false;
+  const c = el._ui || (el._ui = {});
+  const key = 'style.' + prop;
+  if (c[key] === v){ UI_STATS.skips++; return false; }
+  c[key] = v;
+  el.style[prop] = v;
+  UI_STATS.writes++;
+  return true;
+}
+function setDisplay(el, v){ return setStyle(el, 'display', v); }
+function setClass(el, name, on){
+  if (!el) return false;
+  const c = el._ui || (el._ui = {});
+  const key = 'class.' + name;
+  if (c[key] === !!on){ UI_STATS.skips++; return false; }
+  c[key] = !!on;
+  el.classList.toggle(name, !!on);
+  UI_STATS.writes++;
+  return true;
+}
+
+/* ---------- 装修度升星：这是玩法事件，不是视图事件 ----------
+ * 以前这段写在 updateHUD 里——视图函数顺手改了 cozyTierSeen 还放粒子，
+ * 于是"视图"没法重复执行（第二次会重复播放），也没法单测。
+ * 现在归到 sim 侧：改状态 + 触发表现，视图只负责显示当前星级。 */
+function tickCozyTier(){
+  if (scene !== 'home') return;
+  const stars = cozyTier().stars;
+  if (cozyTierSeen === null){ cozyTierSeen = stars; return; }
+  if (stars > cozyTierSeen){
+    cozyTierSeen = stars;
+    showFloat('装修度提升 · ' + cozyTier().name, Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
+    spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f0c14b', 12);
+    SND.ok();
+  } else if (stars < cozyTierSeen) cozyTierSeen = stars;
+}
+
 function updateHUD(){
   /* 小区里显示"街区名"而不是坐标：分区表里有 label，玩家能知道自己站在哪 */
   let where;
@@ -8967,7 +9040,7 @@ function updateHUD(){
   } else {
     where = '家 · ';
   }
-  posLabel.textContent = where + `(${Math.round(PLAYER.fx)},${Math.round(PLAYER.fy)})`;
+  setText(posLabel, where + `(${Math.round(PLAYER.fx)},${Math.round(PLAYER.fy)})`);
   const _L = curLight(), _S = curSeason();
   const _W = curWeather();
   const _T = curTemp();
@@ -8975,59 +9048,49 @@ function updateHUD(){
   const _dateTxt = (TIME_SOURCE === 'realtime' && REAL_DATE)
     ? (REAL_DATE + ' ' + WEEK_CN[REAL_WEEKDAY])
     : ('第' + DAY + '天');
-  clockChip.textContent = _dateTxt + ' ' + fmtClock(MINUTE);
-  clockChip.title = '第' + DAY + '天 · ' + (_S.label || '') + '季 · ' + (_L.label || '') +
+  setText(clockChip, _dateTxt + ' ' + fmtClock(MINUTE));
+  setTitle(clockChip, '第' + DAY + '天 · ' + (_S.label || '') + '季 · ' + (_L.label || '') +
     ' · ' + (TIME_SOURCE === 'world' ? '全服统一世界时间'
-            : (TIME_SOURCE === 'realtime' ? '与北京时间同步' : '游戏时间'));
+            : (TIME_SOURCE === 'realtime' ? '与北京时间同步' : '游戏时间')));
   /* 环境条：季节 · 天气 · 室外温度 */
-  envChip.textContent = (_S.label || '') + ' ' + (_W ? _W.label : '') + ' ' + _T + '°';
-  envChip.title = '室外：' + (_S.label || '') + '季 · ' + (_L.label || '') +
-    ' · ' + (_W ? _W.label : '') + ' · ' + _T + '°C';
-  speedBtn.textContent = (TIME_SOURCE === 'world') ? '世界时间 · 全服'
-    : ((TIME_SOURCE === 'realtime') ? '实时 · 北京' : ('速度 ' + SPEED_LABEL[SPEED]));
-  sceneBtn.textContent = (scene==='street' || scene==='peer') ? '回家' : (scene==='visit' ? '出门' : '小区');
-  expandBtn.textContent = '房型·' + HOUSE_LEVELS[houseLevel].name;
+  setText(envChip, (_S.label || '') + ' ' + (_W ? _W.label : '') + ' ' + _T + '°');
+  setTitle(envChip, '室外：' + (_S.label || '') + '季 · ' + (_L.label || '') +
+    ' · ' + (_W ? _W.label : '') + ' · ' + _T + '°C');
+  setText(speedBtn, (TIME_SOURCE === 'world') ? '世界时间 · 全服'
+    : ((TIME_SOURCE === 'realtime') ? '实时 · 北京' : ('速度 ' + SPEED_LABEL[SPEED])));
+  setText(sceneBtn, (scene==='street' || scene==='peer') ? '回家' : (scene==='visit' ? '出门' : '小区'));
+  setText(expandBtn, '房型·' + HOUSE_LEVELS[houseLevel].name);
   const cz = cozyScore();
   const tier = cozyTier();
-  cozyChip.textContent = '装修度 ' + cz + (tier.stars ? ' ' + '★'.repeat(tier.stars) : '');
-  cozyChip.title = '装修度 ' + cz + '（' + tier.name + '）：睡一觉情绪 +' + Math.max(1, cozyBonus()) +
-                   '，清晨额外 +' + Math.max(0, Math.round(cozyBonus()*0.6)) + '。摆装饰品可提升。';
+  setText(cozyChip, '装修度 ' + cz + (tier.stars ? ' ' + '★'.repeat(tier.stars) : ''));
+  setTitle(cozyChip, '装修度 ' + cz + '（' + tier.name + '）：睡一觉情绪 +' + Math.max(1, cozyBonus()) +
+                   '，清晨额外 +' + Math.max(0, Math.round(cozyBonus()*0.6)) + '。摆装饰品可提升。');
   /* 生意徽章：每天净入直接写脸上，玩家一眼能算"今天赚多少" */
   if (bizBtn){
     const inc = (typeof bizDailyNet === 'function') ? bizDailyNet() : 0;
     const label = inc > 0 ? ('生意 +' + inc + '/天') : '生意';
-    if (bizBtn.textContent !== label) bizBtn.textContent = label;
-    bizBtn.title = inc > 0
+    setText(bizBtn, label);
+    setTitle(bizBtn, inc > 0
       ? ('承包中：每天净入 ¥' + inc + '，点开看明细或续约')
-      : '承包店铺：付一个月承包金，期内每天有净收益';
+      : '承包店铺：付一个月承包金，期内每天有净收益');
   }
   /* 食材与待缴账单：这两件事每天都该看得见，别等玩家开面板才发现冰箱空了 / 欠费了 */
   if (pantryChip){
     const tot = foodTotal();
-    pantryChip.textContent = '食材 ' + tot + (BAG > 0 ? ' · 背包 ' + BAG : '');
-    pantryChip.classList.toggle('bagfull', BAG >= bagCap());
-    pantryChip.title = '冰箱 ' + PANTRY + '/' + pantryMax() + ' · 背包 ' + BAG + '/' + bagCap() +
-      ' ' + foodUnit() + '：做饭吃饭都消耗；买的东西先进背包，回家自动进冰箱';
+    setText(pantryChip, '食材 ' + tot + (BAG > 0 ? ' · 背包 ' + BAG : ''));
+    setClass(pantryChip, 'bagfull', BAG >= bagCap());
+    setTitle(pantryChip, '冰箱 ' + PANTRY + '/' + pantryMax() + ' · 背包 ' + BAG + '/' + bagCap() +
+      ' ' + foodUnit() + '：做饭吃饭都消耗；买的东西先进背包，回家自动进冰箱');
   }
   if (billChip){
     const un = unpaidCount();
-    billChip.style.display = un ? '' : 'none';
+    setStyle(billChip, 'display', un ? '' : 'none');
     if (un){
       const lt = lateCount();
-      billChip.classList.toggle('late', lt > 0);
-      billChip.textContent = '账单 ' + un + (lt ? ' · 逾期' + lt : '');
-      billChip.title = '待缴 ¥' + unpaidTotal() + (lt ? '，其中 ' + lt + ' 张已逾期' : '') + ' · 点开查看';
+      setClass(billChip, 'late', lt > 0);
+      setText(billChip, '账单 ' + un + (lt ? ' · 逾期' + lt : ''));
+      setTitle(billChip, '待缴 ¥' + unpaidTotal() + (lt ? '，其中 ' + lt + ' 张已逾期' : '') + ' · 点开查看');
     }
-  }
-  // 等级提升提示（参观别人家时不要误报"装修度提升"）
-  if (scene === 'home'){
-    if (cozyTierSeen === null) cozyTierSeen = tier.stars;
-    else if (tier.stars > cozyTierSeen){
-      cozyTierSeen = tier.stars;
-      showFloat('装修度提升 · ' + tier.name, Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
-      spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f0c14b', 12);
-      SND.ok();
-    } else if (tier.stars < cozyTierSeen) cozyTierSeen = tier.stars;
   }
 
   /* 资源条统一渲染：遍历已声明的资源，不再逐个写死。
@@ -9039,31 +9102,31 @@ function updateHUD(){
     const v = STATS[k] || 0;
     const max = (s.def && s.def.max) || 100;
     const crit = (s.def && s.def.criticalBelow != null) ? s.def.criticalBelow : 35;
-    s.val.textContent = Math.round(v);
-    s.bar.style.width = Math.round(v / max * 100) + '%';
-    s.bar.style.background = v < crit ? '#c0392b' : ((s.def && s.def.color) || '#d2691e');
+    setText(s.val, Math.round(v));
+    setStyle(s.bar, 'width', Math.round(v / max * 100) + '%');
+    setStyle(s.bar, 'background', v < crit ? '#c0392b' : ((s.def && s.def.color) || '#d2691e'));
     /* 跌破警戒线时整行轻轻呼吸一下：条子变红在余光里是看不出来的，
      * 但"心脏跳动"这种节奏变化能。只在跨过阈值那一刻切类，不逐帧写 DOM。 */
     const wanted = v < crit;
-    if (s._crit !== wanted){ s._crit = wanted; s.el.classList.toggle('is-crit', wanted); }
+    if (s._crit !== wanted){ s._crit = wanted; setClass(s.el, 'is-crit', wanted); }
   }
 
-  statsEl.money.val.textContent = '¥' + MONEY;
-  workBtn.textContent = '工作';   // 旧的自助打工已改为"打开工作面板"
+  setText(statsEl.money.val, '¥' + MONEY);
+  setText(workBtn, '工作');   // 旧的自助打工已改为"打开工作面板"
 
   /* 目标徽章：达成数变了才改文本，避免每帧写 DOM */
   if (achBtn){
     const label = '目标 ' + achDoneCount() + '/' + ACHIEVEMENTS.length;
-    if (achBtn.textContent !== label) achBtn.textContent = label;
+    setText(achBtn, label);
   }
   /* 仓库徽章：显示"已买未摆"的件数，否则买完看不出东西去哪了 */
   if (invChip){
     let n = 0;
     for (const it of inventory) n += (it.count || 0);
     const label = n ? '仓库 ' + n : '仓库';
-    if (invChip.textContent !== label) invChip.textContent = label;
+    setText(invChip, label);
     const tip = n ? (n + ' 件未摆放 · 点开可以摆出来或半价卖出') : '已买未摆的家具（可以摆出来，也可以半价卖出）';
-    if (invChip.title !== tip) invChip.title = tip;
+    setTitle(invChip, tip);
   }
 
   /* 上班徽章：靠近岗位或正在上班时才出现 */
@@ -9071,19 +9134,19 @@ function updateHUD(){
     const near = SHIFT.active ? null : jobAtPlayer();
     const j = SHIFT.active ? SHIFT.job : near;
     if (j){
-      jobChip.style.display = '';
+      setStyle(jobChip, 'display', '');
       const used = !SHIFT.active && shiftUsedToday();
-      jobChip.textContent = SHIFT.active
+      setText(jobChip, SHIFT.active
         ? (j.name + ' ' + SHIFT.done + '/' + j.tasks + (SHIFT.timer > 0 ? ' · ' + SHIFT.timer.toFixed(1) + 's' : ''))
-        : (used ? '今天已上班 · 明天再来' : ('上班 · ' + j.name));
-      jobChip.style.opacity = used ? '.6' : '';
-      jobChip.title = SHIFT.active
+        : (used ? '今天已上班 · 明天再来' : ('上班 · ' + j.name)));
+      setStyle(jobChip, 'opacity', used ? '.6' : '');
+      setTitle(jobChip, SHIFT.active
         ? '正在上班：点开可以继续做单或下班'
         : (used ? ('今天已经在「' + shiftUsedLabel() + '」上过一班，明天（第 ' + (DAY + 1) + ' 天）再来')
-                : (j.name + ' · ' + jobZoneLabel(j) + ' · ' + shiftText(j)));
+                : (j.name + ' · ' + jobZoneLabel(j) + ' · ' + shiftText(j))));
 
     } else {
-      jobChip.style.display = 'none';
+      setStyle(jobChip, 'display', 'none');
     }
   }
   if (typeof updateTip === 'function') updateTip();
@@ -9137,10 +9200,10 @@ function renderWork(){
       html.push('<div class="wtask" id="workTaskLine">已完成 ' + SHIFT.done + '/' + job.tasks + ' 单' +
         (SHIFT.done >= job.tasks ? '，可以下班了' : '，点下面开工') + '</div>');
     }
-    html.push('<div class="wrow"><button class="wbtn" id="workTaskBtn"' + (running ? ' disabled' : '') + '>' +
+    html.push('<div class="wrow"><button class="wbtn" id="workTaskBtn" data-act="task"' + (running ? ' disabled' : '') + '>' +
       (running ? '进行中…' : (SHIFT.done >= job.tasks ? '再做一单' : '做下一单')) + '</button></div>');
-    html.push('<div class="wrow"><button class="wbtn ghost" id="workAutoBtn">连续做单：' + (SHIFT.auto ? '开' : '关') + '</button></div>');
-    html.push('<div class="wrow"><button class="wbtn ghost" id="workQuitBtn">提前下班</button></div>');
+    html.push('<div class="wrow"><button class="wbtn ghost" id="workAutoBtn" data-act="auto">连续做单：' + (SHIFT.auto ? '开' : '关') + '</button></div>');
+    html.push('<div class="wrow"><button class="wbtn ghost" id="workQuitBtn" data-act="quit">提前下班</button></div>');
     html.push('</div>');
   } else if (near){
     const need = Object.entries(near.require || {}).map(([k, v]) => statLabelOf(k) + ' ≥ ' + v).join(' · ') || '无门槛';
@@ -9155,7 +9218,7 @@ function renderWork(){
       ' · 门槛：' + need + ' · 已做 ' + careerShifts(near.id) + ' 班（Lv.' + careerLevel(near) + '）</div>');
     const usedToday = shiftUsedToday();
     const canIn = hourOk && !usedToday;
-    html.push('<div class="wrow"><button class="wbtn" id="workInBtn"' + (canIn ? '' : ' disabled') + '>' +
+    html.push('<div class="wrow"><button class="wbtn" id="workInBtn" data-act="in"' + (canIn ? '' : ' disabled') + '>' +
       (usedToday ? '今天已上班 · 明天再来' : (hourOk ? '打卡上班' : '不在班次内')) + '</button></div>');
     if (usedToday){
       html.push('<div class="wmeta">日薪制：一天只排一个班。今天上的是「' + shiftUsedLabel() +
@@ -9212,42 +9275,54 @@ function renderWork(){
 
   workList.innerHTML = html.join('');
 
-  workList.querySelectorAll('[data-grocery]').forEach(el => {
-    el.addEventListener('click', () => buyGroceries(el.getAttribute('data-grocery'), 1));
-  });
-  // 「去承包」：把生意面板打开并定位到这家店，而不是让玩家回 HUD 再翻一遍
-  workList.querySelectorAll('[data-bizopen]').forEach(el => {
-    el.addEventListener('click', () => {
-      const sid = el.getAttribute('data-bizopen');
-      BIZ_FOCUS = sid;
+  bindWorkList();
+}
+
+/* ---------- 工作面板的意图 → 动作 ----------
+ * 视图只写 data-act（"我想做什么"），怎么做到由这里分派。
+ * 以前每次 renderWork 都要 querySelectorAll + addEventListener 挂一遍监听：
+ * 元素虽是新建的，但写法本身把视图和业务缝在了一起，也让"面板重绘"变成有副作用的事。 */
+let _workBound = false;
+function bindWorkList(){
+  if (_workBound || !workList) return;
+  _workBound = true;
+  workList.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-act],[data-grocery],[data-bizopen],[data-job]');
+    if (!t || !workList.contains(t)) return;
+    if (t.hasAttribute('data-act')) return actWork(t.getAttribute('data-act'));
+    if (t.hasAttribute('data-grocery')) return buyGroceries(t.getAttribute('data-grocery'), 1);
+    /* 「去承包」：把生意面板打开并定位到这家店，而不是让玩家回 HUD 再翻一遍 */
+    if (t.hasAttribute('data-bizopen')){
+      BIZ_FOCUS = t.getAttribute('data-bizopen');
       toggleWork(false);
       toggleBiz(true);
-    });
+      return;
+    }
+    const job = JOB_BY_ID[t.getAttribute('data-job')];
+    if (job) goToJob(job);
   });
+}
 
-  const inBtn = document.getElementById('workInBtn');
-  if (inBtn) inBtn.addEventListener('click', () => clockIn(near));
-  const taskBtn = document.getElementById('workTaskBtn');
-  if (taskBtn) taskBtn.addEventListener('click', () => startTask());
-  const quitBtn = document.getElementById('workQuitBtn');
-  if (quitBtn) quitBtn.addEventListener('click', () => clockOut(true));
-  const autoBtn = document.getElementById('workAutoBtn');
-  if (autoBtn) autoBtn.addEventListener('click', () => {
-    SHIFT.auto = !SHIFT.auto;
-    renderWork();
-    // 打开时如果正闲着，直接开工，少点一次
-    if (SHIFT.auto && SHIFT.active && SHIFT.timer <= 0 && SHIFT.done < SHIFT.job.tasks) startTask();
-  });
-  workList.querySelectorAll('.item[data-job]').forEach(el => {
-    el.addEventListener('click', () => {
-      const job = JOB_BY_ID[el.getAttribute('data-job')];
-      const a = jobAnchor(job);
-      if (!a) return;
-      if (scene !== 'street'){ switchScene('street'); }
-      walkTo(a.gx, a.gy);
-      showFloat('去' + jobZoneLabel(job) + '：' + job.name, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
-    });
-  });
+function actWork(kind){
+  if (kind === 'in') return clockIn(jobAtPlayer());
+  if (kind === 'task') return startTask();
+  if (kind === 'quit') return clockOut(true);
+  if (kind === 'auto') return toggleWorkAuto();
+}
+
+function toggleWorkAuto(){
+  SHIFT.auto = !SHIFT.auto;
+  renderWork();
+  // 打开时如果正闲着，直接开工，少点一次
+  if (SHIFT.auto && SHIFT.active && SHIFT.timer <= 0 && SHIFT.done < SHIFT.job.tasks) startTask();
+}
+
+function goToJob(job){
+  const a = jobAnchor(job);
+  if (!a) return;
+  if (scene !== 'street') switchScene('street');
+  walkTo(a.gx, a.gy);
+  showFloat('去' + jobZoneLabel(job) + '：' + job.name, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
 }
 
 /* 面板开着时只更新进度条与倒计时，不整块重绘（避免每帧重建 DOM） */
@@ -9834,15 +9909,20 @@ function openChar(){
   refreshCharStats();
   applyIdentityToLook();
 }
-function closeChar(){
-  charOpen = false;
-  charBackdrop.classList.remove('show');
-  // 保存编辑
+/** 档案卡的表单 → 状态。表单读值是 UI 的活，写 PERSON 是命令的活，分开之后
+ *  这条链是单向的：输入 → applyCharForm() → 视图重读状态。 */
+function applyCharForm(){
   PERSON.name = fName.value.trim() || '我的屋主';
   PERSON.gender = fGender.value;
   PERSON.role = fRole.value;
   PERSON.marital = fMarital.value;
-  pName.textContent = PERSON.name;
+}
+
+function closeChar(){
+  charOpen = false;
+  charBackdrop.classList.remove('show');
+  applyCharForm();
+  setText(pName, PERSON.name);
   syncIdentityLine();
 }
 

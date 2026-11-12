@@ -3,7 +3,7 @@
 一款单文件的等距视角生活模拟小游戏：**经营自己的小屋，在小区里上班、买菜、交房租、串门装修**。
 客户端是一个可以双击打开的 HTML，服务端是可选的 Go + SQLite 存档服务。
 
-> 当前版本 **1.78.0** · 存档结构 **schema 22** · 门禁：客户端回归 **448 项** / 服务端自测 **67 项** /
+> 当前版本 **1.80.0** · 存档结构 **schema 22** · 门禁：客户端回归 **453 项** / 服务端自测 **67 项** /
 > 内容校验 **29 包**全绿（V1–V4.33）· 人物 **25 人**（13 种职业）· 街区 **88×48**
 
 ## 直接玩
@@ -63,34 +63,24 @@ node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 node tools/statemap.mjs --check   # 状态登记表是否完整、口径是否自洽（新增顶层 let 必须登记）
 node tools/statemap.mjs           # 顶层可变状态：谁写了多少次、有没有入档
 node tools/statemap.mjs --top 15  # 只看写入最多的（"上帝状态"候选）
+node tools/uilayers.mjs           # 分层体检：哪些函数既改玩法状态又写 DOM
+node tools/uilayers.mjs --check   # 有新的混合函数就失败（白名单在 tools/ui-allow.json）
 ```
 
-当前登记 210 个：**domain 43**（玩法状态，其中 38 个入档、5 个刻意不存并写明原因）/
-**derived 53**（从内容或常量推导）/ **session 81**（瞬态）/ **cache 33**（可重建）。
-新增一个顶层 `let` 忘了登记，`--check` 会直接报出来。
-
-**量一下再改**：想动架构先看状态清单，别凭印象重构。
-
-```bash
-node tools/statemap.mjs --check   # 状态登记表是否完整、口径是否自洽（新增顶层 let 必须登记）
-node tools/statemap.mjs           # 顶层可变状态：谁写了多少次、有没有入档
-node tools/statemap.mjs --top 15  # 只看写入最多的（"上帝状态"候选）
-```
-
-当前登记 210 个：**domain 43**（玩法状态，其中 38 个入档、5 个刻意不存并写明原因）/
-**derived 53**（从内容或常量推导）/ **session 81**（瞬态）/ **cache 33**（可重建）。
+当前登记 212 个：**domain 43**（玩法状态，其中 38 个入档、5 个刻意不存并写明原因）/
+**derived 53**（从内容或常量推导）/ **session 82**（瞬态）/ **cache 34**（可重建）。
 新增一个顶层 `let` 忘了登记，`--check` 会直接报出来。
 
 **跑门禁**（提交前一套）：
 
 ```bash
 node tools/statemap.mjs --check   # 状态登记表：新增顶层状态必须登记，domain 必须写清是否入档
-node tools/guard.mjs              # 提交前体检：行尾/暴涨/重复行/大文件 + 现金与资源是否绕过唯一入口
+node tools/guard.mjs              # 提交前体检：行尾/暴涨/重复行/大文件 + 资源绕过入口 + 视图与玩法是否分开
 node tools/doccheck.mjs           # 文档数字对账：README 写的包数/家具/人物…和内容包实算是否一致
 node tools/dupcheck.mjs           # 重复的顶层函数 / 测试分组；三处年龄枚举是否一致
 node tools/charcheck.mjs          # 撞衫：年龄/性别/制服/配饰/发型五项全同的两个人
 node tools/genidentity.mjs --check # 身份体检：小孩上班、护士在便利店收银这类不合理
-node tools/test.mjs               # dist 与 src 各跑一遍（448 项），用无头 Edge
+node tools/test.mjs               # dist 与 src 各跑一遍（453 项），用无头 Edge
 node tools/test.mjs dist          # 只跑构建产物
 cd server && ./home-server.exe -selftest   # 服务端接口自测（进程内 httptest）
 ```
@@ -106,6 +96,34 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off go build -o home-server.exe .
 ```
 
 详见 [`server/README.md`](server/README.md)（含本机 Go 工具链路径、代理污染、老库迁移的排错记录）。
+
+## 分层：数据 / 逻辑 / 视图
+
+一句话：**数据是唯一真相，逻辑只改数据，视图只读数据**。刷界面永远不改变玩法。
+
+| 层 | 允许做什么 | 绝对不做 |
+|---|---|---|
+| **数据**（`content/` + 存档状态） | 被读、被动作改 | — |
+| **逻辑**（动作 / 结算 / 移动 / 记账） | 改状态、发事件 | 不写 DOM、不碰画布 |
+| **视图**（`updateHUD` / `renderXxx` / 各种面板） | 读状态、写 DOM / canvas | **不改玩法状态** |
+
+三条规矩都已经被工具卡住，不靠记性：
+
+- **状态只走入口**：`credit/debit` 记钱、`bumpStat` 改资源。绕过它们的那一笔在账本里就是隐形收支（`guard` 第⑦项扫）。
+- **视图幂等**：`setText / setTitle / setStyle / setClass` 会跟上次的值比，不同才写。同一个状态连刷 60 帧 →
+  **0 次 DOM 写、1860 次跳过**（`node tools/_uiprobe.mjs` 可以自己量）。视图能反复执行，才谈得上"UI 为主"。
+- **一个函数不能既改状态又写 DOM**：`node tools/uilayers.mjs --check` 扫全量函数，目前 **0 个混合**。
+  确实要留的过渡项在 `tools/ui-allow.json` 里登记并写明原因。
+
+带来的直接好处：
+
+- 视图可以单测（`UI1` 断言第二次刷新零写入、`UI2` 断言刷新不动状态），不用截图比对。
+- 行为可以单测（`UI3` 直接调 `takeBackFurniture` / `moveFurniture`，不用模拟点击）。
+- 面板不会因为"重绘"产生副作用：按钮只写 `data-act="task"`，动作由 `actWork()` 分派；
+  监听只在 `bindWorkList()` 里挂一次，不再每次渲染 `querySelectorAll + addEventListener`。
+
+拆分的次序（每一步都能被 453 项回归兜住）：**先收口写入口 → 再让视图幂等 → 再拆文件**。
+反过来（先拆文件）只是把 200 个全局变量换个地方放。
 
 ## 设计要点
 

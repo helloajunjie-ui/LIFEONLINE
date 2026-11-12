@@ -4947,6 +4947,74 @@
         applyHouseLevel(false);
       }
 
+      // ---------- UI：视图与逻辑的分界 ----------
+      {
+        /* 视图必须幂等：同样的状态调两次，第二次不该再写 DOM。
+         * 这条同时证明"每帧刷新"不再是无条件写——静止时几乎零写入。 */
+        UI_STATS.writes = 0; UI_STATS.skips = 0;
+        updateHUD();
+        const firstW = UI_STATS.writes;
+        UI_STATS.writes = 0; UI_STATS.skips = 0;
+        updateHUD();
+        P('UI1 HUD refresh is idempotent: the second call writes nothing',
+          firstW > 0 && UI_STATS.writes === 0 && UI_STATS.skips > 0,
+          'first=' + firstW + ' second=' + UI_STATS.writes + ' skips=' + UI_STATS.skips);
+      }
+
+      {
+        /* 视图只读不写：跑一遍 updateHUD，玩法状态一个都不能动 */
+        const snap = { money: MONEY, hunger: STATS.hunger, emotion: STATS.emotion,
+                       tier: cozyTierSeen, placed: placed.length, minute: MINUTE };
+        updateHUD();
+        P('UI2 the view never mutates gameplay state',
+          MONEY === snap.money && STATS.hunger === snap.hunger && STATS.emotion === snap.emotion &&
+          cozyTierSeen === snap.tier && placed.length === snap.placed && MINUTE === snap.minute,
+          JSON.stringify(snap));
+      }
+
+      {
+        /* 动作从点击分支里抽出来之后，"收回一件家具"不用模拟点击就能测 */
+        const bakPlaced = placed.map(f => ({ ...f }));
+        const bakInv = inventory.map(x => ({ ...x }));
+        const f = { catalogId: (placed[0] && placed[0].catalogId) || 'bed', gx: 4, gy: 4, rot: 0 };
+        placed.push(f);
+        const n0 = placed.length;
+        takeBackFurniture(f, 4, 4);
+        const tookBack = placed.length === n0 - 1;
+        placed.push(f);
+        const at = f.gx + ',' + f.gy;
+        const moved = moveFurniture(f, f.gx, f.gy);       // 挪到原地：必然合法
+        const still = placed.some(x => x.gx === f.gx && x.gy === f.gy);
+        P('UI3 furniture actions are callable without a click',
+          tookBack && moved === true && placed.length === n0 && still,
+          'takeBack=' + tookBack + ' moved=' + moved + ' at=' + at + ' n=' + placed.length);
+        placed = bakPlaced; inventory = bakInv;
+        markDirty();
+      }
+
+      {
+        /* 工作面板：按钮只发 data-act，动作由 actWork 分派。
+         * 以前 renderWork 每次都 querySelectorAll + addEventListener 挂一遍监听，
+         * 视图重绘带副作用；现在监听只挂一次（_workBound），按钮只是意图。 */
+        const bakShift = { active: SHIFT.active, job: SHIFT.job, done: SHIFT.done,
+                           timer: SHIFT.timer, auto: SHIFT.auto };
+        SHIFT.active = true; SHIFT.job = CAREERS[0]; SHIFT.done = 0; SHIFT.timer = 0; SHIFT.auto = false;
+        renderWork();
+        const hasActs = !!document.querySelector('#workList [data-act="task"]') &&
+                        !!document.querySelector('#workList [data-act="auto"]') &&
+                        !!document.querySelector('#workList [data-act="quit"]');
+        toggleWorkAuto();
+        const flipped = SHIFT.auto === true;
+        toggleWorkAuto();
+        const back = SHIFT.auto === false;
+        P('UI4 work panel buttons dispatch intents instead of wiring listeners per render',
+          hasActs && flipped && back && _workBound === true && typeof actWork === 'function',
+          'acts=' + hasActs + ' auto=' + flipped + '/' + back + ' bound=' + _workBound);
+        SHIFT.active = bakShift.active; SHIFT.job = bakShift.job; SHIFT.done = bakShift.done;
+        SHIFT.timer = bakShift.timer; SHIFT.auto = bakShift.auto;
+        renderWork();
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;
