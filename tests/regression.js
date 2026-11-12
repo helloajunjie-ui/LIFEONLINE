@@ -4354,6 +4354,18 @@
               PARCELS.length === 1 && PARCELS[0].uid === 'rt1' && PARCELS[0].readyDay === 4,
               JSON.stringify(PARCELS[0] || null));
 
+            /* 重开面板时模式按钮的高亮必须跟着 shopMode 走，
+             * 否则会看到"到店"亮着、价格却是 88 折 */
+            shopMode = 'online';
+            if (typeof syncShopModeChips === 'function') syncShopModeChips();
+            const chips = Array.from(document.querySelectorAll('#shopMode button'));
+            const onIdx = chips.findIndex(b => b.classList.contains('on'));
+            shopMode = 'now';
+            if (typeof syncShopModeChips === 'function') syncShopModeChips();
+            const onIdx2 = Array.from(document.querySelectorAll('#shopMode button')).findIndex(b => b.classList.contains('on'));
+            P('DP5 the mode chips follow the actual mode', chips.length === 2 && onIdx === 1 && onIdx2 === 0,
+              'chips=' + chips.length + ' online=' + onIdx + ' now=' + onIdx2);
+
             MONEY = bak.money; DAY = bak.day; PARCELS = bak.parcels; shopMode = bak.mode;
             inventory.length = 0; for (const x of bak.inv) inventory.push(x);
             if (PARCELS.length !== was) PARCELS = bak.parcels;

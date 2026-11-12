@@ -9273,10 +9273,18 @@ function shopRender(){
     shopList.appendChild(row);
   }
 }
+/** 模式按钮的高亮要跟 shopMode 对齐：不然重开面板会看到"到店"亮着但价格是 88 折 */
+function syncShopModeChips(){
+  const el = document.getElementById('shopMode');
+  if (!el) return;
+  el.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.mode === shopMode));
+}
+
 function toggleShop(force){
   shopOpen = (force===undefined) ? !shopOpen : force;
   shopEl.classList.toggle('open', shopOpen);
   if (shopOpen){
+    syncShopModeChips();
     closeOtherPanels('shop');
     if (window.closeSocialPanel) window.closeSocialPanel();   // 两个侧栏别叠在一起
     if (workOpen) toggleWork(false);
