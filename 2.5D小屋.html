@@ -488,6 +488,13 @@
     border-radius:12px; padding:10px 12px; margin-bottom:8px;
   }
   #ach .acell.done{background:rgba(240,193,75,.16); border-color:rgba(200,150,50,.35);}
+  /* 引导链：当前这一步描边高亮，已完成压成一行，只露一条"下一步"预览 */
+  #ach .acell.cur{border-color:var(--accent); box-shadow:0 0 0 2px rgba(122,82,48,.12) inset;}
+  #ach .acell.mini{padding:6px 10px; display:flex; align-items:center; gap:7px; margin-bottom:6px;}
+  #ach .acell.mini .an{font-size:12.5px; font-weight:700;}
+  #ach .acell.mini.todo{opacity:.5;}
+  #ach .chk{font-size:12px; color:#3f8a44; font-weight:800; flex:none;}
+  #ach .hint{font-size:11.5px; color:#7a6a4c; line-height:1.65; margin:2px 0 0;}
   #ach .atop{display:flex; align-items:center; gap:8px;}
   #ach .an{font-size:14px; font-weight:800; color:var(--ink); margin-right:auto;}
   #ach .ap{font-size:11px; font-weight:800; color:#8a7a5c;}
@@ -6283,8 +6290,10 @@ const ACH_GROUPS   = (HomeCore.content.achievementGroups && HomeCore.content.ach
 const ACH_BY_ID = {};
 for (const a of ACHIEVEMENTS) ACH_BY_ID[a.id] = a;
 
-/* 解锁时间戳 + 去过谁家（去重，避免反复进出同一家刷"串门"） */
-let ACH = { unlocked: {}, visited: [] };
+/* 解锁时间戳 + 去过谁家（去重，避免反复进出同一家刷"串门"）
+ * + 发生过的一次性事件（'street' 出门 / 'meal' 吃饭）。事件没法从状态反推
+ * （"吃过饭"不是一个持续存在的值），所以只能记下来——但只记标签，不记次数。 */
+let ACH = { unlocked: {}, visited: [], events: [] };
 let achOpen = false;
 
 function achUnlocked(id){ return !!(ACH.unlocked && ACH.unlocked[id]); }
@@ -6305,7 +6314,7 @@ function achMaxCareerLevel(){
 /** 当前进度：raw=真实值（判达成），cur=夹到目标值（画进度条） */
 function achProgress(a){
   const g = (a && a.goal) || {};
-  const target = Math.max(1, g.value || 1);
+  const target = 1;
   let raw = 0;
   switch (g.kind){
     case 'day':         raw = DAY; break;
@@ -6317,8 +6326,50 @@ function achProgress(a){
     case 'jobShifts':   raw = careerShifts(g.job); break;
     case 'careerLevel': raw = achMaxCareerLevel(); break;
     case 'visits':      raw = achVisitedCount(); break;
+    /* 引导链专用：存款 / 房产套数 / 一次性事件 */
+    case 'savings':     raw = (BANK && Number(BANK.savings)) || 0; break;
+    case 'estates':     raw = (typeof estateCount === 'function') ? estateCount() : 0; break;
+    case 'event':       raw = achEventSeen(g.value) ? 1 : 0; break;
   }
-  return { raw, cur: Math.max(0, Math.min(raw, target)), target };
+  const goalTarget = (g.kind === 'event') ? 1 : Math.max(1, g.value || 1);
+  return { raw, cur: Math.max(0, Math.min(raw, goalTarget)), target: goalTarget };
+}
+
+/* ---------- 「第一次」引导链 ----------
+ * 成就本身是长期目标，不需要顺序；但新手需要的是"现在该干什么"。
+ * group=first 的那一组按 step 排成一条链：做完第 N 条才显示第 N+1 条，
+ * 一次只推一件事，避免一上来十条目标糊脸上。 */
+function achEventSeen(tag){
+  return !!tag && Array.isArray(ACH.events) && ACH.events.includes(tag);
+}
+/** 记一次"发生过"的事件；同一个标签只记一次（上限 40，存档不能无限长） */
+function firstMark(tag){
+  if (!tag || achEventSeen(tag)) return false;
+  if (!Array.isArray(ACH.events)) ACH.events = [];
+  if (ACH.events.length >= 40) return false;
+  ACH.events.push(tag);
+  /* 只结算"等这个事件"的那一条：不能调 checkAchievements()，
+   * 那会把整张表扫一遍，一次吃饭连带解锁一堆不相干的目标、连带发钱发情绪。 */
+  const a = ACHIEVEMENTS.find(x => (x.group || '') === 'first' &&
+    x.goal && x.goal.kind === 'event' && x.goal.value === tag);
+  if (a) unlockAchievement(a);
+  else { markDirty(); saveGame(); }
+  return true;
+}
+function firstChain(){
+  return ACHIEVEMENTS
+    .filter(a => (a.group || '') === 'first')
+    .slice()
+    .sort((x, y) => (Number(x.step) || 99) - (Number(y.step) || 99));
+}
+/** 下一个要做的「第一次」；全做完返回 null */
+function firstNext(){
+  const chain = firstChain();
+  for (const a of chain){ if (!achUnlocked(a.id)) return a; }
+  return null;
+}
+function firstDoneCount(){
+  return firstChain().filter(a => achUnlocked(a.id)).length;
 }
 
 function grantAchievementReward(a){
@@ -6329,25 +6380,32 @@ function grantAchievementReward(a){
 }
 
 /** 检查所有目标；返回本次新解锁的数量（测试与面板刷新都用它） */
+/** 解锁单条并发放奖励。抽出来是为了"事件型目标"能只结算自己那一条，
+ *  而不是顺手把整个成就表扫一遍——那会让一次吃饭连带解锁一堆不相干的目标。 */
+function unlockAchievement(a){
+  if (!a || achUnlocked(a.id)) return false;
+  ACH.unlocked[a.id] = Date.now();
+  grantAchievementReward(a);
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  const bonus = (a.reward && a.reward.money) ? '  +¥' + a.reward.money : '';
+  const isFirst = (a.group || '') === 'first';
+  showFloat((isFirst ? '第一次 · ' : '成就达成 · ') + a.name + bonus, px, py - 1);
+  if (a.hint && isFirst) showFloat('接着：' + ((firstNext() && firstNext().name) || '都做完了'), px, py - 2);
+  spawnParticles(px, py, '#f0c14b', 12);
+  SND.pay();
+  markDirty();
+  if (achOpen) renderAch();
+  saveGame();
+  return true;
+}
+
 function checkAchievements(){
   let unlockedNow = 0;
   for (const a of ACHIEVEMENTS){
     if (achUnlocked(a.id)) continue;
     const p = achProgress(a);
     if (p.raw < p.target) continue;
-    ACH.unlocked[a.id] = Date.now();
-    grantAchievementReward(a);
-    unlockedNow++;
-    const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
-    const bonus = (a.reward && a.reward.money) ? '  +¥' + a.reward.money : '';
-    showFloat('成就达成 · ' + a.name + bonus, px, py - 1);
-    spawnParticles(px, py, '#f0c14b', 12);
-    SND.pay();
-  }
-  if (unlockedNow){
-    markDirty();
-    if (achOpen) renderAch();
-    saveGame();
+    if (unlockAchievement(a)) unlockedNow++;
   }
   return unlockedNow;
 }
@@ -7141,6 +7199,8 @@ function switchScene(to, houseIdx){
   }
   /* 声景跟着场景走：小区/别人家是户外底噪，自己家是室内底噪。淡变由 SND 内部处理 */
   try { SND.ambience(scene === 'home' ? 'home' : 'street'); } catch(e){}
+  /* 「第一次出门」只记一次：事件无法从当前状态反推，只能在发生的这一刻打标 */
+  if (scene === 'street'){ try { firstMark('street'); } catch(e){} }
   // 立即把相机对准角色
   const pc = worldToScreen(PLAYER.fx, PLAYER.fy);
   cam.x = viewW/2 - pc.x;
@@ -7395,7 +7455,12 @@ function tipText(){
   if (typeof foodTotal === 'function' && foodTotal() === 0 && STATS.hunger < 70){
     return '食材用完了 · 菜市场 10 份 ¥26、超市 6 份 ¥24、便利店 3 份 ¥15';
   }
-  // ⑥ 兜底：操作说明
+  // ⑥ 「第一次」引导链：紧急状态都没命中时，推进主线一步
+  if (typeof firstNext === 'function'){
+    const fq = firstNext();
+    if (fq && fq.hint) return '第一次 · ' + fq.name + '：' + fq.hint;
+  }
+  // ⑦ 兜底：操作说明
   // 兜底保持短：窄屏这行会折成两三行，太长会顶到「目标」按钮
   return scene === 'street'
     ? '点店铺看工作与柜台 · 信箱在公寓楼门口 · 银行 / 证券在商业街东端'
@@ -7739,7 +7804,43 @@ function renderAch(){
 
   const groups = ACH_GROUPS.length ? ACH_GROUPS : [{ id: '', name: '目标' }];
   const html = [];
+
+  /* ① 引导链放最上面：一次只推一件事。做完的压成一行，当前这一步展开提示，
+   *    后面只预览一条，剩下的不铺开——目标一次糊十条，新手只会关掉面板。 */
+  const chain = firstChain();
+  if (chain.length){
+    const cur = firstNext();
+    html.push('<div class="sgroup">第一次 · ' + firstDoneCount() + '/' + chain.length + '</div>');
+    let shownNext = false;
+    for (const a of chain){
+      const ok = achUnlocked(a.id);
+      if (ok){
+        html.push('<div class="acell mini done"><span class="chk">✓</span>' +
+          '<span class="an">' + a.name + '</span></div>');
+        continue;
+      }
+      if (cur && a.id === cur.id){
+        const p = achProgress(a);
+        const pct = Math.max(0, Math.min(100, Math.round(p.cur / p.target * 100)));
+        const reward = (a.reward && a.reward.money) ? ' · 奖励 ¥' + a.reward.money : '';
+        html.push('<div class="acell cur">' +
+          '<div class="atop"><span class="an">' + a.name + '</span><span class="ap">下一步</span></div>' +
+          '<div class="ad">' + a.desc + reward + '</div>' +
+          (a.hint ? '<div class="hint">' + a.hint + '</div>' : '') +
+          '<div class="abar" style="margin-top:7px"><i style="width:' + pct + '%"></i></div></div>');
+        continue;
+      }
+      if (!shownNext){
+        shownNext = true;
+        html.push('<div class="acell mini todo"><span class="an">' + a.name + '</span>' +
+          '<span class="ap" style="margin-left:auto">之后</span></div>');
+      }
+    }
+    html.push('<div class="sgroup" style="margin-top:14px">长期目标</div>');
+  }
+
   for (const g of groups){
+    if (g.id === 'first') continue;
     const list = ACHIEVEMENTS.filter(a => (a.group || '') === g.id);
     if (!list.length) continue;
     const gd = list.filter(a => achUnlocked(a.id)).length;
@@ -8857,6 +8958,9 @@ function applyPlace(id, gx, gy, existing, rot){
     if (rot !== undefined) existing.rot = normalizeRot(rot);
   } else {
     placed.push({catalogId: id, gx, gy, rot: normalizeRot(rot)});
+    /* 「第一次自己摆家具」只认新放下的，不认挪位置——开局那 8 件是送的，
+     * 玩家把沙发挪一格不能算"第一次布置自己的家"。 */
+    try { firstMark('placed'); } catch(e){}
   }
   spawnParticles(gx, gy, '#9dbf80', 7);
   SND.place();
@@ -9159,6 +9263,9 @@ function updateInteract(dt){
     if (foodUse && !spendFood(foodUse, f)){ interacting = null; return; }
     if (act.consumes) consumeItems(act.consumes);
     applyFx(fx, f);
+    /* 「第一次吃饭」打在真正吃了东西的地方：foodUse 成立说明真的消耗了食材。
+     * 不能挂在 applyFx 上——门诊"饥饿 +10"也会经过那里，看个病不该算吃过饭。 */
+    if (foodUse){ try { firstMark('meal'); } catch(e){} }
     if (act.hook && VERB_HOOKS[act.hook]) VERB_HOOKS[act.hook]({ act, furn: f, effects: fx });
     else if (act.sfx && act.sfx !== 'ok' && SND[act.sfx]) SND[act.sfx]();
     if (act.produces) produceItems(act.produces);
@@ -9383,10 +9490,13 @@ function pickDecor(kind, i){
     owned.push(i);
     SND.coin();
   }
+  const before = (kind === 'floor') ? floorStyle : wallStyle;
   if (kind === 'floor') floorStyle = i; else wallStyle = i;
   SND.place();
   spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f4d35e', 8);
   showFloat((kind === 'floor' ? '地板换成 ' : '墙面换成 ') + st.name, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  /* 真的换了一种才算"第一次装修"——点了同一款不算 */
+  if (before !== i){ try { firstMark('decor'); } catch(e){} }
   renderDecor(); render(); saveGame(); updateHUD();
 }
 function openDecor(){
@@ -9522,7 +9632,7 @@ function collectSave(){
       total: CAREER.total,
       lastShift: { day: LAST_SHIFT_DAY, jobId: LAST_SHIFT_JOB }   // 今天上过班没
     },
-    achievements: { unlocked: ACH.unlocked, visited: ACH.visited },
+    achievements: { unlocked: ACH.unlocked, visited: ACH.visited, events: ACH.events },
     residence: RESIDENCE, address: ADDRESS,
     estates: ESTATES.map(e => ({
       buildingId: e.buildingId, floor: e.floor, room: e.room, mode: e.mode, paid: e.paid,
@@ -9687,6 +9797,20 @@ function migrateSave(d){
         }
       }
     }
+    if (schema === 19){
+      // v20：加入「第一次」引导链。事件（出门/吃饭）无法从状态反推，只能从存档里补：
+      // 已经玩过不止一天的档，说明这两件事一定做过，直接标上，别让老玩家被
+      // 第 1 步"出门看看"拦在原地。奖励不补发（checkAchievements 会照常结算，
+      // 但那是它自己的规则：进度够了就发，不区分早晚）。
+      d.achievements = (d.achievements && typeof d.achievements === 'object')
+        ? d.achievements : { unlocked: {}, visited: [] };
+      if (!Array.isArray(d.achievements.events)) d.achievements.events = [];
+      if ((Number(d.day) || 1) > 1){
+        for (const tag of ['street', 'meal']){
+          if (!d.achievements.events.includes(tag)) d.achievements.events.push(tag);
+        }
+      }
+    }
     schema++;
   }
   d.schema = schema;
@@ -9739,7 +9863,9 @@ function applySave(d){
     }
     const visited = Array.isArray(d.achievements.visited)
       ? d.achievements.visited.filter(x => typeof x === 'string').slice(0, 200) : [];
-    ACH = { unlocked, visited };
+    const events = Array.isArray(d.achievements.events)
+      ? d.achievements.events.filter(x => typeof x === 'string').slice(0, 40) : [];
+    ACH = { unlocked, visited, events };
   }
   // 住址：存档里没有（v4 及更早）就按 uid 分配一间，之后固定不变
   RESIDENCE = normalizeResidence(d.residence);
@@ -11528,6 +11654,7 @@ function eatDish(id){
   debit(d.price, 'food', d.name);
   applyFx({ hunger: d.hunger, thirst: d.thirst, emotion: d.emotion }, { gx: px, gy: py });
   showFloat(d.name + ' · ¥' + d.price, px, py);
+  try { firstMark('meal'); } catch(e){}
   SND.coin();
   updateHUD(); saveGame(); renderCounter();
   return true;
@@ -11544,6 +11671,7 @@ function takeGood(id){
   debit(g.price, 'food', g.name);
   applyFx({ hunger: g.hunger, thirst: g.thirst }, { gx: px, gy: py });
   showFloat(g.name + ' · ¥' + g.price, px, py);
+  if (Number(g.hunger) > 0){ try { firstMark('meal'); } catch(e){} }
   SND.coin();
   updateHUD(); saveGame(); renderCounter();
   return true;

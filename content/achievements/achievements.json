@@ -1,133 +1,400 @@
 {
   "schema": "achievements/1",
   "id": "achievements.default",
-  "note": "生活目标（成就）：目标值由引擎按 kind 从当前状态推导，不单独存进度；只把已解锁的 id 记进存档。新增一条 = 加数据，代码零改动（kind 见 note）。kind: day=天数 money=存款 cozy=装修度 houseLevel=房型等级 placed=摆放件数 shifts=总班次 jobShifts=某岗位班次(需 job) careerLevel=最高熟练等级 visits=串门过的人家数",
+  "note": "生活目标（成就）：目标值由引擎按 kind 从当前状态推导，不单独存进度；只把已解锁的 id 记进存档。新增一条 = 加数据，代码零改动（kind 见 note）。kind: day=天数 money=存款 cozy=装修度 houseLevel=房型等级 placed=摆放件数 shifts=总班次 jobShifts=某岗位班次(需 job) careerLevel=最高熟练等级 visits=串门过的人家数 「第一次」组是有顺序的引导链（step 1→7），前一条做完再做下一条：教的是\"第一个必需动词\"，不要往中间插无关目标。",
   "groups": [
-    { "id": "life", "name": "生活", "order": 0 },
-    { "id": "home", "name": "小家", "order": 1 },
-    { "id": "career", "name": "工作", "order": 2 },
-    { "id": "social", "name": "邻里", "order": 3 }
+    {
+      "id": "first",
+      "name": "第一次",
+      "order": -1
+    },
+    {
+      "id": "life",
+      "name": "生活",
+      "order": 0
+    },
+    {
+      "id": "home",
+      "name": "小家",
+      "order": 1
+    },
+    {
+      "id": "career",
+      "name": "工作",
+      "order": 2
+    },
+    {
+      "id": "social",
+      "name": "邻里",
+      "order": 3
+    }
   ],
   "achievements": [
+    {
+      "id": "first.street",
+      "group": "first",
+      "step": 1,
+      "name": "出门看看",
+      "desc": "第一次走进小区",
+      "hint": "走到院子门口往下，就进小区了",
+      "goal": {
+        "kind": "event",
+        "value": "street"
+      },
+      "reward": {
+        "money": 20,
+        "effects": {
+          "emotion": 2
+        }
+      }
+    },
+    {
+      "id": "first.meal",
+      "group": "first",
+      "step": 2,
+      "name": "吃第一顿饭",
+      "desc": "第一次填饱肚子",
+      "hint": "菜市场买食材回家点灶台做饭，或到老张饭馆吃一顿",
+      "goal": {
+        "kind": "event",
+        "value": "meal"
+      },
+      "reward": {
+        "money": 20,
+        "effects": {
+          "emotion": 3
+        }
+      }
+    },
+    {
+      "id": "first.job",
+      "group": "first",
+      "step": 3,
+      "name": "上第一天班",
+      "desc": "第一次打卡拿到工资",
+      "hint": "走到便利店或咖啡店门口点「打卡上班」，一天只有一班",
+      "goal": {
+        "kind": "shifts",
+        "value": 1
+      },
+      "reward": {
+        "money": 30,
+        "effects": {
+          "emotion": 4
+        }
+      }
+    },
+    {
+      "id": "first.furniture",
+      "group": "first",
+      "step": 4,
+      "name": "摆下第一件家具",
+      "desc": "第一次自己把新买的家具摆进屋",
+      "hint": "去家具店买一件，回家点「仓库」把新买的那件摆出来",
+      "goal": {
+        "kind": "event",
+        "value": "placed"
+      },
+      "reward": {
+        "money": 30,
+        "effects": {
+          "emotion": 4
+        }
+      }
+    },
+    {
+      "id": "first.decor",
+      "group": "first",
+      "step": 5,
+      "name": "换个地板或墙纸",
+      "desc": "第一次给屋子换一种地面或墙面",
+      "hint": "回家点「装修」，挑一种地板或墙纸——买一次永久解锁",
+      "goal": {
+        "kind": "event",
+        "value": "decor"
+      },
+      "reward": {
+        "money": 50,
+        "effects": {
+          "emotion": 6
+        }
+      }
+    },
+    {
+      "id": "first.savings",
+      "group": "first",
+      "step": 6,
+      "name": "存下第一笔钱",
+      "desc": "活期存款达到 ¥300",
+      "hint": "去民生银行存 ¥300，活期每天生息，急用随时取",
+      "goal": {
+        "kind": "savings",
+        "value": 300
+      },
+      "reward": {
+        "money": 50,
+        "effects": {
+          "emotion": 5
+        }
+      }
+    },
+    {
+      "id": "first.home",
+      "group": "first",
+      "step": 7,
+      "name": "搬进自己的家",
+      "desc": "买下或租下第二套房（现在住的这间也算一套）",
+      "hint": "在公寓楼目录里挑一间买下或租下——每人最多 3 套",
+      "goal": {
+        "kind": "estates",
+        "value": 2
+      },
+      "reward": {
+        "money": 200,
+        "effects": {
+          "emotion": 10
+        }
+      }
+    },
     {
       "id": "ach.savings_800",
       "group": "life",
       "name": "开始有积蓄",
       "desc": "存款达到 ¥800",
-      "goal": { "kind": "money", "value": 800 },
-      "reward": { "effects": { "emotion": 4 } }
+      "goal": {
+        "kind": "money",
+        "value": 800
+      },
+      "reward": {
+        "effects": {
+          "emotion": 4
+        }
+      }
     },
     {
       "id": "ach.first_night",
       "group": "life",
       "name": "住了一夜",
       "desc": "在这个小区过完第一晚",
-      "goal": { "kind": "day", "value": 2 },
-      "reward": { "money": 40, "effects": { "emotion": 4 } }
+      "goal": {
+        "kind": "day",
+        "value": 2
+      },
+      "reward": {
+        "money": 40,
+        "effects": {
+          "emotion": 4
+        }
+      }
     },
     {
       "id": "ach.one_week",
       "group": "life",
       "name": "一周住户",
       "desc": "住满七天，把这里当成家",
-      "goal": { "kind": "day", "value": 7 },
-      "reward": { "money": 120, "effects": { "emotion": 6 } }
+      "goal": {
+        "kind": "day",
+        "value": 7
+      },
+      "reward": {
+        "money": 120,
+        "effects": {
+          "emotion": 6
+        }
+      }
     },
     {
       "id": "ach.saver",
       "group": "life",
       "name": "小有积蓄",
       "desc": "存款达到 ¥3000",
-      "goal": { "kind": "money", "value": 3000 },
-      "reward": { "effects": { "emotion": 10 } }
+      "goal": {
+        "kind": "money",
+        "value": 3000
+      },
+      "reward": {
+        "effects": {
+          "emotion": 10
+        }
+      }
     },
     {
       "id": "ach.ten_pieces",
       "group": "home",
       "name": "十件家当",
       "desc": "屋里同时摆着十件家具",
-      "goal": { "kind": "placed", "value": 10 },
-      "reward": { "money": 150, "effects": { "emotion": 5 } }
+      "goal": {
+        "kind": "placed",
+        "value": 10
+      },
+      "reward": {
+        "money": 150,
+        "effects": {
+          "emotion": 5
+        }
+      }
     },
     {
       "id": "ach.cozy_50",
       "group": "home",
       "name": "温馨小屋",
       "desc": "装修度达到 50",
-      "goal": { "kind": "cozy", "value": 50 },
-      "reward": { "money": 120, "effects": { "emotion": 6 } }
+      "goal": {
+        "kind": "cozy",
+        "value": 50
+      },
+      "reward": {
+        "money": 120,
+        "effects": {
+          "emotion": 6
+        }
+      }
     },
     {
       "id": "ach.cozy_120",
       "group": "home",
       "name": "梦想之家",
       "desc": "装修度达到 120",
-      "goal": { "kind": "cozy", "value": 120 },
-      "reward": { "money": 300, "effects": { "emotion": 10 } }
+      "goal": {
+        "kind": "cozy",
+        "value": 120
+      },
+      "reward": {
+        "money": 300,
+        "effects": {
+          "emotion": 10
+        }
+      }
     },
     {
       "id": "ach.expand_once",
       "group": "home",
       "name": "第一次扩建",
       "desc": "把小屋升到更大的房型",
-      "goal": { "kind": "houseLevel", "value": 1 },
-      "reward": { "money": 200, "effects": { "emotion": 8 } }
+      "goal": {
+        "kind": "houseLevel",
+        "value": 1
+      },
+      "reward": {
+        "money": 200,
+        "effects": {
+          "emotion": 8
+        }
+      }
     },
     {
       "id": "ach.first_shift",
       "group": "career",
       "name": "打的第一份工",
       "desc": "完整上完一个班次",
-      "goal": { "kind": "shifts", "value": 1 },
-      "reward": { "money": 60, "effects": { "emotion": 5 } }
+      "goal": {
+        "kind": "shifts",
+        "value": 1
+      },
+      "reward": {
+        "money": 60,
+        "effects": {
+          "emotion": 5
+        }
+      }
     },
     {
       "id": "ach.ten_shifts",
       "group": "career",
       "name": "老手",
       "desc": "累计上完十个整班",
-      "goal": { "kind": "shifts", "value": 10 },
-      "reward": { "money": 300, "effects": { "emotion": 8 } }
+      "goal": {
+        "kind": "shifts",
+        "value": 10
+      },
+      "reward": {
+        "money": 300,
+        "effects": {
+          "emotion": 8
+        }
+      }
     },
     {
       "id": "ach.store_veteran",
       "group": "career",
       "name": "便利店熟手",
       "desc": "在便利店上完十个整班",
-      "goal": { "kind": "jobShifts", "job": "job.store", "value": 10 },
-      "reward": { "money": 200, "effects": { "emotion": 6 } }
+      "goal": {
+        "kind": "jobShifts",
+        "job": "job.store",
+        "value": 10
+      },
+      "reward": {
+        "money": 200,
+        "effects": {
+          "emotion": 6
+        }
+      }
     },
     {
       "id": "ach.teacher",
       "group": "career",
       "name": "站上讲台",
       "desc": "在学校代课五个整班",
-      "goal": { "kind": "jobShifts", "job": "job.teacher", "value": 5 },
-      "reward": { "money": 200, "effects": { "emotion": 8 } }
+      "goal": {
+        "kind": "jobShifts",
+        "job": "job.teacher",
+        "value": 5
+      },
+      "reward": {
+        "money": 200,
+        "effects": {
+          "emotion": 8
+        }
+      }
     },
     {
       "id": "ach.promoted",
       "group": "career",
       "name": "升了一级",
       "desc": "任意岗位的熟练度达到 Lv.2",
-      "goal": { "kind": "careerLevel", "value": 2 },
-      "reward": { "money": 250, "effects": { "emotion": 10 } }
+      "goal": {
+        "kind": "careerLevel",
+        "value": 2
+      },
+      "reward": {
+        "money": 250,
+        "effects": {
+          "emotion": 10
+        }
+      }
     },
     {
       "id": "ach.first_visit",
       "group": "social",
       "name": "第一次串门",
       "desc": "去一位邻居家里做客",
-      "goal": { "kind": "visits", "value": 1 },
-      "reward": { "money": 50, "effects": { "emotion": 6 } }
+      "goal": {
+        "kind": "visits",
+        "value": 1
+      },
+      "reward": {
+        "money": 50,
+        "effects": {
+          "emotion": 6
+        }
+      }
     },
     {
       "id": "ach.five_homes",
       "group": "social",
       "name": "走遍小区",
       "desc": "去过五位不同邻居的家",
-      "goal": { "kind": "visits", "value": 5 },
-      "reward": { "money": 150, "effects": { "emotion": 8 } }
+      "goal": {
+        "kind": "visits",
+        "value": 5
+      },
+      "reward": {
+        "money": 150,
+        "effects": {
+          "emotion": 8
+        }
+      }
     }
   ]
 }

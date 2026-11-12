@@ -7,6 +7,10 @@
   const flush = () => { pre.textContent = out.join('\n'); };
 
   try {
+    /* 「第一次」奖励会在任意时刻发钱/发情绪，会让"精确金额"类断言飘。
+     * 测试期把四个事件都标成已发生 = 冻结这条奖励线；链本身的逻辑由 AP1–AP5 单独验证。 */
+    ACH = { unlocked: {}, visited: [], events: ['street', 'meal', 'placed', 'decor'] };
+
     /* 启动快照：小区分区/树木是按区块惰性生成的，这里记下初始状态，
      * 用来证明"没人在开局就把整张地图算完"。 */
     const BOOT_ZONE_CHUNKS = _zoneChunks.size;
@@ -1196,11 +1200,13 @@
         placed: placed.slice(), scene: scene
       };
 
-      P('A1 achievements loaded', ACHIEVEMENTS.length === 15 && ACH_GROUPS.length === 4,
+      P('A1 achievements loaded', ACHIEVEMENTS.length >= 15 && ACH_GROUPS.length >= 4,
         'ach=' + ACHIEVEMENTS.length + ' groups=' + ACH_GROUPS.length);
+      P('A1b the first-time chain exists', firstChain().length >= 5 && ACH_GROUPS.some(g => g.id === 'first'),
+        'chain=' + firstChain().length);
 
       // A2 进度由当前状态推导，不读存档
-      ACH = { unlocked: {}, visited: [] };
+      ACH = { unlocked: {}, visited: [], events: ['street', 'meal', 'placed', 'decor'] };
       MONEY = 1500; DAY = 3;
       const pMoney = achProgress(ACH_BY_ID['ach.saver']);
       const pDay = achProgress(ACH_BY_ID['ach.one_week']);
@@ -3765,6 +3771,52 @@
             } catch(e){ threw = String(e); }
             SND.on = before;
             P('AO2 muted audio is a safe no-op', !threw, 'err=' + threw);
+          }
+
+          // ---------- AP：「第一次」引导链（一次只推一件事） ----------
+          {
+            const bak = { ach: ACH, money: MONEY, bank: BANK };
+            const chain = firstChain();
+            const steps = chain.map(a => Number(a.step) || 0);
+            const seqOk = steps.length >= 5 && steps.every((s, i) => s === i + 1);
+            P('AP1 first-time chain is ordered and contiguous', seqOk,
+              'n=' + steps.length + ' steps=' + steps.join(','));
+
+            ACH = { unlocked: {}, visited: [], events: [] };
+            const first = firstNext();
+            const okFirst = !!first && chain.length > 1 && first.id === chain[0].id;
+            const before = MONEY;
+            firstMark('street');
+            const done = chain.length > 0 && achUnlocked(chain[0].id);
+            const next = firstNext();
+            const advanced = !!next && chain.length > 1 && next.id === chain[1].id;
+            const paid = MONEY > before;
+            P('AP2 marking an event unlocks that step and advances the chain',
+              okFirst && done && advanced && paid,
+              'first=' + (first && first.id) + ' done=' + done +
+              ' next=' + (next && next.id) + ' paid=' + paid);
+
+            const n0 = ACH.events.length;
+            firstMark('street'); firstMark('street');
+            P('AP3 the same event is only recorded once', n0 === 1 && ACH.events.length === 1,
+              'events=' + ACH.events.length + ' first=' + n0);
+
+            const saveProbe = { goal: { kind: 'savings', value: 300 } };
+            const estateProbe = { goal: { kind: 'estates', value: 2 } };
+            const evtProbe = { goal: { kind: 'event', value: 'meal' } };
+            const ps = achProgress(saveProbe), pe = achProgress(estateProbe), pv = achProgress(evtProbe);
+            const okKinds = ps.target === 300 && pe.raw === estateCount() && pv.raw === 0;
+            P('AP4 guide goals read savings / estates / events', okKinds,
+              'savingsTarget=' + ps.target + ' estates=' + pe.raw + '/' + estateCount() + ' meal=' + pv.raw);
+
+            const old = migrateSave({ schema: 19, day: 5, achievements: { unlocked: {}, visited: [] } });
+            const evts = (old.achievements && old.achievements.events) || [];
+            const mig = old.schema === CLIENT_VERSION.saveSchema &&
+                        evts.indexOf('street') >= 0 && evts.indexOf('meal') >= 0;
+            P('AP5 legacy save backfills the two silent events', mig,
+              'schema=' + old.schema + ' events=' + JSON.stringify(evts));
+
+            ACH = bak.ach; MONEY = bak.money; BANK = bak.bank;
           }
 
           placed = dc.placed; inventory = dc.inv; ESTATES = dc.estates;

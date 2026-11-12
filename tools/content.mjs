@@ -669,7 +669,10 @@ function validate(){
   const achPack = Object.entries(packs).find(([rel]) => rel.startsWith('achievements/'))?.[1];
   const careersPack = packs['careers/jobs.json'];
   if (achPack){
-    const KINDS = ['day', 'money', 'cozy', 'houseLevel', 'placed', 'shifts', 'jobShifts', 'careerLevel', 'visits'];
+    const KINDS = ['day', 'money', 'cozy', 'houseLevel', 'placed', 'shifts', 'jobShifts', 'careerLevel', 'visits',
+      'savings', 'estates', 'event'];
+    /* 事件型目标的标签由客户端 firstMark() 打点，改tag必须两边一起改，所以在这里列白名单 */
+    const KNOWN_EVENTS = ['street', 'meal', 'placed', 'decor'];
     const groupIds = new Set((achPack.groups || []).map(g => g.id));
     const jobIdSet = new Set((careersPack?.jobs || []).map(j => j.id));
     const itemIds = new Set(items.map(i => i.id));
@@ -683,7 +686,15 @@ function validate(){
       if (groupIds.size && !groupIds.has(a.group)) problems.push('[成就] ' + a.id + ' 的分组不存在: ' + a.group);
       const g = a.goal || {};
       if (!KINDS.includes(g.kind)) problems.push('[成就] ' + a.id + ' 未知目标类型: ' + g.kind);
-      if (!(g.value >= 1)) problems.push('[成就] ' + a.id + ' 目标值必须 ≥ 1');
+      if (g.kind === 'event'){
+        if (typeof g.value !== 'string' || !g.value) problems.push('[成就] ' + a.id + ' 事件目标必须写标签字符串');
+        else if (!KNOWN_EVENTS.includes(g.value)) problems.push('[成就] ' + a.id + ' 引用了未打点的事件: ' + g.value);
+      } else if (!(g.value >= 1)) problems.push('[成就] ' + a.id + ' 目标值必须 ≥ 1');
+      /* 引导链：step 必须是从 1 开始的连续整数，否则面板里会莫名跳号 */
+      if ((a.group || '') === 'first'){
+        if (!(Number(a.step) >= 1)) problems.push('[成就] ' + a.id + ' 属于「第一次」链但缺少 step');
+        if (!a.hint) problems.push('[成就] ' + a.id + ' 属于「第一次」链但缺少 hint（面板与底部提示都要用）');
+      }
       if (g.kind === 'jobShifts' && !jobIdSet.has(g.job)) problems.push('[成就] ' + a.id + ' 引用了不存在的岗位: ' + g.job);
       const rw = a.reward || {};
       if (rw.money != null && !(rw.money >= 0)) problems.push('[成就] ' + a.id + ' 奖金非法');
