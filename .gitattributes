@@ -1,0 +1,22 @@
+# 统一行尾：仓库里一律存 LF。
+# 起因：Windows 上 python 的 open(w) 是文本模式，会把 \n 翻成 \r\n，
+# 一次误写就把 100 行的改动变成 30000 行的 diff（真发生过三次）。
+# 声明 text=auto eol=lf 之后，git 在 add 时会把 CRLF 归一成 LF，
+# 工作区是什么行尾都不再影响提交内容——这类事故从此只可能出现在没被 add 的文件上。
+
+* text=auto eol=lf
+
+# 二进制：不参与行尾转换，也不做文本 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.exe binary
+*.db binary
+*.db-shm binary
+*.db-wal binary
+
+# 生成物：diff 噪音大，但仍然按文本处理（出事时要看得见）
+dist/*.html text
+dist/*.js text

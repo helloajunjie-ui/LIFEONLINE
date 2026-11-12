@@ -1477,11 +1477,14 @@
       await renderBuilding();
       SOCIAL.buildingRooms = oldBR;
       const html = buildingList.innerHTML;
+      /* 断言失败时要能看出"缺的是哪一个"：只报 len 等于什么都没说，
+       * 上一次排查这种 flaky 全靠猜。 */
+      const need = ['18F', '1803', '十八楼', '我家', 'data-state="sale"'];
+      const lost = need.filter(k => html.indexOf(k) < 0);
       P('B2 directory renders floor grid with unit states',
-        html.indexOf('18F') >= 0 && html.indexOf('1803') >= 0 && html.indexOf('十八楼') >= 0 &&
-        html.indexOf('我家') >= 0 && html.indexOf('data-state="sale"') >= 0 &&
-        (html.indexOf('待售') >= 0 || html.indexOf('待租') >= 0),
-        'len=' + html.length);
+        !lost.length && (html.indexOf('待售') >= 0 || html.indexOf('待租') >= 0),
+        'len=' + html.length + ' missing=' + (lost.join(',') || '-') +
+        ' states=' + (html.match(/data-state="\w+"/g) || []).length);
 
       // B3 从小区进别人家，离开后回到小区（不是回家）
       scene = 'street'; PLAYER.fx = 6; PLAYER.fy = 43;
