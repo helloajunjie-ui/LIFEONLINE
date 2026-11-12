@@ -4312,6 +4312,53 @@
             BAG = bak.bag; PANTRY = bak.pantry; LAST_SHIFT_DAY = bak.day; LAST_SHIFT_JOB = bak.job;
           }
 
+          // ---------- DP：网购 / 取件 ----------
+          {
+            const bak = { money: MONEY, day: DAY, parcels: PARCELS, inv: inventory.slice(), mode: shopMode };
+            const d = FURNITURE_CATALOG[0];
+            const was = PARCELS.length;
+            MONEY = 5000; DAY = 10; PARCELS = []; shopMode = 'online';
+            const full = d.price, cheap = onlinePriceOf(d);
+            const invBefore = inventory.length;
+
+            const ordered = orderFurniture(d);
+            P('DP1 ordering online charges less than the shop price and posts a parcel',
+              ordered && cheap < full && MONEY === 5000 - cheap && PARCELS.length === 1 &&
+              inventory.length === invBefore && PARCELS[0].readyDay === 10 + onlineDays(),
+              'full=' + full + ' online=' + cheap + ' parcels=' + PARCELS.length +
+              ' ready=' + (PARCELS[0] && PARCELS[0].readyDay));
+
+            const uid = PARCELS[0].uid;
+            const tooEarly = takeParcel(uid) === false && PARCELS.length === 1 &&
+              inventory.length === invBefore;
+            DAY = 10 + onlineDays();
+            const took = takeParcel(uid) && PARCELS.length === 0 && inventory.length === invBefore + 1;
+            P('DP2 a parcel cannot be picked up early, and lands in the warehouse when ready',
+              tooEarly && took && readyParcels().length === 0,
+              'early=' + tooEarly + ' took=' + took + ' inv=' + inventory.length);
+
+            /* 脏存档不能凭空变出家具：未知 id 的包裹读档时直接丢 */
+            applySave(Object.assign({}, collectSave(), {
+              parcels: [{ uid: 'x1', id: 'no.such.item', price: 1, orderedDay: 1, readyDay: 1 },
+                        { uid: 'x2', id: FURNITURE_CATALOG[0].id, price: 5, orderedDay: 1, readyDay: 2 }]
+            }));
+            P('DP3 unknown parcel items are dropped on load', PARCELS.length === 1 && PARCELS[0].uid === 'x2',
+              'parcels=' + PARCELS.length + ' ' + (PARCELS[0] && PARCELS[0].id));
+
+            /* 存档往返：包裹也要存得住（schema 21 加的字段） */
+            PARCELS = [{ uid: 'rt1', id: FURNITURE_CATALOG[0].id, price: 9, orderedDay: 3, readyDay: 4 }];
+            const dump = collectSave();
+            PARCELS = [];
+            applySave(dump);
+            P('DP4 parcels survive a save round-trip',
+              PARCELS.length === 1 && PARCELS[0].uid === 'rt1' && PARCELS[0].readyDay === 4,
+              JSON.stringify(PARCELS[0] || null));
+
+            MONEY = bak.money; DAY = bak.day; PARCELS = bak.parcels; shopMode = bak.mode;
+            inventory.length = 0; for (const x of bak.inv) inventory.push(x);
+            if (PARCELS.length !== was) PARCELS = bak.parcels;
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

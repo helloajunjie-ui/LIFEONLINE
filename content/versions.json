@@ -115,9 +115,9 @@
     "updatedAt": "2026-11-05T19:17:35.958Z"
   },
   "rules/economy.json": {
-    "version": 6,
-    "hash": "1ba7b3eada81",
-    "updatedAt": "2026-11-12T10:06:02.212Z"
+    "version": 7,
+    "hash": "b349f088b6d0",
+    "updatedAt": "2026-11-12T10:59:59.993Z"
   },
   "rules/survival.json": {
     "version": 6,

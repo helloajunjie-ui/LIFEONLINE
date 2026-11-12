@@ -1275,6 +1275,29 @@ function validate(){
     }
   }
 
+  /* V4.21 网购：折扣与等待天数写歪了不会报错，只会让"网购"变成稳赚或者慢到没人用 */
+  {
+    const eco = packs['rules/economy.json'] || {};
+    const on = eco.online;
+    if (on){
+      const shops = new Set();
+      for (const [rel, m] of Object.entries(packs)){
+        if (!rel.startsWith('maps/') || !m || !Array.isArray(m.zones)) continue;
+        for (const z of m.zones) if (z.kind === 'shop' || z.kind === 'civic') shops.add(z.id);
+      }
+      if (!on.zone) problems.push('[网购] 缺少 zone（包裹放在哪个门面取）');
+      else if (!shops.has(on.zone)) problems.push('[网购] zone「' + on.zone + '」不是商铺/公共建筑');
+      const k = Number(on.discount);
+      if (!(k > 0.5 && k < 1)) problems.push('[网购] discount 应在 0.5~1 之间（现在 ' + on.discount + '），1 就没有下单的理由，太低等于印钱');
+      const days = Number(on.days);
+      if (!(days >= 0 && days <= 5)) problems.push('[网购] days 应在 0~5（现在 ' + on.days + '）');
+      if (!on.name) problems.push('[网购] 缺少 name');
+      if (!on.note) problems.push('[网购] 缺少 note（面板上要有一句话解释为什么便宜）');
+    } else {
+      problems.push('[网购] 缺少 economy.online 配置');
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

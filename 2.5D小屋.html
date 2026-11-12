@@ -895,6 +895,10 @@
         <option value="cozy">装修度↓</option>
       </select>
     </div>
+    <div class="cats" id="shopMode">
+      <button data-mode="now" class="on">马上要 · 全价</button>
+      <button data-mode="online">网购 · 88 折，次日到快递站</button>
+    </div>
     <div class="cats" id="shopCats">
       <button data-cat="all" class="on">全部<b class="cn"></b></button>
       <button data-cat="家具">家具<b class="cn"></b></button>
@@ -6967,6 +6971,14 @@ function loop(now){
   if (DAY !== _newsDay){
     _newsDay = DAY;
     try { showDailyNews(); } catch(e){}
+    /* 包裹到了提醒一句：不然玩家不会想到往东边跑一趟 */
+    if (_parcelNoticeDay !== DAY){
+      _parcelNoticeDay = DAY;
+      try {
+        const n = readyParcels().length;
+        if (n) showFloat('快递到了 ' + n + ' 件 · 去快递站取', Math.round(PLAYER.fx), Math.round(PLAYER.fy), 4.0);
+      } catch(e){}
+    }
   }
   /* 银行利息 / 定期到期 / 贷款扣款：挂在主循环里检测"结算日落后了"，
    * 而不是在三个跨天点各调一次。financeTick 自带游标，重复调用无害。 */
@@ -9010,6 +9022,57 @@ document.addEventListener('visibilitychange', ()=>{ if (document.hidden) saveGam
 /* ---------- 商店系统 ---------- */
 const shopEl = document.getElementById('shop');
 const shopList = document.getElementById('shopList');
+
+/* ---------- 网购 ----------
+ * 到店买是全价、立刻进仓库；网上下单打 88 折，但要等一天，自己到快递站取。
+ * 这么设计是因为地图东边那条街（快递站）除了上班没有别的理由过去。 */
+const ONLINE_DEF = ECON.online || null;
+let PARCELS = [];                 // [{ uid, id, price, readyDay, orderedDay }]
+let shopMode = 'now';             // 'now' 到店 | 'online' 网购
+let _parcelNoticeDay = 0;
+
+function onlinePriceOf(d){
+  const p = Number(d && d.price) || 0;
+  const k = Math.max(0.5, Math.min(1, Number(ONLINE_DEF && ONLINE_DEF.discount) || 0.88));
+  return Math.max(1, Math.round(p * k));
+}
+function onlineDays(){
+  return Math.max(0, Math.min(5, Math.round(Number(ONLINE_DEF && ONLINE_DEF.days) || 1)));
+}
+/** 下单个家具：钱现在扣，货明天到（不进仓库，也不进摆放模式） */
+function orderFurniture(d){
+  if (!d || !ONLINE_DEF) return false;
+  const price = onlinePriceOf(d);
+  if (MONEY < price) return false;
+  if (PARCELS.length >= 20) { showFloat('包裹堆不下了，先去快递站取几件', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return false; }
+  debit(price, 'furn', '网购 ' + d.name);
+  PARCELS.push({ uid: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
+                 id: d.id, price: price, orderedDay: DAY, readyDay: DAY + onlineDays() });
+  showFloat('已下单 ' + d.name + ' · ¥' + price + '，' + (onlineDays() ? onlineDays() + ' 天后' : '马上') + '到快递站',
+    Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  SND.coin();
+  updateHUD(); saveGame(); shopRender();
+  return true;
+}
+/** 到货没：readyDay <= 今天 */
+function parcelReady(p){ return p && Number(p.readyDay) <= DAY; }
+function readyParcels(){ return PARCELS.filter(parcelReady); }
+
+/** 取件：进仓库（不直接进摆放，跟到店买"先进仓库"的原则一致） */
+function takeParcel(uid){
+  const i = PARCELS.findIndex(p => p.uid === uid);
+  if (i < 0) return false;
+  const p = PARCELS[i];
+  if (!parcelReady(p)) { showFloat('还在路上', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return false; }
+  const def = FURN_BY_ID[p.id];
+  PARCELS.splice(i, 1);
+  invAdd(p.id);
+  showFloat('取件 · ' + (def ? def.name : '包裹') + ' 已进仓库', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#8fb4d8', 8);
+  SND.ok();
+  updateHUD(); saveGame(); renderCounter();
+  return true;
+}
 const shopBal = document.getElementById('shopBal');
 const shopCats = document.getElementById('shopCats');
 const shopBtn = document.getElementById('shopBtn');
@@ -9153,8 +9216,10 @@ function shopRender(){
     return;
   }
   const FXN = {hunger:'饥饿', thirst:'口渴', emotion:'情绪'};
+  const online = (shopMode === 'online') && !!ONLINE_DEF;
   for (const d of list){
-    const afford = MONEY >= d.price;
+    const price = online ? onlinePriceOf(d) : d.price;
+    const afford = MONEY >= price;
     const fx = Object.keys(d.fx || {}).map(k=> FXN[k]+'+'+d.fx[k]).join(' ');
 
     const row = document.createElement('div');
@@ -9188,17 +9253,20 @@ function shopRender(){
     pr.className = 'pr';
     const pe = document.createElement('div');
     pe.className = 'price' + (afford ? '' : ' poor');
-    pe.textContent = '¥' + d.price;
+    pe.textContent = '¥' + price;
+    if (online && price < d.price) pe.textContent = '¥' + price;
     const btn = document.createElement('button');
     if (afford){
-      btn.textContent = '购买';
-      btn.title = '买下后直接进入摆放，点地面放下';
+      btn.textContent = online ? '下单' : '购买';
+      btn.title = online
+        ? '便宜 ' + Math.round((1 - price / d.price) * 100) + '%，' + onlineDays() + ' 天后到快递站自提'
+        : '买下后直接进入摆放，点地面放下';
     } else {
-      btn.textContent = '差 ¥' + Math.ceil(d.price - MONEY);
+      btn.textContent = '差 ¥' + Math.ceil(price - MONEY);
       btn.disabled = true;
-      btn.title = '还差 ¥' + Math.ceil(d.price - MONEY) + ' · 去上一天班就有了';
+      btn.title = '还差 ¥' + Math.ceil(price - MONEY) + ' · 去上一天班就有了';
     }
-    btn.addEventListener('click', ()=> buyFurniture(d));
+    btn.addEventListener('click', ()=> online ? orderFurniture(d) : buyFurniture(d));
     pr.appendChild(pe); pr.appendChild(btn);
 
     row.appendChild(sw); row.appendChild(ib); row.appendChild(pr);
@@ -9308,6 +9376,15 @@ shopBtn.addEventListener('click', ()=>{
   toggleShop();
 });
 document.getElementById('shopClose').addEventListener('click', ()=> toggleShop(false));
+const shopModeEl = document.getElementById('shopMode');
+if (shopModeEl){
+  shopModeEl.addEventListener('click', (e)=>{
+    const b = e.target.closest('button'); if (!b) return;
+    shopMode = b.dataset.mode === 'online' ? 'online' : 'now';
+    shopModeEl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.mode === shopMode));
+    shopRender();
+  });
+}
 shopCats.addEventListener('click', (e)=>{
   const b = e.target.closest('button'); if (!b) return;
   shopCat = b.dataset.cat;
@@ -10369,6 +10446,9 @@ function collectSave(){
       lateDay: BILL_LATE_DAY,
       lateTotal: BILL_LATE_TOTAL
     },
+    /* 网购包裹：只记"买了什么、付了多少、哪天到"。到没到由 readyDay 与 DAY 相比算出来，
+     * 不存状态机——省得存档里出现"到了但标记没翻"这种自相矛盾的档 */
+    parcels: PARCELS,
     pets: {
       food: PETFOOD,
       list: MY_PETS.map(p => ({
@@ -10518,6 +10598,10 @@ function migrateSave(d){
           if (!d.achievements.events.includes(tag)) d.achievements.events.push(tag);
         }
       }
+    }
+    if (schema === 20){
+      // v21：加入网购包裹。老玩家没有在途包裹，空表即可
+      d.parcels = Array.isArray(d.parcels) ? d.parcels : [];
     }
     schema++;
   }
@@ -10754,6 +10838,21 @@ function applySave(d){
     BILL_CURSOR = cur;
     BILL_LATE_DAY = Math.max(0, Math.floor(Number(bd.lateDay) || 0));
     BILL_LATE_TOTAL = Math.min(0, Math.floor(Number(bd.lateTotal) || 0));
+  }
+  /* 包裹：只认目录里存在的家具、到期日数字合法、条数设上限。
+   * 脏存档不能靠塞包裹把免费家具领出来——取件时还会再按 id 校验一次。 */
+  {
+    const raw = Array.isArray(d.parcels) ? d.parcels : [];
+    PARCELS = raw
+      .filter(p => p && FURN_BY_ID[p.id])
+      .slice(0, 20)
+      .map((p, i) => ({
+        uid: String(p.uid || ('p_old_' + i)),
+        id: p.id,
+        price: Math.max(0, Math.round(Number(p.price) || 0)),
+        orderedDay: Math.max(0, Math.floor(Number(p.orderedDay) || DAY)),
+        readyDay: Math.max(0, Math.floor(Number(p.readyDay) || DAY))
+      }));
   }
   // 宠物：只认内容里存在的品种，需求夹到 0-100，脏存档不能凭空造宠物
   {
@@ -12190,6 +12289,9 @@ function counterZoneDef(zoneId){
     return { kind: 'mart', name: MART_DEF.name || '超市', def: MART_DEF };
   /* 只卖食材、没有货架的店（菜市场）：groceries 里配了数据却没有柜台，
    * 等于"卖菜的地方进不去"。这里有食材包就算有柜台。 */
+  /* 快递站：不是卖东西，是取网上下单的包裹 */
+  if (ONLINE_DEF && ONLINE_DEF.zone === zoneId)
+    return { kind: 'parcel', name: ONLINE_DEF.name || '快递站', def: ONLINE_DEF };
   const gr = groceryFor(zoneId);
   if (gr) return { kind: 'mart', name: gr.name || '小店', def: { goods: [], note: gr.desc || '' } };
   return null;
@@ -12259,7 +12361,35 @@ function renderCounter(){
       '，柜台收起来了。急用可以去 24 小时的便利店。</div>');
   }
 
-  if (z.kind === 'restaurant'){
+  if (z.kind === 'parcel'){
+    const ready = PARCELS.filter(parcelReady);
+    const wait = PARCELS.filter(p => !parcelReady(p));
+    out.push('<div class="cnote">' + (z.def.note || '') + '</div>');
+    out.push('<div class="sgroup">已到货 · ' + ready.length + ' 件</div>');
+    if (!ready.length){
+      out.push('<div class="cnote">没有待取的包裹。' +
+        (wait.length ? '在路上的还有 ' + wait.length + ' 件。' : '在家点「商店」可以网上下单。') + '</div>');
+    }
+    for (const p of ready){
+      const d = FURN_BY_ID[p.id] || { name: '包裹' };
+      out.push('<div class="item"><div class="ib">' +
+        '<div class="in">' + d.name + '</div>' +
+        '<div class="id">' + (p.orderedDay ? '第 ' + p.orderedDay + ' 天下的单' : '') +
+        ' · 实付 ¥' + p.price + '</div></div>' +
+        '<button class="sbtn" data-parcel="' + p.uid + '">取件</button></div>');
+    }
+    if (wait.length){
+      out.push('<div class="sgroup">在路上</div>');
+      for (const p of wait){
+        const d = FURN_BY_ID[p.id] || { name: '包裹' };
+        const left = Math.max(0, Number(p.readyDay) - DAY);
+        out.push('<div class="item"><div class="ib">' +
+          '<div class="in">' + d.name + '</div>' +
+          '<div class="id">还有 ' + left + ' 天才到 · 实付 ¥' + p.price + '</div></div>' +
+          '<button class="sbtn" disabled>未到</button></div>');
+      }
+    }
+  } else if (z.kind === 'restaurant'){
     out.push('<div class="cnote">' + (z.def.note || '') + '</div>');
     out.push('<div class="sgroup">今日菜单</div>');
     for (const d of (z.def.menu || [])){
@@ -12376,6 +12506,7 @@ if (counterEl){
     if (b.hasAttribute('data-dish')) eatDish(b.getAttribute('data-dish'));
     else if (b.hasAttribute('data-good')) takeGood(b.getAttribute('data-good'));
     else if (b.hasAttribute('data-grocery')) buyGroceries(COUNTER_ZONE, 1);
+    else if (b.hasAttribute('data-parcel')) takeParcel(b.getAttribute('data-parcel'));
     else if (b.hasAttribute('data-clockin')){
       const job = JOB_BY_ZONE[COUNTER_ZONE];
       if (job && clockIn(job)) toggleWork(true);      // toggleWork 会顺手关掉柜台
