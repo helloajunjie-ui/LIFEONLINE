@@ -2799,11 +2799,61 @@ function drawWall(gx, gy){
 const CHAR_W = 48, CHAR_H = 68, CHAR_AX = 24, CHAR_AY = 64;   // 脚底锚点
 const charCache = {};
 function charKey(app, frame){
-  return [app.skin, app.hair, app.top, app.bottom, app.shoes, app.face, app.hairStyle||0, app.faceStyle||0, frame].join('|');
+  /* 配饰必须进键：漏了它，改过配饰的人和没改的人会共用同一张缓存图，
+   * 表现是"只有第一个人戴帽子，其他人都跟着变" */
+  return [app.skin, app.hair, app.top, app.bottom, app.shoes, app.face,
+          app.hairStyle||0, app.faceStyle||0, app.acc||'none', frame].join('|');
+}
+
+/* ---------- 角色美术：命名色板 + 描边 + 剪影配饰 ----------
+ * 按美术规范里那两条走：
+ *   ① 每个人要有"一条颜色线索 + 一条剪影线索"——颜色已经有了，剪影靠配饰
+ *   ② 描边是剪影的前提：街区地面本身花，不给轮廓的人物在铺装和树影里会糊掉
+ * 效果（影子、呼吸、走路摆动）一律由代码叠加，不画进素材。 */
+const ACC_PAL = {
+  line:    'rgba(70,48,32,.52)',   // 统一轮廓
+  apron:   '#efe6d6', apronD: '#cdbfa8',
+  capD:    '#3c332c',
+  bag:     '#8a6a4a', bagD:   '#6a4f36',
+  tote:    '#c9b28a', toteD:  '#a8916d',
+  scarf:   '#c06a5a', scarfD: '#9b5044'
+};
+/** 剪影配饰：只有这几种。未知值当作没有——脏内容不该把人物画坏 */
+function accSVG(app, acc){
+  const P = ACC_PAL;
+  if (acc === 'apron'){
+    return `  <path d="M18.9,35 L29.1,35 L29.6,51.5 L18.4,51.5 Z" fill="${P.apron}" stroke="${P.apronD}" stroke-width=".8"/>
+  <path d="M18.9,35 Q24,33.2 29.1,35" stroke="${P.apronD}" stroke-width="1.6" fill="none"/>
+  <rect x="22.6" y="38.4" width="2.8" height="3" rx=".8" fill="${P.apronD}"/>`;
+  }
+  if (acc === 'band'){
+    /* 发带而不是鸭舌帽：帽檐无论怎么摆都会压到眼睛那一行
+     * （眼睛在 y25.9、眼圈顶到 23.4），发带稳稳落在眉毛上方 */
+    const bandC = shade(app.top, 0.74);
+    return `  <path d="M15.2,21.4 Q24,18.2 32.8,21.4 L32.8,23 Q24,19.8 15.2,23 Z" fill="${bandC}"/>
+  <path d="M14.9,22.1 l-2.9,1.5 l.5,2.3 l2.6,-1.2 Z" fill="${bandC}"/>`;
+  }
+  if (acc === 'bag'){
+    return `  <path d="M19.4,34.2 L29.6,47.6" stroke="${P.bagD}" stroke-width="2.1" fill="none"/>
+  <rect x="27.4" y="44.2" width="7.8" height="7.2" rx="1.8" fill="${P.bag}" stroke="${P.bagD}" stroke-width=".9"/>
+  <rect x="28.2" y="46.4" width="6.2" height="1.5" rx=".7" fill="${P.bagD}"/>`;
+  }
+  if (acc === 'tote'){
+    return `  <path d="M33.4,43.6 q4,1.4 3.6,5.6" stroke="${P.toteD}" stroke-width="1.5" fill="none"/>
+  <rect x="31.4" y="48.2" width="8.2" height="8.6" rx="1.7" fill="${P.tote}" stroke="${P.toteD}" stroke-width=".9"/>
+  <rect x="31.4" y="50.4" width="8.2" height="1.3" fill="${P.toteD}" opacity=".55"/>`;
+  }
+  if (acc === 'scarf'){
+    return `  <rect x="20.4" y="30" width="7.2" height="3.8" rx="1.9" fill="${P.scarf}" stroke="${P.scarfD}" stroke-width=".8"/>
+  <path d="M21.2,33.4 L19.9,39.8 L23.1,39.8 L23.4,33.4 Z" fill="${P.scarfD}"/>`;
+  }
+  return '';
 }
 function charSVG(app, frame){
   const swing = frame==='w0' ? 1 : frame==='w1' ? -1 : 0;
   const hs = app.hairStyle || 0, fs = app.faceStyle || 0;
+  const accG = accSVG(app, app.acc || 'none');
+  const LINE = ACC_PAL.line;
   const topD  = shade(app.top, 0.84);
   const botD  = shade(app.bottom, 0.85);
   const shoeD = shade(app.shoes, 0.72);
@@ -2845,32 +2895,32 @@ function charSVG(app, frame){
   </defs>
   ${backHair}
   <g transform="rotate(${-swing*14} 31.6 38)">
-    <rect x="29.4" y="36.5" width="4.7" height="13.5" rx="2.3" fill="${topD}"/>
-    <circle cx="31.7" cy="50.4" r="2.7" fill="${skinD}"/>
+    <rect x="29.4" y="36.5" width="4.7" height="13.5" rx="2.3" fill="${topD}" stroke="${LINE}" stroke-width=".95"/>
+    <circle cx="31.7" cy="50.4" r="2.7" fill="${skinD}" stroke="${LINE}" stroke-width=".8"/>
   </g>
   <g transform="rotate(${swing*10} 20 49)">
-    <rect x="16.6" y="46" width="6.4" height="14" rx="2.6" fill="${app.bottom}"/>
-    <rect x="15.4" y="58.8" width="8" height="3.8" rx="1.9" fill="${app.shoes}"/>
+    <rect x="16.6" y="46" width="6.4" height="14" rx="2.6" fill="${app.bottom}" stroke="${LINE}" stroke-width="1"/>
+    <rect x="15.4" y="58.8" width="8" height="3.8" rx="1.9" fill="${app.shoes}" stroke="${LINE}" stroke-width=".9"/>
     <rect x="15.4" y="61.2" width="8" height="1.4" rx=".7" fill="${shoeD}"/>
   </g>
   <g transform="rotate(${-swing*10} 28 49)">
-    <rect x="25" y="46" width="6.4" height="14" rx="2.6" fill="${botD}"/>
-    <rect x="24.6" y="58.8" width="8" height="3.8" rx="1.9" fill="${app.shoes}"/>
+    <rect x="25" y="46" width="6.4" height="14" rx="2.6" fill="${botD}" stroke="${LINE}" stroke-width="1"/>
+    <rect x="24.6" y="58.8" width="8" height="3.8" rx="1.9" fill="${app.shoes}" stroke="${LINE}" stroke-width=".9"/>
     <rect x="24.6" y="61.2" width="8" height="1.4" rx=".7" fill="${shoeD}"/>
   </g>
   <rect x="22.3" y="30.2" width="3.4" height="4.5" rx="1.5" fill="${skinD}"/>
-  <rect x="16" y="33.2" width="16" height="21.5" rx="5.5" fill="url(#tG)" stroke="rgba(60,40,20,.18)" stroke-width="1"/>
+  <rect x="16" y="33.2" width="16" height="21.5" rx="5.5" fill="url(#tG)" stroke="${LINE}" stroke-width="1.15"/>
   <path d="M19.4,33.9 Q24,37.6 28.6,33.9" stroke="${topD}" stroke-width="1.4" fill="none"/>
   <circle cx="24" cy="44.5" r="1" fill="rgba(255,255,255,.4)"/>
   <circle cx="24" cy="48.6" r="1" fill="rgba(255,255,255,.4)"/>
   <g transform="rotate(${swing*14} 16.4 38)">
-    <rect x="13.9" y="36.5" width="4.7" height="13.5" rx="2.3" fill="${app.top}"/>
-    <circle cx="16.3" cy="50.4" r="2.7" fill="${app.skin}"/>
+    <rect x="13.9" y="36.5" width="4.7" height="13.5" rx="2.3" fill="${app.top}" stroke="${LINE}" stroke-width=".95"/>
+    <circle cx="16.3" cy="50.4" r="2.7" fill="${app.skin}" stroke="${LINE}" stroke-width=".8"/>
   </g>
   <circle cx="15.6" cy="27" r="2.1" fill="${app.skin}"/>
   <circle cx="32.4" cy="27" r="2.1" fill="${app.skin}"/>
   <circle cx="24" cy="24.6" r="10.1" fill="${app.hair}"/>
-  <circle cx="24" cy="26.2" r="9.3" fill="${app.skin}"/>
+  <circle cx="24" cy="26.2" r="9.3" fill="${app.skin}" stroke="${LINE}" stroke-width="1.15"/>
   ${bangs}${extraHair}
   <ellipse cx="20.6" cy="25.9" rx="2" ry="2.5" fill="#ffffff"/>
   <ellipse cx="27.4" cy="25.9" rx="2" ry="2.5" fill="#ffffff"/>
@@ -2883,6 +2933,7 @@ function charSVG(app, frame){
   <ellipse cx="17.7" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>
   <ellipse cx="30.3" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>
   ${mouth}
+  ${accG}
 </svg>`;
 }
 function charImage(app, frame, onready){

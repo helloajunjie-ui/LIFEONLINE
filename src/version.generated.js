@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.66.0",
+  "appVersion": "1.67.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 22,
   "contentVersion": 1,
-  "contentHash": "e2add2781190",
-  "builtAt": "2026-11-12T12:17:44.860Z",
+  "contentHash": "1e1d445cfe7e",
+  "builtAt": "2026-11-12T12:29:21.124Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -20,8 +20,8 @@ export const BUILD = {
       "hash": "5e5248ad66a2"
     },
     "content/careers/jobs.json": {
-      "version": 5,
-      "hash": "09697cdf7cd3"
+      "version": 6,
+      "hash": "ed778bd88d35"
     },
     "content/catalog/categories.json": {
       "version": 1,
@@ -40,8 +40,8 @@ export const BUILD = {
       "hash": "f4800b19fb18"
     },
     "content/characters/npcs.neighbors.json": {
-      "version": 11,
-      "hash": "7a576b37e150"
+      "version": 12,
+      "hash": "69155e14d201"
     },
     "content/characters/palettes.json": {
       "version": 1,
@@ -121,7 +121,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "e2add2781190"
+      "hash": "1e1d445cfe7e"
     },
     "src/core/clock.js": {
       "version": null,

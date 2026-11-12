@@ -35,7 +35,9 @@ const problems = [];
 {
   const src = read('tests/regression.js');
   const seen = new Map();
-  const re = /\/\/ -{6,}\s*([A-Z]{1,3})[：:]/g;
+  /* 分组名可能带数字（AT2 / SH / DP）：只写 [A-Z]{1,3} 会漏掉带数字的那批，
+   * 之前就因为这个盲点放过了一次 AT2 重复插入 */
+  const re = /\/\/ -{6,}\s*([A-Z]{1,3}\d{0,2})[：:]/g;
   let m;
   while ((m = re.exec(src))){
     const key = m[1];

@@ -4483,6 +4483,37 @@
             CAREER = bak.career;
           }
 
+          // ---------- AT2：人物剪影（配饰 / 描边 / 缓存键） ----------
+          {
+            const ap = { skin: '#e8a878', hair: '#2f2a26', top: '#5fae62', bottom: '#3a3a4a',
+                         shoes: '#2b2b2b', face: '#3b3226', hairStyle: 0, faceStyle: 0 };
+            /* 每种配饰都要真的画出来（写错就静默消失，界面上看不出来） */
+            const marks = { apron: 'M18.9,35', band: 'M15.2,21.4', bag: 'M19.4,34.2',
+                            tote: 'M33.4,43.6', scarf: 'x="20.4" y="30"' };
+            const missing = Object.keys(marks).filter(k => charSVG(Object.assign({}, ap, { acc: k }), 'idle').indexOf(marks[k]) < 0);
+            const noneG = charSVG(Object.assign({}, ap, { acc: 'none' }), 'idle');
+            P('AT5 every accessory actually draws, and none means nothing extra',
+              missing.length === 0 && noneG.indexOf(marks.apron) < 0 && noneG.indexOf(marks.band) < 0,
+              'missing=' + missing.join(','));
+
+            /* 未知配饰当作没有：脏内容不该把人物画坏 */
+            const odd = charSVG(Object.assign({}, ap, { acc: 'hat' }), 'idle');
+            P('AT6 unknown accessories fall back to none', odd === noneG, 'len=' + odd.length + '/' + noneG.length);
+
+            /* 缓存键必须带配饰，否则戴帽子的人会"传染"整条街 */
+            const kA = charKey(Object.assign({}, ap, { acc: 'apron' }), 'idle');
+            const kB = charKey(Object.assign({}, ap, { acc: 'bag' }), 'idle');
+            const kC = charKey(ap, 'idle');
+            P('AT7 the sprite cache key includes the accessory', kA !== kB && kA !== kC && kB !== kC,
+              'keys=' + (kA === kB) + '/' + (kA === kC));
+
+            /* 描边：躯干与头都该有轮廓，不然在花地上会糊成一团 */
+            P('AT8 characters get a consistent outline',
+              noneG.indexOf('stroke="' + ACC_PAL.line + '"') > 0 &&
+              (noneG.split('stroke="' + ACC_PAL.line + '"').length - 1) >= 6,
+              'strokes=' + (noneG.split('stroke="' + ACC_PAL.line + '"').length - 1));
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

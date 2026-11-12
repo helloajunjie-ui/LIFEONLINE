@@ -1352,6 +1352,24 @@ function validate(){
     }
   }
 
+  /* V4.24 剪影配饰：写错一个字母，那个人身上的配饰就静默消失（渲染层当作没有） */
+  {
+    const ACC = ['none', 'apron', 'band', 'bag', 'tote', 'scarf'];
+    const check = (who, ap) => {
+      if (!ap || ap.acc == null) return;
+      if (!ACC.includes(ap.acc)){
+        problems.push('[人物] ' + who + ' 的 appearance.acc「' + ap.acc + '」不在白名单（' + ACC.join('/') + '）');
+      }
+    };
+    const pk = packs['characters/npcs.neighbors.json'] || {};
+    for (const n of (pk.npcs || [])) check(n.id || n.name, n.appearance);
+    for (const c of (pk.clerks || [])) check(c.id, c.appearance);
+    /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
+    const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
+      .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');
+    if (!withAcc.length) problems.push('[人物] 没有任何人配剪影配饰，人群会只靠颜色区分');
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){
