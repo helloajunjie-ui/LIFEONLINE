@@ -1,4 +1,4 @@
-/* 由 tools/build.mjs 生成：2026-11-12T11:04:08.274Z */
+/* 由 tools/build.mjs 生成：2026-11-12T11:06:45.014Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -1498,12 +1498,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.64.1",
+  "appVersion": "1.64.2",
   "minAppVersion": "1.6.0",
   "saveSchema": 21,
   "contentVersion": 1,
   "contentHash": "a311124f632e",
-  "builtAt": "2026-11-12T11:04:08.266Z",
+  "builtAt": "2026-11-12T11:06:45.014Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -1670,3 +1670,5 @@ const BUILD = {
   clock: __require("src/core/clock.js")
   };
 })();
+/* 用版本模块里的时间，而不是当场取：这样重复构建能产出完全一样的文件
+ * （否则每次都会因为这一行产生差异，补丁跑两遍就留下一个只含产物的空提交） */

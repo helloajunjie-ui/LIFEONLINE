@@ -119,9 +119,26 @@ function generateVersionModule(){
   walkSrc(SRC);
   build.modules = modules;
 
+  /* builtAt 只用来在关于面板里显示"构建于"，但它是唯一每次都会变的字段——
+   * 于是重复跑一次构建就会生成一个只含产物的空提交（补丁脚本被跑两遍时尤其明显）。
+   * 这里做幂等：其余字段（含源码指纹、内容指纹、版本号）都没变时，沿用旧的 builtAt，
+   * 只有内容真的变了才更新成现在的时间。 */
+  const outPath = path.join(SRC, 'version.generated.js');
+  let builtAt = new Date().toISOString();
+  try {
+    const prev = fs.readFileSync(outPath, 'utf8');
+    const m = prev.match(/"builtAt":\s*"([^"]+)"/);
+    if (m && m[1]){
+      const prevBody = prev.replace(/"builtAt":\s*"[^"]+"/, '"builtAt": "__same__"');
+      const nextBody = JSON.stringify(Object.assign({}, build, { builtAt: '__same__' }), null, 2);
+      if (prevBody.includes(nextBody)) builtAt = m[1];      // 除了时间，其它完全一致
+    }
+  } catch (e) {}
+  build.builtAt = builtAt;
+
   const out = '// 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）\n'
     + 'export const BUILD = ' + JSON.stringify(build, null, 2) + ';\n';
-  fs.writeFileSync(path.join(SRC, 'version.generated.js'), out, 'utf8');
+  fs.writeFileSync(outPath, out, 'utf8');
   return build;
 }
 
@@ -222,7 +239,9 @@ ${body}
 ${expose}
   };
 })();
-`.replace('$(date)', new Date().toISOString());
+/* 用版本模块里的时间，而不是当场取：这样重复构建能产出完全一样的文件
+ * （否则每次都会因为这一行产生差异，补丁跑两遍就留下一个只含产物的空提交） */
+`.replace('$(date)', ver.builtAt);
 
   fs.mkdirSync(DIST, { recursive: true });
   fs.writeFileSync(BUNDLE, out, 'utf8');
