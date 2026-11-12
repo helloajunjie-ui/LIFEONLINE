@@ -3981,6 +3981,15 @@
               wetPool.length > nightPool.length && nightPool.length >= 10,
               'night=' + nightPool.length + ' wet=' + wetPool.length + ' morn=' + mornPool.length);
 
+            /* 饭点的"需求"：11:30-13:00 / 17:30-19:00 才聊吃什么 */
+            MINUTE = 12 * 60;
+            const lunchPool = chatterTopics().map(t => t.id);
+            MINUTE = 15 * 60;
+            const teaPool = chatterTopics().map(t => t.id);
+            P('CB2b meal topics only show up around lunch and dinner',
+              lunchPool.indexOf('meal-what') >= 0 && teaPool.indexOf('meal-what') < 0,
+              'lunch=' + (lunchPool.indexOf('meal-what') >= 0) + ' tea=' + (teaPool.indexOf('meal-what') >= 0));
+
             /* 配对只认距离：两格该配上，三十格不该凑一桌 */
             const realPeople = chatterPeople;
             chatterPeople = () => [{ p: { fx: 10, fy: 10 } }, { p: { fx: 12, fy: 10 } }, { p: { fx: 60, fy: 10 } }];
@@ -4042,6 +4051,31 @@
             P('CB7 chatter is pure presentation: no money, no stats, no day change',
               !!fired && fired.lines.length >= 2 && pure,
               'fired=' + (!!fired) + ' pure=' + pure);
+
+            /* 台词认人：小孩不该在算房租，厨子才该聊后厨 */
+            {
+              const kidP = CLERKS.find(c => c.appearance && c.appearance.age === 'kid');
+              const elderP = CLERKS.find(c => c.appearance && c.appearance.age === 'elder');
+              const chefP = CLERKS.find(c => c.appearance && c.appearance.uniform === 'chef');
+              MINUTE = 14 * 60;                     // 白天，三类人都能开口
+              const pick = (p) => p ? chatterTopicsFor({ p: p }, { p: p }) : [];
+              const kidPair = pick(kidP), elderPair = pick(elderP), chefPair = pick(chefP);
+              const hasWho = (list, tag) => list.some(t => Array.isArray(t.who) && t.who.indexOf(tag) >= 0);
+              const noRent = !kidPair.some(t => t.id === 'rent-day');
+              const noHomework = !chefPair.some(t => t.id === 'kid-homework');
+              P('CB8 lines are picked by who is talking, not just by the clock',
+                !!kidP && !!elderP && !!chefP &&
+                hasWho(kidPair, 'kid') && hasWho(elderPair, 'elder') && hasWho(chefPair, 'chef') &&
+                noRent && noHomework,
+                'kid=' + kidPair.length + ' elder=' + elderPair.length + ' chef=' + chefPair.length +
+                ' noRent=' + noRent + ' noHomework=' + noHomework);
+
+              const kidSolos = kidP ? chatterSolosFor({ p: kidP }) : [];
+              P('CB9 a kid never mutters an adult line',
+                kidSolos.length >= 2 && kidSolos.indexOf('又到月底了……') < 0 &&
+                kidSolos.indexOf('路灯该修了，一闪一闪的。') < 0,
+                'kidSolos=' + kidSolos.length + ' list=' + kidSolos.join('/'));
+            }
 
             CHATTER = bak.chatter; _chatNext = bak.next; WX.rainOn = bak.rain;
             MONEY = bak.money; STATS.emotion = bak.emo; MINUTE = bak.min; scene = bak.sc;

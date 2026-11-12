@@ -8231,40 +8231,84 @@ function showDailyNews(){
 let CHATTER = null;        // { a, b, lines, i, t, dur, solo }
 let _chatNext = 0;         // 下一次尝试搭话的游戏分钟
 let _chatTick = 0;         // 调试计数：一共搭过几次话（只在控制台看）
+let _chatLastTopic = '';   // 上一组话题：连着两次说同一件事很像坏掉
 
 function chatterCfg(){
   const amb = (HomeCore.content.ambient && HomeCore.content.ambient()) || {};
   return amb.chatter || {};
+}
+/** 饭点：11:30-13:00 和 17:30-19:00。这条是"人此刻的需求"——饿了聊吃的最自然 */
+function chatterMealTime(){
+  const h = ((Number(MINUTE) || 0) % 1440 + 1440) % 1440 / 60;
+  return (h >= 11.5 && h < 13) || (h >= 17.5 && h < 19);
 }
 /** 这个时段/天气能用的对话题 */
 function chatterTopics(){
   const cfg = chatterCfg();
   const rainy = (typeof WX !== 'undefined' && WX.rainOn);
   const bucket = npcLineBucket();
+  const meal = chatterMealTime();
   const out = [];
   for (const t of (cfg.topics || [])){
     if (!t || !Array.isArray(t.lines) || t.lines.length < 2) continue;
     const w = t.when || 'any';
     if (w === 'rain'){ if (rainy) out.push(t); continue; }
+    if (w === 'meal'){ if (meal) out.push(t); continue; }
     if (w !== 'any' && w !== bucket) continue;
     out.push(t);
   }
   return out;
 }
-/** 一个人自言自语用的话 */
+/** 一个人自言自语用的话（返回原始条目，带 who/avoid 供筛选） */
 function chatterSolos(){
   const cfg = chatterCfg();
   const rainy = (typeof WX !== 'undefined' && WX.rainOn);
   const bucket = npcLineBucket();
+  const meal = chatterMealTime();
   const out = [];
   for (const s of (cfg.solos || [])){
     if (!s || !s.t) continue;
     const w = s.when || 'any';
-    if (w === 'rain'){ if (rainy) out.push(s.t); continue; }
+    if (w === 'rain'){ if (rainy) out.push(s); continue; }
+    if (w === 'meal'){ if (meal) out.push(s); continue; }
     if (w !== 'any' && w !== bucket) continue;
-    out.push(s.t);
+    out.push(s);
   }
   return out;
+}
+
+/* ---------- 台词认人：谁在说话，决定他能说什么 ----------
+ * 光按时段挑台词，会出现"小孩在算房租""厨子在聊后厨"这种张冠李戴。
+ * 每个人由此刻的身份打一撮标签，台词用标签挑人：
+ *   who   —— 每一个标签都得有人对得上（["clerk"] = 至少有个店员；["kid"] = 有个小孩）
+ *   avoid —— 任一个人踩上这个标签就不说（成年人话题标 avoid:["kid"]）
+ * 标签全部来自存档里本来就有的字段（role / age / sex / uniform），不用新加数据。 */
+function chatterTags(p){
+  const app = (p && p.appearance) || {};
+  const out = [];
+  out.push(p && p.role === 'clerk' ? 'clerk' : (p && p.role === 'site' ? 'site' : 'neighbor'));
+  out.push(app.age || 'adult');
+  out.push(app.sex === 'f' ? 'female' : 'male');
+  if (app.uniform && app.uniform !== 'none') out.push(app.uniform);
+  return out;
+}
+function chatterWhoOk(topic, a, b){
+  if (!topic) return false;
+  const ta = a ? chatterTags(a.p) : [];
+  const tb = b ? chatterTags(b.p) : [];
+  const has = (t) => ta.indexOf(t) >= 0 || tb.indexOf(t) >= 0;
+  const who = topic.who;
+  if (Array.isArray(who)) for (const t of who) if (!has(t)) return false;
+  const no = topic.avoid;
+  if (Array.isArray(no)) for (const t of no) if (has(t)) return false;
+  return true;
+}
+/** 这两个人能聊的话题 */
+function chatterTopicsFor(a, b){ return chatterTopics().filter(t => chatterWhoOk(t, a, b)); }
+/** 这个人能自言自语的话 */
+function chatterSolosFor(p){
+  const arr = chatterSolos().filter(s => chatterWhoOk(s, p, null));
+  return arr.map(s => s.t);
 }
 /** 能开口的人：在岗的店员 + 街上走着的邻居，都要求此刻在画面里 */
 function chatterPeople(){
@@ -8339,21 +8383,26 @@ function chatterTry(force){
   if (!force && anyPanelVisible()){ _chatNext = MINUTE + 4; return null; }
   const pair = chatterPair();
   if (pair){
-    const topics = chatterTopics();
+    /* 话题要挑这对人真能说的：小孩不聊房租，厨子才聊后厨 */
+    let topics = chatterTopicsFor(pair[0], pair[1]);
+    if (topics.length > 1 && _chatLastTopic) topics = topics.filter(t => t.id !== _chatLastTopic);
     if (topics.length){
       const t = topics[Math.floor(Math.random() * topics.length)];
+      _chatLastTopic = t.id || '';
       _chatNext = MINUTE + cd + Math.random() * jit;
       return startChatter(t.lines, pair[0], pair[1]);
     }
   }
-  /* 附近没人对话：让一个人自己嘀咕一句，空街上也不至于死气沉沉 */
+  /* 附近没人搭得上话：让一个人自己嘀咕一句，空街上也不至于死气沉沉 */
   const people = chatterPeople();
-  const solos = chatterSolos();
-  if (people.length && solos.length){
+  if (people.length){
     const who = people[Math.floor(Math.random() * people.length)];
-    const text = solos[Math.floor(Math.random() * solos.length)];
-    _chatNext = MINUTE + cd + Math.random() * jit;
-    return startChatter([{ s: 'a', t: text }], who, null);
+    const solos = chatterSolosFor(who);
+    if (solos.length){
+      const text = solos[Math.floor(Math.random() * solos.length)];
+      _chatNext = MINUTE + cd + Math.random() * jit;
+      return startChatter([{ s: 'a', t: text }], who, null);
+    }
   }
   _chatNext = MINUTE + 6;
   return null;

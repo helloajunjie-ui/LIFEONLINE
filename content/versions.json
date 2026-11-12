@@ -55,9 +55,9 @@
     "updatedAt": "2026-11-05T09:56:34.049Z"
   },
   "environment/ambient.json": {
-    "version": 7,
-    "hash": "c6568d76a1fb",
-    "updatedAt": "2026-11-12T14:04:36.181Z"
+    "version": 9,
+    "hash": "a34dfce89d75",
+    "updatedAt": "2026-11-12T14:17:22.750Z"
   },
   "environment/climate.json": {
     "version": 4,

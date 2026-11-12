@@ -1528,7 +1528,7 @@ function validate(){
     if (!chat){
       problems.push('[闲聊] environment/ambient.json 缺少 chatter 配置');
     } else {
-      const WHEN = new Set(['any', 'morning', 'day', 'eve', 'night', 'rain']);
+      const WHEN = new Set(['any', 'morning', 'day', 'eve', 'night', 'rain', 'meal']);
       const topics = Array.isArray(chat.topics) ? chat.topics : [];
       const solos = Array.isArray(chat.solos) ? chat.solos : [];
       const ids = new Set();
@@ -1539,7 +1539,7 @@ function validate(){
         if (ids.has(t.id)) problems.push('[闲聊] 话题 id 重复: ' + t.id);
         ids.add(t.id);
         const w = t.when || 'any';
-        if (!WHEN.has(w)) problems.push(`[闲聊] ${t.id} 的 when「${w}」不是 any/morning/day/eve/night/rain`);
+        if (!WHEN.has(w)) problems.push(`[闲聊] ${t.id} 的 when「${w}」不是 any/morning/day/eve/night/rain/meal`);
         if (w === 'any') anyCount++;
         const lines = Array.isArray(t.lines) ? t.lines : [];
         if (lines.length < 2) problems.push(`[闲聊] ${t.id} 至少要两句（一问一答），现在 ${lines.length} 句`);
@@ -1566,6 +1566,52 @@ function validate(){
       if (!(cd >= 8)) problems.push(`[闲聊] cooldownMinutes 应 ≥ 8（现在 ${chat.cooldownMinutes}），太短会一直有人说话`);
       const rg = Number(chat.rangeTiles);
       if (!(rg >= 2 && rg <= 8)) problems.push(`[闲聊] rangeTiles 应在 2~8（现在 ${chat.rangeTiles}）`);
+
+      /* V4.29 台词认人：who/avoid 写错一个字母不会报错——标签永远匹配不上，
+       * 那句台词就被静默吞掉，谁都听不到。这里把"标签表"和"有没有这个人"都查一遍。 */
+      {
+        const TAGS = new Set(['clerk', 'site', 'neighbor', 'kid', 'teen', 'adult', 'elder',
+                              'male', 'female', 'food', 'chef', 'shop', 'office', 'medical',
+                              'uniform', 'delivery']);
+        /* 场上真有这些标签的人吗：没有就说明这条台词永远说不出口 */
+        const has = new Set();
+        const pk = packs['characters/npcs.neighbors.json'] || {};
+        for (const [list, role] of [[pk.npcs, 'neighbor'], [pk.clerks, 'clerk'], [pk.sites, 'site']]){
+          for (const p of (list || [])){
+            const a = p.appearance || {};
+            has.add(role);
+            has.add(a.age || 'adult');
+            has.add(a.sex === 'f' ? 'female' : 'male');
+            if (a.uniform && a.uniform !== 'none') has.add(a.uniform);
+          }
+        }
+        const unknownTag = [], noOne = [];
+        const whoCount = {};
+        let free = 0;
+        for (const t of topics){
+          const who = Array.isArray(t.who) ? t.who : [];
+          const no = Array.isArray(t.avoid) ? t.avoid : [];
+          if (!who.length && !no.length) free++;
+          for (const g of who.concat(no)) if (!TAGS.has(g)) unknownTag.push((t.id || '?') + ':' + g);
+          for (const g of who){ whoCount[g] = (whoCount[g] || 0) + 1; if (!has.has(g)) noOne.push((t.id || '?') + ':' + g); }
+        }
+        for (const s of solos){
+          const who = Array.isArray(s.who) ? s.who : [];
+          const no = Array.isArray(s.avoid) ? s.avoid : [];
+          for (const g of who.concat(no)) if (!TAGS.has(g)) unknownTag.push('独白:' + g);
+          for (const g of who){ whoCount[g] = (whoCount[g] || 0) + 1; if (!has.has(g)) noOne.push('独白:' + g); }
+        }
+        if (unknownTag.length)
+          problems.push('[闲聊] 没见过的身份标签（永远匹配不上）：' + [...new Set(unknownTag)].slice(0, 6).join(', '));
+        if (noOne.length)
+          problems.push('[闲聊] 这些标签场上没有任何人，对应的台词一辈子说不出口：' + [...new Set(noOne)].slice(0, 6).join(', '));
+        if (free < 4)
+          problems.push(`[闲聊] 不限定身份的通用话题只有 ${free} 组，随便两个人凑一起就可能没话可说`);
+        if ((whoCount.kid || 0) < 4) problems.push(`[闲聊] 认小孩的话题只有 ${whoCount.kid || 0} 组，小孩子会像大人一样说话`);
+        if ((whoCount.elder || 0) < 3) problems.push(`[闲聊] 认老人的话题只有 ${whoCount.elder || 0} 组`);
+        const tagged = topics.filter(t => Array.isArray(t.who) && t.who.length).length;
+        if (tagged < 8) problems.push(`[闲聊] 只有 ${tagged} 组台词认身份，剩下的人凑一起说的都是通用句`);
+      }
     }
   }
 
