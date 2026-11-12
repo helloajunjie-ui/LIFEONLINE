@@ -115,6 +115,12 @@ function buildIndex(packs, meta){
     if (id.startsWith('maps/') && pack.id) maps[String(pack.id).replace('map.', '')] = pack;
   }
 
+  /* ui/ 包现在只剩 talk.json（气泡与时长参数）。以前还有个 strings 文案包，
+   * 但因为引擎全部硬编码、没人读它，已于 2026-11-13 删除——留一个"看起来像配置"的空壳
+   * 比没有更糟。要做多语言时先加 t(key) 与键表，再谈包。 */
+  /* ui/ 包现在只剩 talk.json（气泡与时长参数）。以前还有个 strings 文案包，
+   * 但因为引擎全部硬编码、没人读它，已于 2026-11-13 删除——留一个"看起来像配置"的空壳
+   * 比没有更糟。要做多语言时先加 t(key) 与键表，再谈包。 */
   const uiPack = Object.entries(packs).find(([id]) => id.startsWith('ui/'))?.[1] || {};
   /* 对话表现层参数（气泡尺寸、停留时长、方位阈值）：单独一包，改观感不用碰代码 */
   const talkCfg = packs['ui/talk.json'] || {};

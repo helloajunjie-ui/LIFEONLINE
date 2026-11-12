@@ -47,7 +47,10 @@ for (const [name, file] of Object.entries(TARGETS)){
       '--headless', '--disable-gpu',
       '--user-data-dir=' + profile,
       '--window-size=1280,800',
-      '--virtual-time-budget=15000',
+      /* 15s 在冷缓存（刚 rebuild 完、图片要解码）时不够用，出现过两次
+       * "改完内容立刻跑，第一遍偶发 1 条失败、第二遍全绿"。给足余量：
+       * 虚拟时间只是上限，跑完就结束，不会拖慢正常情况。 */
+      '--virtual-time-budget=30000',
       '--dump-dom',
       'file:///' + work.replace(/\\/g, '/')
     ], { encoding: 'utf8', timeout: 120000, maxBuffer: 32*1024*1024, stdio: ['ignore', 'pipe', 'ignore'] });

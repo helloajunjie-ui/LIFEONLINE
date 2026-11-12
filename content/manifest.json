@@ -31,7 +31,6 @@
     "rules/economy.json",
     "rules/survival.json",
     "stock/stock.json",
-    "ui/strings.zh-CN.json",
     "ui/talk.json",
     "vehicles/cars.json"
   ],
@@ -170,11 +169,6 @@
       "version": 2,
       "hash": "b628686e5439",
       "updatedAt": "2026-11-12T07:35:50.423Z"
-    },
-    "ui/strings.zh-CN.json": {
-      "version": 3,
-      "hash": "f9aa47123d82",
-      "updatedAt": "2026-11-12T17:23:59.913Z"
     },
     "ui/talk.json": {
       "version": 1,
