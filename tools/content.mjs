@@ -1384,7 +1384,9 @@ function validate(){
   /* V4.24 剪影配饰：写错一个字母，那个人身上的配饰就静默消失（渲染层当作没有） */
   {
     const ACC = ['none', 'apron', 'band', 'bag', 'tote', 'scarf', 'cane'];
-    const AGES = ['kid', 'teen', 'adult', 'elder'];
+    /* 年龄是四个阶段：儿童 / 青年 / 中年 / 老年。老名字（kid/teen/adult/elder）
+     * 只留在引擎里做存档别名，内容里再写就报错，免得两套名字越漂越远。 */
+    const AGES = ['child', 'youth', 'middle', 'senior'];
     const SEXES = ['f', 'm', 'x'];
     const UNIS = ['food', 'office', 'medical', 'uniform', 'delivery', 'chef', 'shop'];
     const HAIRS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -1418,11 +1420,38 @@ function validate(){
       const all = [...(pk.npcs || []), ...(pk.clerks || [])];
       for (const x of all){
         const a = x.appearance || {};
-        const k = [a.age || 'adult', a.sex || 'x', a.uniform || '', a.acc || 'none',
+        const k = [a.age || 'middle', a.sex || 'x', a.uniform || '', a.acc || 'none',
                    String(a.hairStyle == null ? 0 : a.hairStyle)].join('|');
         if (seen[k]) problems.push('[人物] ' + (x.name || x.id) + ' 与 ' + seen[k] +
           ' 五项全同（年龄/性别/制服/配饰/发型），屏幕上只差衣服颜色');
         else seen[k] = (x.name || x.id);
+      }
+    }
+
+    /* V4.30 职业：身份三件套里的第三个字段（年龄阶段 / 性别 / 职业）。
+     * 没有 job 的人照样能走能说，只是永远只说通用台词、也不穿制服——
+     * 这种缺失不会报任何错，所以必须在这里拦。 */
+    {
+      const jobs = Array.isArray(pk.jobs) ? pk.jobs : [];
+      const byId = {};
+      const UNIS = ['food', 'office', 'medical', 'uniform', 'delivery', 'chef', 'shop'];
+      if (!jobs.length) problems.push('[职业] 人物包里没有 jobs[] 职业表，身份就少一条腿');
+      for (const j of jobs){
+        if (!j || !j.id){ problems.push('[职业] jobs[] 里有条目缺少 id'); continue; }
+        if (byId[j.id]) problems.push('[职业] 职业 id 重复: ' + j.id);
+        if (!j.name) problems.push('[职业] ' + j.id + ' 缺少 name（档案卡上会显示空白）');
+        if (j.uniform != null && !UNIS.includes(j.uniform))
+          problems.push('[职业] ' + j.id + ' 的默认制服「' + j.uniform + '」不在白名单');
+        byId[j.id] = j;
+      }
+      const people = [...(pk.npcs || []), ...(pk.clerks || []), ...(pk.sites || [])];
+      for (const x of people){
+        const ap = x.appearance || {};
+        if (!ap.job){ problems.push('[职业] ' + (x.name || x.id) + ' 没有 appearance.job'); continue; }
+        const j = byId[ap.job];
+        if (!j){ problems.push('[职业] ' + (x.name || x.id) + ' 的职业「' + ap.job + '」不在 jobs[] 里'); continue; }
+        if (ap.uniform && j.uniform && ap.uniform !== j.uniform)
+          problems.push('[职业] ' + (x.name || x.id) + ' 穿的是 ' + ap.uniform + '，但「' + j.name + '」的默认制服是 ' + j.uniform);
       }
     }
 
@@ -1570,9 +1599,12 @@ function validate(){
       /* V4.29 台词认人：who/avoid 写错一个字母不会报错——标签永远匹配不上，
        * 那句台词就被静默吞掉，谁都听不到。这里把"标签表"和"有没有这个人"都查一遍。 */
       {
-        const TAGS = new Set(['clerk', 'site', 'neighbor', 'kid', 'teen', 'adult', 'elder',
-                              'male', 'female', 'food', 'chef', 'shop', 'office', 'medical',
-                              'uniform', 'delivery']);
+        /* 标签词表 = 身份（clerk/site/neighbor）+ 年龄阶段 + 性别 + 职业 id。
+         * 职业那部分直接从 jobs[] 长出来，加一个职业不用回来改这里。 */
+        const TAGS = new Set(['clerk', 'site', 'neighbor', 'child', 'youth', 'middle', 'senior',
+                              'male', 'female']);
+        for (const j of (packs['characters/npcs.neighbors.json'] || {}).jobs || [])
+          if (j && j.id) TAGS.add(j.id);
         /* 场上真有这些标签的人吗：没有就说明这条台词永远说不出口 */
         const has = new Set();
         const pk = packs['characters/npcs.neighbors.json'] || {};
@@ -1580,9 +1612,9 @@ function validate(){
           for (const p of (list || [])){
             const a = p.appearance || {};
             has.add(role);
-            has.add(a.age || 'adult');
+            has.add(a.age || 'middle');
             has.add(a.sex === 'f' ? 'female' : 'male');
-            if (a.uniform && a.uniform !== 'none') has.add(a.uniform);
+            if (a.job) has.add(a.job);
           }
         }
         const unknownTag = [], noOne = [];
@@ -1607,8 +1639,8 @@ function validate(){
           problems.push('[闲聊] 这些标签场上没有任何人，对应的台词一辈子说不出口：' + [...new Set(noOne)].slice(0, 6).join(', '));
         if (free < 4)
           problems.push(`[闲聊] 不限定身份的通用话题只有 ${free} 组，随便两个人凑一起就可能没话可说`);
-        if ((whoCount.kid || 0) < 4) problems.push(`[闲聊] 认小孩的话题只有 ${whoCount.kid || 0} 组，小孩子会像大人一样说话`);
-        if ((whoCount.elder || 0) < 3) problems.push(`[闲聊] 认老人的话题只有 ${whoCount.elder || 0} 组`);
+        if ((whoCount.child || 0) < 4) problems.push(`[闲聊] 认小孩（child）的话题只有 ${whoCount.child || 0} 组，小孩子会像大人一样说话`);
+        if ((whoCount.senior || 0) < 3) problems.push(`[闲聊] 认老人（senior）的话题只有 ${whoCount.senior || 0} 组`);
         const tagged = topics.filter(t => Array.isArray(t.who) && t.who.length).length;
         if (tagged < 8) problems.push(`[闲聊] 只有 ${tagged} 组台词认身份，剩下的人凑一起说的都是通用句`);
       }

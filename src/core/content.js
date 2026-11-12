@@ -94,11 +94,15 @@ function buildIndex(packs, meta){
   const npcs = [];
   const clerks = [];
   const sites = [];
+  /* 职业表：人物身份三件套之一是 job，名字与默认制服都写在这里。
+   * 台词认人、档案卡、校验器读同一份，避免"代码里一套中文、内容里另一套"。 */
+  let jobs = [];
   for (const [id, pack] of Object.entries(packs)){
     if (!id.startsWith('characters/')) continue;
     if (pack.npcs) npcs.push(...pack.npcs);
     if (Array.isArray(pack.clerks)) clerks.push(...pack.clerks);
     if (Array.isArray(pack.sites)) sites.push(...pack.sites);
+    if (Array.isArray(pack.jobs)) jobs = jobs.concat(pack.jobs);
   }
 
   const maps = {};
@@ -175,6 +179,7 @@ function buildIndex(packs, meta){
     npcs,
     clerks,
     sites,
+    jobs,
     maps,
     ui: uiPack.strings || {},
     verbs: verbTable,
@@ -268,6 +273,8 @@ export function npcs(){ return content.npcs; }
 export function clerks(){ return content.clerks; }
 /** 场所里的人：学校门口 / 球场 / 公园 / 儿童乐园，只在自己那块地方活动 */
 export function sites(){ return content.sites; }
+/** 职业表：{ id, name, uniform? }。身份三件套 = age 阶段 / sex / job */
+export function jobs(){ return content.jobs; }
 
 /** 气候：天气权重 + 一天的光照关键帧 */
 export function climate(){ return content.climate; }

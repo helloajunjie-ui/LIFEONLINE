@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.74.0",
+  "appVersion": "1.75.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 22,
   "contentVersion": 1,
-  "contentHash": "be76754089f3",
-  "builtAt": "2026-11-12T14:17:52.685Z",
+  "contentHash": "97412fd119df",
+  "builtAt": "2026-11-12T15:02:38.787Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -40,8 +40,8 @@ export const BUILD = {
       "hash": "f4800b19fb18"
     },
     "content/characters/npcs.neighbors.json": {
-      "version": 26,
-      "hash": "88956e5732d3"
+      "version": 27,
+      "hash": "505c3ac1b1e4"
     },
     "content/characters/palettes.json": {
       "version": 1,
@@ -52,8 +52,8 @@ export const BUILD = {
       "hash": "1b632f4c14f5"
     },
     "content/environment/ambient.json": {
-      "version": 9,
-      "hash": "a34dfce89d75"
+      "version": 10,
+      "hash": "dbe1d9fb88ab"
     },
     "content/environment/climate.json": {
       "version": 4,
@@ -121,7 +121,7 @@ export const BUILD = {
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "be76754089f3"
+      "hash": "97412fd119df"
     },
     "src/core/clock.js": {
       "version": null,
@@ -129,7 +129,7 @@ export const BUILD = {
     },
     "src/core/content.js": {
       "version": null,
-      "hash": "1da11cd790bd"
+      "hash": "05ae8582cb94"
     },
     "src/core/environment.js": {
       "version": null,

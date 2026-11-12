@@ -242,7 +242,7 @@
     ]
   },
   "chatter": {
-    "note": "街坊之间闲聊：两个人站得够近就自己搭话，附近没人时改说一句独白。纯表现层——不写存档、不改数值，加多少句台词都不会影响平衡。台词认人：who 里的每个标签都得有人对得上（clerk/site/neighbor、kid/teen/adult/elder、female/male、food/chef/shop/office/medical/uniform/delivery），avoid 是任一人踩上就不说（成年人的话题避开小孩）。lines 按 a/b 交替念；when 决定进哪个池子（any / morning / day / eve / night / rain / meal）。句子控制在 16 字以内，多了会在气泡里折行。",
+    "note": "街坊之间闲聊：两个人站得够近就自己搭话，附近没人时改说一句独白。纯表现层——不写存档、不改数值，加多少句台词都不会影响平衡。台词认人：who 里的每个标签都得有人对得上（身份 clerk/site/neighbor、年龄阶段 child/youth/middle/senior、性别 female/male、职业 student/retiree/shopclerk/server/chef/officeworker/nurse/officer/guard/courier/sales/freelance/founder），avoid 是任一人踩上就不说（成年人的话题避开 child）。lines 按 a/b 交替念；when 决定进哪个池子（any / morning / day / eve / night / rain / meal）。句子控制在 16 字以内，多了会在气泡里折行。",
     "cooldownMinutes": 26,
     "cooldownJitter": 22,
     "rangeTiles": 5,
@@ -267,7 +267,7 @@
       {
         "id": "estate-price",
         "when": "any",
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "听说东边那排公寓又涨价了。" },
           { "s": "b", "t": "涨吧，反正我也买不起。" }
@@ -286,7 +286,7 @@
         "id": "market-greens",
         "when": "morning",
         "who": ["clerk"],
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "这青菜早上刚到的。" },
           { "s": "b", "t": "给我来两把，晚上炒个素的。" }
@@ -295,7 +295,7 @@
       {
         "id": "lottery",
         "when": "eve",
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "昨儿那期你买了吗？" },
           { "s": "b", "t": "买了，一个号都没对上。" }
@@ -320,7 +320,7 @@
       {
         "id": "school-crossing",
         "when": "morning",
-        "who": ["kid"],
+        "who": ["child"],
         "lines": [
           { "s": "a", "t": "放学别在路口追着跑。" },
           { "s": "b", "t": "知道啦——" }
@@ -329,7 +329,7 @@
       {
         "id": "court-again",
         "when": "eve",
-        "who": ["kid"],
+        "who": ["child"],
         "lines": [
           { "s": "a", "t": "再来一场？" },
           { "s": "b", "t": "天都快黑了，明儿吧。" }
@@ -338,7 +338,7 @@
       {
         "id": "park-late",
         "when": "night",
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "这么晚还遛弯？" },
           { "s": "b", "t": "睡不着，走两圈。" }
@@ -372,7 +372,7 @@
       {
         "id": "parcel-rush",
         "when": "day",
-        "who": ["delivery"],
+        "who": ["courier"],
         "lines": [
           { "s": "a", "t": "今天件儿怎么这么多。" },
           { "s": "b", "t": "网购打折，一窝蜂都下单。" }
@@ -389,7 +389,7 @@
       {
         "id": "bank-rate",
         "when": "any",
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "利率又降了。" },
           { "s": "b", "t": "存着吧，总比乱花了强。" }
@@ -406,7 +406,7 @@
       {
         "id": "night-bus",
         "when": "night",
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "末班车几点？" },
           { "s": "b", "t": "十点半，再不走就赶不上。" }
@@ -416,7 +416,7 @@
         "id": "night-shift",
         "when": "night",
         "who": ["clerk"],
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "这么晚还不睡？" },
           { "s": "b", "t": "刚换下夜班，还醒着。" }
@@ -425,7 +425,7 @@
       {
         "id": "stock-green",
         "when": "day",
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "你那只票今儿绿得发亮。" },
           { "s": "b", "t": "别提了，我还在等回本。" }
@@ -434,7 +434,7 @@
       {
         "id": "rent-day",
         "when": "any",
-        "avoid": ["kid"],
+        "avoid": ["child"],
         "lines": [
           { "s": "a", "t": "这月房租交了吗？" },
           { "s": "b", "t": "交了，一到月初就肉疼。" }
@@ -443,7 +443,7 @@
       {
         "id": "kid-play",
         "when": "day",
-        "who": ["kid"],
+        "who": ["child"],
         "lines": [
           { "s": "a", "t": "操场那边又开踢了。" },
           { "s": "b", "t": "喊上老李，正好凑一队。" }
@@ -452,7 +452,7 @@
       {
         "id": "kid-homework",
         "when": "day",
-        "who": ["kid"],
+        "who": ["child"],
         "lines": [
           { "s": "a", "t": "作业写完没？" },
           { "s": "b", "t": "还差两页数学。" }
@@ -461,7 +461,7 @@
       {
         "id": "kid-snack",
         "when": "day",
-        "who": ["kid"],
+        "who": ["child"],
         "lines": [
           { "s": "a", "t": "你带零钱了吗？" },
           { "s": "b", "t": "就五块，买根冰棍。" }
@@ -470,7 +470,7 @@
       {
         "id": "kid-secret",
         "when": "eve",
-        "who": ["kid"],
+        "who": ["child"],
         "lines": [
           { "s": "a", "t": "别告诉老师啊。" },
           { "s": "b", "t": "我嘴严着呢。" }
@@ -479,7 +479,7 @@
       {
         "id": "elder-chess",
         "when": "day",
-        "who": ["elder"],
+        "who": ["senior"],
         "lines": [
           { "s": "a", "t": "昨儿那盘你走错一步。" },
           { "s": "b", "t": "我那是让着你。" }
@@ -488,7 +488,7 @@
       {
         "id": "elder-health",
         "when": "morning",
-        "who": ["elder"],
+        "who": ["senior"],
         "lines": [
           { "s": "a", "t": "血压又有点高。" },
           { "s": "b", "t": "少吃点咸的。" }
@@ -497,7 +497,7 @@
       {
         "id": "elder-legs",
         "when": "night",
-        "who": ["elder"],
+        "who": ["senior"],
         "lines": [
           { "s": "a", "t": "这楼梯越爬越费劲。" },
           { "s": "b", "t": "该装电梯了，说了三年。" }
@@ -506,7 +506,7 @@
       {
         "id": "elder-market",
         "when": "morning",
-        "who": ["elder"],
+        "who": ["senior"],
         "lines": [
           { "s": "a", "t": "菜又贵了两毛。" },
           { "s": "b", "t": "挑下午去买，便宜些。" }
@@ -515,7 +515,7 @@
       {
         "id": "delivery-load",
         "when": "day",
-        "who": ["delivery"],
+        "who": ["courier"],
         "lines": [
           { "s": "a", "t": "这栋还有几件？" },
           { "s": "b", "t": "三楼两件，马上上去。" }
@@ -524,7 +524,7 @@
       {
         "id": "medical-shift",
         "when": "night",
-        "who": ["medical"],
+        "who": ["nurse"],
         "lines": [
           { "s": "a", "t": "今晚谁值班？" },
           { "s": "b", "t": "我，到十一点。" }
@@ -533,7 +533,7 @@
       {
         "id": "food-order",
         "when": "day",
-        "who": ["food"],
+        "who": ["server"],
         "lines": [
           { "s": "a", "t": "一份盖饭，不要辣。" },
           { "s": "b", "t": "十分钟就好。" }
@@ -551,7 +551,7 @@
       {
         "id": "office-overtime",
         "when": "day",
-        "who": ["office"],
+        "who": ["officeworker"],
         "lines": [
           { "s": "a", "t": "这报表今天得交。" },
           { "s": "b", "t": "你那份我帮你对了。" }
@@ -560,7 +560,7 @@
       {
         "id": "shop-restock",
         "when": "day",
-        "who": ["shop"],
+        "who": ["shopclerk"],
         "lines": [
           { "s": "a", "t": "货架空了两排。" },
           { "s": "b", "t": "仓库还有两箱。" }
@@ -578,7 +578,7 @@
       {
         "id": "teen-phone",
         "when": "eve",
-        "who": ["teen"],
+        "who": ["youth"],
         "lines": [
           { "s": "a", "t": "你手机借我刷一下。" },
           { "s": "b", "t": "自己没电了怪谁。" }
@@ -587,7 +587,7 @@
       {
         "id": "uniform-patrol",
         "when": "night",
-        "who": ["uniform"],
+        "who": ["officer"],
         "lines": [
           { "s": "a", "t": "这片儿今晚归你？" },
           { "s": "b", "t": "嗯，转到十二点。" }
@@ -619,32 +619,32 @@
       }
     ],
     "solos": [
-      { "when": "any", "avoid": ["kid"], "t": "今天怎么这么冷清。" },
+      { "when": "any", "avoid": ["child"], "t": "今天怎么这么冷清。" },
       { "when": "any", "who": ["clerk"], "t": "这账算得我脑仁疼。" },
-      { "when": "any", "avoid": ["kid"], "t": "又到月底了……" },
+      { "when": "any", "avoid": ["child"], "t": "又到月底了……" },
       { "when": "any", "who": ["clerk"], "t": "门口这盆花该浇水了。" },
       { "when": "any", "t": "谁家又炖肉了，香得慌。" },
-      { "when": "any", "avoid": ["kid"], "t": "明天得去趟菜市场。" },
+      { "when": "any", "avoid": ["child"], "t": "明天得去趟菜市场。" },
       { "when": "morning", "t": "早上的风倒是挺凉快。" },
-      { "when": "day", "who": ["clerk"], "avoid": ["kid"], "t": "站一天了，腰有点酸。" },
-      { "when": "day", "avoid": ["kid"], "t": "公交怎么又晚点。" },
+      { "when": "day", "who": ["clerk"], "avoid": ["child"], "t": "站一天了，腰有点酸。" },
+      { "when": "day", "avoid": ["child"], "t": "公交怎么又晚点。" },
       { "when": "eve", "who": ["clerk"], "t": "再撑一会儿就收摊。" },
-      { "when": "night", "avoid": ["kid"], "t": "路灯该修了，一闪一闪的。" },
-      { "when": "night", "avoid": ["kid"], "t": "这个点，街上就剩风了。" },
+      { "when": "night", "avoid": ["child"], "t": "路灯该修了，一闪一闪的。" },
+      { "when": "night", "avoid": ["child"], "t": "这个点，街上就剩风了。" },
       { "when": "rain", "t": "这雨下得，路上全是泥。" },
       { "when": "rain", "t": "屋檐水都成串了。" },
-      { "when": "day", "who": ["kid"], "t": "作业还剩两页……" },
-      { "when": "any", "who": ["kid"], "t": "妈妈怎么还不来接我。" },
-      { "when": "day", "who": ["kid"], "t": "刚才那球明明进了。" },
-      { "when": "any", "who": ["elder"], "t": "腿脚不如从前喽。" },
-      { "when": "day", "who": ["elder"], "t": "这棋子儿又少了一个。" },
-      { "when": "any", "who": ["elder"], "t": "腰上这贴膏药该换了。" },
+      { "when": "day", "who": ["child"], "t": "作业还剩两页……" },
+      { "when": "any", "who": ["child"], "t": "妈妈怎么还不来接我。" },
+      { "when": "day", "who": ["child"], "t": "刚才那球明明进了。" },
+      { "when": "any", "who": ["senior"], "t": "腿脚不如从前喽。" },
+      { "when": "day", "who": ["senior"], "t": "这棋子儿又少了一个。" },
+      { "when": "any", "who": ["senior"], "t": "腰上这贴膏药该换了。" },
       { "when": "night", "who": ["clerk"], "t": "最后一班了，再等等。" },
-      { "when": "day", "who": ["shop"], "t": "货架又空了。" },
-      { "when": "day", "who": ["delivery"], "t": "这单得赶在六点前送到。" },
+      { "when": "day", "who": ["shopclerk"], "t": "货架又空了。" },
+      { "when": "day", "who": ["courier"], "t": "这单得赶在六点前送到。" },
       { "when": "day", "who": ["chef"], "t": "这锅汤得再吊一会儿。" },
-      { "when": "eve", "who": ["teen"], "t": "手机快没电了。" },
-      { "when": "night", "who": ["uniform"], "t": "这一圈走完就换班。" },
+      { "when": "eve", "who": ["youth"], "t": "手机快没电了。" },
+      { "when": "night", "who": ["officer"], "t": "这一圈走完就换班。" },
       { "when": "meal", "t": "闻着味儿就饿了。" }
     ]
   }

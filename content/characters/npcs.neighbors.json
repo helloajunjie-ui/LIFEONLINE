@@ -1,5 +1,5 @@
 {
-  "schema": "characters/1",
+  "schema": "characters/2",
   "note": "小区 NPC：spawn 为街景初始格；home 指向 street.map 里的房屋 id dialogues 支持按场合（street/visit）+ 时段（morning/day/eve/night）+ rain 分池，first 只在初次见面时用一次。每个 NPC 的语气必须互不串味：老王短句、阿芳长句带感叹号、小杰带停顿、王婶爱劝人、老周爱打比方。",
   "npcs": [
     {
@@ -15,8 +15,9 @@
         "hairStyle": 0,
         "faceStyle": 2,
         "acc": "band",
-        "age": "elder",
+        "age": "senior",
         "sex": "m",
+        "job": "retiree",
         "facial": "stubble"
       },
       "spawn": {
@@ -87,8 +88,9 @@
         "hairStyle": 6,
         "faceStyle": 0,
         "acc": "tote",
-        "age": "adult",
+        "age": "middle",
         "sex": "f",
+        "job": "officeworker",
         "earring": true
       },
       "spawn": {
@@ -158,8 +160,9 @@
         "hairStyle": 1,
         "faceStyle": 1,
         "acc": "scarf",
-        "age": "teen",
+        "age": "youth",
         "sex": "m",
+        "job": "courier",
         "uniform": "delivery"
       },
       "spawn": {
@@ -229,8 +232,9 @@
         "hairStyle": 2,
         "faceStyle": 0,
         "acc": "apron",
-        "age": "elder",
+        "age": "senior",
         "sex": "f",
+        "job": "server",
         "uniform": "food"
       },
       "spawn": {
@@ -300,8 +304,9 @@
         "hairStyle": 3,
         "faceStyle": 2,
         "acc": "cane",
-        "age": "elder",
+        "age": "senior",
         "sex": "m",
+        "job": "retiree",
         "facial": "mustache"
       },
       "spawn": {
@@ -378,8 +383,9 @@
         "hairStyle": 7,
         "faceStyle": 1,
         "acc": "apron",
-        "age": "adult",
+        "age": "middle",
         "sex": "f",
+        "job": "shopclerk",
         "uniform": "shop"
       },
       "lines": {
@@ -412,8 +418,9 @@
         "hairStyle": 5,
         "faceStyle": 0,
         "acc": "apron",
-        "age": "adult",
+        "age": "middle",
         "sex": "m",
+        "job": "server",
         "uniform": "food"
       },
       "lines": {
@@ -446,8 +453,9 @@
         "hairStyle": 10,
         "faceStyle": 2,
         "acc": "none",
-        "age": "elder",
+        "age": "senior",
         "sex": "f",
+        "job": "server",
         "uniform": "food"
       },
       "lines": {
@@ -480,8 +488,9 @@
         "hairStyle": 5,
         "faceStyle": 1,
         "acc": "bag",
-        "age": "teen",
+        "age": "youth",
         "sex": "m",
+        "job": "courier",
         "uniform": "delivery"
       },
       "lines": {
@@ -514,8 +523,9 @@
         "hairStyle": 0,
         "faceStyle": 1,
         "acc": "none",
-        "age": "teen",
+        "age": "youth",
         "sex": "f",
+        "job": "shopclerk",
         "uniform": "shop",
         "earring": true
       },
@@ -549,8 +559,9 @@
         "hairStyle": 9,
         "faceStyle": 2,
         "acc": "apron",
-        "age": "elder",
+        "age": "senior",
         "sex": "m",
+        "job": "chef",
         "uniform": "chef",
         "facial": "mustache"
       },
@@ -583,8 +594,9 @@
         "hairStyle": 1,
         "faceStyle": 0,
         "acc": "none",
-        "age": "adult",
+        "age": "middle",
         "sex": "f",
+        "job": "shopclerk",
         "uniform": "shop"
       },
       "lines": {
@@ -616,8 +628,9 @@
         "hairStyle": 2,
         "faceStyle": 1,
         "acc": "bag",
-        "age": "adult",
+        "age": "middle",
         "sex": "f",
+        "job": "officeworker",
         "uniform": "office",
         "earring": true
       },
@@ -650,10 +663,11 @@
         "hairStyle": 3,
         "faceStyle": 2,
         "acc": "none",
-        "age": "elder",
+        "age": "senior",
         "sex": "m",
-        "facial": "stubble",
-        "uniform": "shop"
+        "job": "shopclerk",
+        "uniform": "shop",
+        "facial": "stubble"
       },
       "lines": {
         "hello": [
@@ -684,8 +698,9 @@
         "hairStyle": 0,
         "faceStyle": 1,
         "acc": "none",
-        "age": "adult",
+        "age": "middle",
         "sex": "m",
+        "job": "officeworker",
         "uniform": "office"
       },
       "lines": {
@@ -717,8 +732,9 @@
         "hairStyle": 9,
         "faceStyle": 1,
         "acc": "bag",
-        "age": "adult",
+        "age": "middle",
         "sex": "m",
+        "job": "sales",
         "uniform": "office"
       },
       "lines": {
@@ -750,10 +766,11 @@
         "hairStyle": 2,
         "faceStyle": 1,
         "acc": "bag",
-        "age": "adult",
+        "age": "middle",
         "sex": "f",
-        "earring": true,
-        "uniform": "shop"
+        "job": "shopclerk",
+        "uniform": "shop",
+        "earring": true
       },
       "lines": {
         "hello": [
@@ -784,8 +801,9 @@
         "hairStyle": 6,
         "faceStyle": 0,
         "acc": "scarf",
-        "age": "adult",
+        "age": "middle",
         "sex": "f",
+        "job": "nurse",
         "uniform": "medical"
       },
       "lines": {
@@ -817,8 +835,9 @@
         "hairStyle": 1,
         "faceStyle": 2,
         "acc": "bag",
-        "age": "elder",
+        "age": "senior",
         "sex": "m",
+        "job": "officer",
         "uniform": "uniform",
         "facial": "stubble"
       },
@@ -851,8 +870,9 @@
         "hairStyle": 7,
         "faceStyle": 1,
         "acc": "tote",
-        "age": "adult",
+        "age": "middle",
         "sex": "f",
+        "job": "officeworker",
         "uniform": "office"
       },
       "lines": {
@@ -884,8 +904,9 @@
         "hairStyle": 3,
         "faceStyle": 2,
         "acc": "band",
-        "age": "elder",
+        "age": "senior",
         "sex": "m",
+        "job": "guard",
         "uniform": "uniform",
         "facial": "beard"
       },
@@ -903,7 +924,7 @@
   ],
   "clerksNote": "店员：站在自己门口，按 hours（24 小时制，含头不含尾）上下班。lines.hello 是打招呼，lines.tip 是\"这家店怎么用\"，新手不知道柜台能点的时候，问一句话比翻说明快。 便利店 24 小时（[0,24]），深夜也有人。 便利店 24 小时（[0,24]），深夜也有人。",
   "accNote": "appearance.acc 是剪影配饰：apron 围裙 / band 发带 / bag 挎包 / tote 手提袋 / scarf 围巾 / cane 拐杖。可省略（等于 none）。颜色已经有区分时，配饰负责\"远看也能分出是谁\"——美术规范里要求每个角色一条颜色线索 + 一条剪影线索。",
-  "profNote": "appearance 的三层识别：age（kid/teen/adult/elder，改头身比与眼睛大小）、sex（f/m/x，改肩宽与睫毛）、uniform（food/office/medical/uniform/delivery，画制服层）。acc 是剪影配饰，和 uniform 叠加使用：制服管\"是干什么的\"，配饰管\"是谁\"。",
+  "profNote": "appearance 的三层识别：age（child/youth/middle/senior，改头身比与眼睛大小）、sex（f/m/x，改肩宽与睫毛）、job（职业 id，决定制服层与台词）。acc 是剪影配饰，和制服叠加使用：职业管\"是干什么的\"，配饰管\"是谁\"。",
   "hairNote": "hairStyle 0~10：短发 / 中发 / 长发 / 卷发 / 双马尾 / 短刺 / 丸子头 / 齐耳短发 / 高马尾 / 短寸 / 麻花辫。0~5 的刘海在上方，6~10 各自有独立的剪影。",
   "faceNote": "facial：胡茬 stubble / 小胡子 mustache / 络腮 beard（都不碰眼鼻）；earring：耳垂下一颗小金属点。这两样比再加发型更容易\"一眼认出是谁\"。",
   "sites": [
@@ -924,9 +945,10 @@
         "face": "#4a3a2a",
         "hairStyle": 4,
         "faceStyle": 0,
-        "age": "kid",
-        "sex": "f",
         "acc": "tote",
+        "age": "child",
+        "sex": "f",
+        "job": "student",
         "uniform": "none"
       },
       "lines": {
@@ -957,10 +979,11 @@
         "face": "#3b3226",
         "hairStyle": 5,
         "faceStyle": 1,
-        "age": "teen",
+        "acc": "none",
+        "age": "youth",
         "sex": "m",
-        "uniform": "none",
-        "acc": "none"
+        "job": "student",
+        "uniform": "none"
       },
       "lines": {
         "hello": [
@@ -990,10 +1013,11 @@
         "face": "#3b3226",
         "hairStyle": 0,
         "faceStyle": 2,
-        "age": "elder",
-        "sex": "m",
-        "uniform": "none",
         "acc": "cane",
+        "age": "senior",
+        "sex": "m",
+        "job": "retiree",
+        "uniform": "none",
         "facial": "mustache"
       },
       "lines": {
@@ -1024,10 +1048,11 @@
         "face": "#3b3226",
         "hairStyle": 3,
         "faceStyle": 1,
-        "age": "kid",
+        "acc": "none",
+        "age": "child",
         "sex": "m",
-        "uniform": "none",
-        "acc": "none"
+        "job": "student",
+        "uniform": "none"
       },
       "lines": {
         "hello": [
@@ -1041,5 +1066,69 @@
       }
     }
   ],
-  "sitesNote": "sites = 场所里的人（学校门口/球场/公园/儿童乐园）。和 clerk 的区别：他们不守店，只是\"这个地方本来就该有人\"。站位在场地内部找可走格，不做门的逻辑；台词只讲这个场所的实话，不许承诺点不到的功能。"
+  "sitesNote": "sites = 场所里的人（学校门口/球场/公园/儿童乐园）。和 clerk 的区别：他们不守店，只是\"这个地方本来就该有人\"。站位在场地内部找可走格，不做门的逻辑；台词只讲这个场所的实话，不许承诺点不到的功能。",
+  "identityNote": "人物身份是三个字段，所有 NPC 与玩家共用同一套：age 年龄阶段（child 儿童 / youth 青年 / middle 中年 / senior 老年，改头身比、眼睛大小与眉毛粗细）、sex 性别（f 女 / m 男 / x 保密，改肩宽与睫毛）、job 职业（引用顶层 jobs[] 的 id，决定说什么话、穿什么制服）。uniform 是制服的画法，可以省略；有值时应当和职业的默认制服一致（校验器会查）。",
+  "jobs": [
+    {
+      "id": "student",
+      "name": "学生"
+    },
+    {
+      "id": "retiree",
+      "name": "退休"
+    },
+    {
+      "id": "shopclerk",
+      "name": "店员",
+      "uniform": "shop"
+    },
+    {
+      "id": "server",
+      "name": "餐饮店员",
+      "uniform": "food"
+    },
+    {
+      "id": "chef",
+      "name": "厨师",
+      "uniform": "chef"
+    },
+    {
+      "id": "officeworker",
+      "name": "白领",
+      "uniform": "office"
+    },
+    {
+      "id": "nurse",
+      "name": "护士",
+      "uniform": "medical"
+    },
+    {
+      "id": "officer",
+      "name": "警察",
+      "uniform": "uniform"
+    },
+    {
+      "id": "guard",
+      "name": "门卫",
+      "uniform": "uniform"
+    },
+    {
+      "id": "courier",
+      "name": "快递员",
+      "uniform": "delivery"
+    },
+    {
+      "id": "sales",
+      "name": "销售",
+      "uniform": "office"
+    },
+    {
+      "id": "freelance",
+      "name": "自由职业"
+    },
+    {
+      "id": "founder",
+      "name": "创业者"
+    }
+  ]
 }

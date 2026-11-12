@@ -4054,9 +4054,9 @@
 
             /* 台词认人：小孩不该在算房租，厨子才该聊后厨 */
             {
-              const kidP = CLERKS.find(c => c.appearance && c.appearance.age === 'kid');
-              const elderP = CLERKS.find(c => c.appearance && c.appearance.age === 'elder');
-              const chefP = CLERKS.find(c => c.appearance && c.appearance.uniform === 'chef');
+              const kidP = CLERKS.find(c => c.appearance && c.appearance.age === 'child');
+              const elderP = CLERKS.find(c => c.appearance && c.appearance.age === 'senior');
+              const chefP = CLERKS.find(c => c.appearance && c.appearance.job === 'chef');
               MINUTE = 14 * 60;                     // 白天，三类人都能开口
               const pick = (p) => p ? chatterTopicsFor({ p: p }, { p: p }) : [];
               const kidPair = pick(kidP), elderPair = pick(elderP), chefPair = pick(chefP);
@@ -4065,7 +4065,7 @@
               const noHomework = !chefPair.some(t => t.id === 'kid-homework');
               P('CB8 lines are picked by who is talking, not just by the clock',
                 !!kidP && !!elderP && !!chefP &&
-                hasWho(kidPair, 'kid') && hasWho(elderPair, 'elder') && hasWho(chefPair, 'chef') &&
+                hasWho(kidPair, 'child') && hasWho(elderPair, 'senior') && hasWho(chefPair, 'chef') &&
                 noRent && noHomework,
                 'kid=' + kidPair.length + ' elder=' + elderPair.length + ' chef=' + chefPair.length +
                 ' noRent=' + noRent + ' noHomework=' + noHomework);
@@ -4075,6 +4075,33 @@
                 kidSolos.length >= 2 && kidSolos.indexOf('又到月底了……') < 0 &&
                 kidSolos.indexOf('路灯该修了，一闪一闪的。') < 0,
                 'kidSolos=' + kidSolos.length + ' list=' + kidSolos.join('/'));
+            }
+
+            /* 身份三件套：年龄阶段 / 性别 / 职业——25 个人一个都不能少 */
+            {
+              const table = jobTable();
+              const all = [...(HomeCore.content.npcs() || []), ...(HomeCore.content.clerks() || []),
+                           ...(HomeCore.content.sites() || [])];
+              const bad = all.filter(p => {
+                const ap = p.appearance || {};
+                return !table[ap.job] || AGE_STAGES.indexOf(ageStageOf(ap.age)) < 0;
+              });
+              const stages = {};
+              for (const p of all) stages[ageStageOf((p.appearance || {}).age)] =
+                (stages[ageStageOf((p.appearance || {}).age)] || 0) + 1;
+              P('CB10 every person has a stage, a sex and a job from the table',
+                all.length === 25 && !bad.length && Object.keys(table).length >= 10 &&
+                Object.keys(stages).length === 4,
+                'people=' + all.length + ' jobs=' + Object.keys(table).length +
+                ' stages=' + JSON.stringify(stages) + ' bad=' + bad.length);
+
+              const nurse = (HomeCore.content.clerks() || []).find(c => (c.appearance || {}).job === 'nurse');
+              const line = personIdentity(nurse ? nurse.appearance : {});
+              P('CB11 identity reads like 中年 · 女 · 护士',
+                /^(儿童|青年|中年|老年) · (男|女|保密) · .+$/.test(line) && line.indexOf('护士') > 0 &&
+                personIdentity({ age: 'child', sex: 'm' }) === '儿童 · 男' &&
+                personIdentity({ age: 'kid', sex: 'f' }) === '儿童 · 女',
+                line);
             }
 
             CHATTER = bak.chatter; _chatNext = bak.next; WX.rainOn = bak.rain;
@@ -4663,11 +4690,18 @@
             const svgOf = (o) => charSVG(Object.assign({}, base0, o), 'idle');
             const headOf = (t) => parseFloat((t.match(/cy="26\.2" r="([0-9.]+)"/) || [])[1] || 0);
             const eyeOf = (t) => parseFloat((t.match(/cy="25\.9" rx="([0-9.]+)"/) || [])[1] || 0);
-            const k = svgOf({ age: 'kid' }), a = svgOf({ age: 'adult' }), e = svgOf({ age: 'elder' });
-            P('AT9 age changes head size and eye size in the right direction',
-              headOf(k) > headOf(a) && headOf(a) >= headOf(e) && eyeOf(k) > eyeOf(a) && eyeOf(a) > eyeOf(e),
-              'head kid/adult/elder=' + headOf(k) + '/' + headOf(a) + '/' + headOf(e) +
-              ' eye=' + eyeOf(k) + '/' + eyeOf(a) + '/' + eyeOf(e));
+            const k = svgOf({ age: 'child' }), y = svgOf({ age: 'youth' });
+            const a = svgOf({ age: 'middle' }), e = svgOf({ age: 'senior' });
+            /* 老存档里写的是 kid/teen/adult/elder：参数一样，别名必须画出同一张图 */
+            const legacy = svgOf({ age: 'kid' }) === k && svgOf({ age: 'adult' }) === a &&
+                           svgOf({ age: 'elder' }) === e;
+            P('AT9 four age stages step head and eye size, and old saves still draw',
+              headOf(k) > headOf(y) && headOf(y) > headOf(a) && headOf(a) > headOf(e) &&
+              eyeOf(k) > eyeOf(y) && eyeOf(y) > eyeOf(a) && eyeOf(a) > eyeOf(e) && legacy &&
+              ageStageName('kid') === '儿童' && ageStageName('senior') === '老年' &&
+              ageStageName('unknown') === '中年',
+              'head child/youth/middle/senior=' + [headOf(k), headOf(y), headOf(a), headOf(e)].join('/') +
+              ' legacy=' + legacy);
 
             /* 性别：肩宽 + 睫毛（低分辨率下这两条最可靠） */
             const ff = svgOf({ sex: 'f' }), mm = svgOf({ sex: 'm' });

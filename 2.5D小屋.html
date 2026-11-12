@@ -1066,12 +1066,14 @@
         <canvas id="charAvatar" width="64" height="64" aria-hidden="true"></canvas>
         <div class="meta">
           <h2 id="pName">—</h2>
+          <div class="uid" id="pId">—</div>
           <div class="uid" id="pUid">UID —</div>
         </div>
         <button class="chip" id="lookBtn" style="margin:0; font-size:12px;">捏人</button>
         <button class="closeX" id="pClose" aria-label="关闭">×</button>
       </div>
       <div class="pfield"><span class="k">名字</span><span class="v"><input id="fName" maxlength="8" placeholder="输入名字"></span></div>
+      <div class="pfield"><span class="k">年龄</span><span class="v"><select id="fAge"><option value="child">儿童</option><option value="youth">青年</option><option value="middle">中年</option><option value="senior">老年</option></select></span></div>
       <div class="pfield"><span class="k">性别</span><span class="v"><select id="fGender"><option>男</option><option>女</option><option>保密</option></select></span></div>
       <div class="pfield"><span class="k">身份</span><span class="v"><select id="fRole"><option>自由职业</option><option>上班族</option><option>学生</option><option>创业者</option><option>退休</option></select></span></div>
       <div class="pfield"><span class="k">住址</span><span class="v" id="fAddr">—</span></div>
@@ -2372,7 +2374,11 @@ const APPEARANCE = {
   shoes:  '#8a5a2b',   // 鞋
   face:   '#3b3226',   // 表情色（眼/嘴）
   hairStyle: 0,        // 发型样式：0短发 / 1中发 / 2长发 / 3卷发
-  faceStyle: 0         // 表情样式：0微笑 / 1开心 / 2平静 / 3惊讶
+  faceStyle: 0,        // 表情样式：0微笑 / 1开心 / 2平静 / 3惊讶
+  /* 身份三件套：和 NPC 用同一套字段，档案卡里能改，改了立刻反映到立绘上 */
+  age: 'middle',       // 年龄阶段：child 儿童 / youth 青年 / middle 中年 / senior 老年
+  sex: 'x',            // 性别：f 女 / m 男 / x 保密
+  job: 'freelance'     // 职业 id：引用 content 的 jobs[]
 };
 
 /* 捏人可选部件（颜色板 / 样式） */
@@ -2803,7 +2809,7 @@ function charKey(app, frame){
    * 表现是"只有第一个人戴帽子，其他人都跟着变" */
   return [app.skin, app.hair, app.top, app.bottom, app.shoes, app.face,
           app.hairStyle||0, app.faceStyle||0, app.acc||'none',
-          app.age||'adult', app.sex||'x', app.uniform||'',
+          app.age||'middle', app.sex||'x', app.uniform||'',
           app.facial||'', app.earring?'e':'',
           app.glasses?'g':'', app.eye||'', frame].join('|');
 }
@@ -2871,17 +2877,21 @@ function charSVG(app, frame){
    *   职业 → 制服层（领带/白大褂/肩章/反光条）+ 剪影配饰（围裙/挎包/手提袋）
    * 只改宽度和头径，不做整体缩放——坐标全都锚在脚底，缩放会把脚抬离地面。 */
   const AGE = {
-    kid:   { head: 10.8, sh: 6.8, eye: 1.20, brow: .82 },
-    teen:  { head: 9.9,  sh: 7.4, eye: 1.12, brow: .92 },
-    adult: { head: 9.3,  sh: 8.0, eye: 1.00, brow: 1.00 },
-    elder: { head: 9.2,  sh: 7.5, eye: 0.88, brow: 1.15 }
+    /* 四个年龄阶段：儿童 / 青年 / 中年 / 老年 */
+    child:  { head: 10.8, sh: 6.8, eye: 1.20, brow: .82 },
+    youth:  { head: 9.9,  sh: 7.4, eye: 1.12, brow: .92 },
+    middle: { head: 9.3,  sh: 8.0, eye: 1.00, brow: 1.00 },
+    senior: { head: 9.2,  sh: 7.5, eye: 0.88, brow: 1.15 }
   };
+  /* 老存档里写的是旧名字（kid/teen/adult/elder）。参数完全一样，加个别名就行，
+   * 不用为此升存档版本——否则每个老玩家读档时都要跑一次迁移。 */
+  AGE.kid = AGE.child; AGE.teen = AGE.youth; AGE.adult = AGE.middle; AGE.elder = AGE.senior;
   const SEX = {
     f: { sh: -0.7, lash: 1 },
     m: { sh: 0.6,  lash: 0 },
     x: { sh: 0,    lash: 0 }
   };
-  const A = AGE[app.age] || AGE.adult;
+  const A = AGE[app.age] || AGE.middle;
   const S = SEX[app.sex] || SEX.x;
   const sh = Math.max(5.8, Math.min(9.6, A.sh + S.sh));
   const head = A.head;
@@ -8277,19 +8287,55 @@ function chatterSolos(){
   return out;
 }
 
+/* ---------- 人物身份：年龄阶段 / 性别 / 职业 ----------
+ * 三个字段都长在 appearance 上，NPC 和玩家共用同一套，不另开一套结构——
+ * 否则"看到的人"和"档案里写的人"迟早会对不上。
+ *   age  四阶段：child 儿童 / youth 青年 / middle 中年 / senior 老年
+ *   sex  f 女 / m 男 / x 保密
+ *   job  职业 id，名字与默认制服在 content/characters/*.json 的 jobs[] 里 */
+const AGE_STAGES = ['child', 'youth', 'middle', 'senior'];
+const AGE_STAGE_NAME = { child: '儿童', youth: '青年', middle: '中年', senior: '老年' };
+/* 老存档写的是 kid/teen/adult/elder：参数一样，只是名字换了，这里做个别名 */
+const AGE_STAGE_LEGACY = { kid: 'child', teen: 'youth', adult: 'middle', elder: 'senior' };
+function ageStageOf(age){
+  const a = String(age || '');
+  if (AGE_STAGES.indexOf(a) >= 0) return a;
+  return AGE_STAGE_LEGACY[a] || 'middle';
+}
+function ageStageName(age){ return AGE_STAGE_NAME[ageStageOf(age)] || '中年'; }
+let _jobTable = null;
+function jobTable(){
+  if (_jobTable) return _jobTable;
+  /* 内容层已经把这堆职业合并好了；这里建索引，顺便容忍内容缺字段 */
+  const fn = HomeCore.content.jobs;
+  const list = (typeof fn === 'function' ? fn() : []) || [];
+  _jobTable = {};
+  for (const j of list) if (j && j.id) _jobTable[j.id] = j;
+  return _jobTable;
+}
+function jobName(id){ const j = jobTable()[String(id || '')]; return (j && j.name) || ''; }
+/** 一句"青年 · 女 · 护士"：档案卡和 NPC 打招呼都用它 */
+function personIdentity(app){
+  const a = app || {};
+  const stage = ageStageName(a.age);
+  const sex = ({ f: '女', m: '男', x: '保密' })[a.sex] || '保密';
+  const job = jobName(a.job);
+  return job ? (stage + ' · ' + sex + ' · ' + job) : (stage + ' · ' + sex);
+}
+
 /* ---------- 台词认人：谁在说话，决定他能说什么 ----------
  * 光按时段挑台词，会出现"小孩在算房租""厨子在聊后厨"这种张冠李戴。
  * 每个人由此刻的身份打一撮标签，台词用标签挑人：
- *   who   —— 每一个标签都得有人对得上（["clerk"] = 至少有个店员；["kid"] = 有个小孩）
- *   avoid —— 任一个人踩上这个标签就不说（成年人话题标 avoid:["kid"]）
- * 标签全部来自存档里本来就有的字段（role / age / sex / uniform），不用新加数据。 */
+ *   who   —— 每一个标签都得有人对得上（["clerk"] = 至少有个店员；["child"] = 有个小孩）
+ *   avoid —— 任一个人踩上这个标签就不说（成年人话题标 avoid:["child"]）
+ * 标签全部来自身份三件套 + 身份（店员/场所/邻居），不额外维护一份表。 */
 function chatterTags(p){
   const app = (p && p.appearance) || {};
   const out = [];
   out.push(p && p.role === 'clerk' ? 'clerk' : (p && p.role === 'site' ? 'site' : 'neighbor'));
-  out.push(app.age || 'adult');
+  out.push(ageStageOf(app.age));
   out.push(app.sex === 'f' ? 'female' : 'male');
-  if (app.uniform && app.uniform !== 'none') out.push(app.uniform);
+  if (app.job) out.push(String(app.job));
   return out;
 }
 function chatterWhoOk(topic, a, b){
@@ -9526,8 +9572,10 @@ let charOpen = false;
 const charBackdrop = document.getElementById('charBackdrop');
 const charPanelEl = document.getElementById('charPanel');
 const pName = document.getElementById('pName');
+const pId = document.getElementById('pId');
 const pUid = document.getElementById('pUid');
 const fName = document.getElementById('fName');
+const fAge = document.getElementById('fAge');
 const fGender = document.getElementById('fGender');
 const fRole = document.getElementById('fRole');
 const fAddr = document.getElementById('fAddr');
@@ -9603,16 +9651,18 @@ function openChar(){
   charBackdrop.classList.add('show');
   // 回填可编辑字段
   fName.value = PERSON.name;
+  fAge.value = ageStageOf(APPEARANCE.age);
   fGender.value = PERSON.gender;
   fRole.value = PERSON.role;
   fMarital.value = PERSON.marital;
   pName.textContent = PERSON.name || '未命名';
+  syncIdentityLine();
   pUid.textContent = 'UID ' + PERSON.uid;
   ensureResidence();
   ensureEstates();
   refreshAddrLabel();
   refreshCharStats();
-  drawAvatar();
+  applyIdentityToLook();
 }
 function closeChar(){
   charOpen = false;
@@ -9623,7 +9673,42 @@ function closeChar(){
   PERSON.role = fRole.value;
   PERSON.marital = fMarital.value;
   pName.textContent = PERSON.name;
+  syncIdentityLine();
 }
+
+/* 身份三件套与档案卡的双向绑定：
+ * 年龄/性别改了要立刻重画立绘（头身比、肩宽、睫毛都跟着变），
+ * 职业则决定制服层。以前这三样只写在数据里，界面上看不见也改不了。 */
+const ROLE_JOB = { '自由职业': 'freelance', '上班族': 'officeworker', '学生': 'student',
+                   '创业者': 'founder', '退休': 'retiree' };
+const SEX_ID = { '男': 'm', '女': 'f', '保密': 'x' };
+function syncIdentityLine(){
+  if (pId) pId.textContent = personIdentity(APPEARANCE);
+}
+function applyIdentityToLook(){
+  APPEARANCE.age = ageStageOf(APPEARANCE.age);
+  APPEARANCE.sex = SEX_ID[PERSON.gender] || APPEARANCE.sex || 'x';
+  APPEARANCE.job = ROLE_JOB[PERSON.role] || APPEARANCE.job || 'freelance';
+  syncIdentityLine();
+  drawAvatar();
+  drawLookPreview();
+  markDirty();
+}
+fAge.addEventListener('change', ()=>{
+  APPEARANCE.age = fAge.value;
+  applyIdentityToLook();
+  saveGame();
+});
+fGender.addEventListener('change', ()=>{
+  PERSON.gender = fGender.value;
+  applyIdentityToLook();
+  saveGame();
+});
+fRole.addEventListener('change', ()=>{
+  PERSON.role = fRole.value;
+  applyIdentityToLook();
+  saveGame();
+});
 function refreshCharStats(){
   pStats.hunger.val.textContent = Math.round(STATS.hunger);
   pStats.hunger.bar.style.width = STATS.hunger + '%';
@@ -10431,7 +10516,10 @@ const VERB_HOOKS = {
     const line = first ? ((c.lines.hello || [])[0] || '……') : clerkLine(c, 'hello', 0);
     if (first) { try { firstMark(tag); } catch(e){} }
     try { addFavor(c.zoneId, 1); } catch(e){}
-    showFloat(c.name + '："' + line + '"' + favorBadge(c.zoneId), c.fx, c.fy, 3.4);
+    /* 第一次见面把身份念出来（"青年 · 女 · 店员"）：这三样是人物信息字段，
+     * 光存在数据里没人看得见——玩家能读出"这个人多大、干什么的"才算数。 */
+    const who = first ? ('（' + personIdentity(c.appearance) + '）') : '';
+    showFloat(c.name + who + '："' + line + '"' + favorBadge(c.zoneId), c.fx, c.fy, 3.4);
     SND.talk();
     c.appearance.faceStyle = 1;
   },

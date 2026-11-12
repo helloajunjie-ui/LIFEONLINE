@@ -53,7 +53,7 @@ function colorDist(a, b) {
 function dims(p) {
   const a = p.ap;
   return {
-    age: a.age || 'adult',
+    age: a.age || 'middle',
     sex: a.sex || 'x',
     uniform: a.uniform || '',
     acc: a.acc || 'none',
