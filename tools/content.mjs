@@ -1521,6 +1521,52 @@ function validate(){
       if (at <= last) problems.push('[环境] 生长阶段时间必须递增: ' + stg.id);
       last = at;
     }
+
+    /* V4.28 街坊闲聊：写歪了不会报错，只会让"两个人各说各的"或者
+     * 一句长到气泡装不下的台词贴在头上。 */
+    const chat = ambient.chatter;
+    if (!chat){
+      problems.push('[闲聊] environment/ambient.json 缺少 chatter 配置');
+    } else {
+      const WHEN = new Set(['any', 'morning', 'day', 'eve', 'night', 'rain']);
+      const topics = Array.isArray(chat.topics) ? chat.topics : [];
+      const solos = Array.isArray(chat.solos) ? chat.solos : [];
+      const ids = new Set();
+      let anyCount = 0;
+      if (topics.length < 8) problems.push(`[闲聊] topics 只有 ${topics.length} 组，街上很快就会重复`);
+      for (const t of topics){
+        if (!t || !t.id){ problems.push('[闲聊] 有一组话题缺少 id'); continue; }
+        if (ids.has(t.id)) problems.push('[闲聊] 话题 id 重复: ' + t.id);
+        ids.add(t.id);
+        const w = t.when || 'any';
+        if (!WHEN.has(w)) problems.push(`[闲聊] ${t.id} 的 when「${w}」不是 any/morning/day/eve/night/rain`);
+        if (w === 'any') anyCount++;
+        const lines = Array.isArray(t.lines) ? t.lines : [];
+        if (lines.length < 2) problems.push(`[闲聊] ${t.id} 至少要两句（一问一答），现在 ${lines.length} 句`);
+        const who = new Set();
+        for (const l of lines){
+          if (!l || !l.t){ problems.push(`[闲聊] ${t.id} 有空台词`); continue; }
+          const s = l.s || 'a';
+          if (s !== 'a' && s !== 'b') problems.push(`[闲聊] ${t.id} 的说话人只能是 a/b，现在 ${s}`);
+          who.add(s);
+          if (String(l.t).length > 16)
+            problems.push(`[闲聊] ${t.id} 有 ${String(l.t).length} 字的长句，气泡会折行：${l.t}`);
+        }
+        if (!who.has('a') || !who.has('b')) problems.push(`[闲聊] ${t.id} 得两个人各说一句（缺 a 或 b）`);
+      }
+      if (anyCount < 6) problems.push(`[闲聊] when=any 的话题只有 ${anyCount} 组，不到 6 组时段外就没什么可聊`);
+      if (solos.length < 6) problems.push(`[闲聊] solos 只有 ${solos.length} 句，独白会反复`);
+      for (const s of solos){
+        if (!s || !s.t){ problems.push('[闲聊] solos 有空台词'); continue; }
+        const w = s.when || 'any';
+        if (!WHEN.has(w)) problems.push(`[闲聊] 独白 when「${w}」不合法`);
+        if (String(s.t).length > 16) problems.push(`[闲聊] 独白过长：${s.t}`);
+      }
+      const cd = Number(chat.cooldownMinutes);
+      if (!(cd >= 8)) problems.push(`[闲聊] cooldownMinutes 应 ≥ 8（现在 ${chat.cooldownMinutes}），太短会一直有人说话`);
+      const rg = Number(chat.rangeTiles);
+      if (!(rg >= 2 && rg <= 8)) problems.push(`[闲聊] rangeTiles 应在 2~8（现在 ${chat.rangeTiles}）`);
+    }
   }
 
   const eco = packs['rules/economy.json'];

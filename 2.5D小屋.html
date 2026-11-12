@@ -7394,15 +7394,15 @@ function loop(now){
     floats[i].y -= 18*dt;
     if (floats[i].life <= 0) floats.splice(i,1);
   }
+  // 街坊闲聊：只在小区里发生，纯表现层，不推进任何数值
+  tickChatter(dt);
   // 转场黑场（纯视觉，和状态无关）
   tickFade(dt);
   // 粒子
   updateParticles(dt);
   // 天气粒子（雨雪/闪电）
   updateWeather(dt);
-  // 屋檐滴水与涟漪
-  updateDrips(dt);
-  // 屋檐滴水与涟漪
+  // 屋檐滴水与涟漪（只能推一次：重复推进会让滴水快一倍）
   updateDrips(dt);
 
   // 公交过场：先推进位置，再让相机跟上去
@@ -7435,7 +7435,7 @@ function loop(now){
     || (scene === 'street' && NEIGHBORS.some(nb => nb.moving || nb.target));
   const animating = !!(PLAYER.moving || sceneAnimated || camMovedNow
     || floats.length || particles.length || work.active || interacting || weatherActive()
-    || pendingTalk || pendingVisit || _fade > 0 || !!busRide);
+    || pendingTalk || pendingVisit || _fade > 0 || !!busRide || !!CHATTER);
   const needDraw = animating || wasAnimating || renderRev !== lastDrawRev
     || (now - lastDrawAt) > IDLE_REDRAW_MS;
 
@@ -7451,6 +7451,7 @@ function loop(now){
       ctx.fillStyle = 'rgba(60,40,20,'+alpha+')';
       ctx.fillText(f.text, f.x, f.y);
     }
+    drawChatter();          // 街坊头顶的对话气泡（压在浮动文字之上、天气之下）
     drawWeatherFX();        // 雨雪与闪电压在最上层
     lastDrawRev = renderRev;
     lastDrawAt = now;
@@ -8220,6 +8221,232 @@ function showDailyNews(){
   if (!t) return false;
   showFloat('小区广播 · ' + t, Math.round(PLAYER.fx), Math.round(PLAYER.fy), 4.2);
   return true;
+}
+
+/* ---------- 街坊之间闲聊 ----------
+ * 两个站得够近的人（店员/邻居）自己搭话，附近没人时改说一句独白。
+ * 纯表现层：不写存档、不动数值。好处是加多少句台词都不会影响平衡，
+ * 也不会让老存档因为少字段而读不出来——这一层随时可以删掉。
+ * 一张嘴一个气泡，按 lines 的顺序轮流念，念完就散。 */
+let CHATTER = null;        // { a, b, lines, i, t, dur, solo }
+let _chatNext = 0;         // 下一次尝试搭话的游戏分钟
+let _chatTick = 0;         // 调试计数：一共搭过几次话（只在控制台看）
+
+function chatterCfg(){
+  const amb = (HomeCore.content.ambient && HomeCore.content.ambient()) || {};
+  return amb.chatter || {};
+}
+/** 这个时段/天气能用的对话题 */
+function chatterTopics(){
+  const cfg = chatterCfg();
+  const rainy = (typeof WX !== 'undefined' && WX.rainOn);
+  const bucket = npcLineBucket();
+  const out = [];
+  for (const t of (cfg.topics || [])){
+    if (!t || !Array.isArray(t.lines) || t.lines.length < 2) continue;
+    const w = t.when || 'any';
+    if (w === 'rain'){ if (rainy) out.push(t); continue; }
+    if (w !== 'any' && w !== bucket) continue;
+    out.push(t);
+  }
+  return out;
+}
+/** 一个人自言自语用的话 */
+function chatterSolos(){
+  const cfg = chatterCfg();
+  const rainy = (typeof WX !== 'undefined' && WX.rainOn);
+  const bucket = npcLineBucket();
+  const out = [];
+  for (const s of (cfg.solos || [])){
+    if (!s || !s.t) continue;
+    const w = s.when || 'any';
+    if (w === 'rain'){ if (rainy) out.push(s.t); continue; }
+    if (w !== 'any' && w !== bucket) continue;
+    out.push(s.t);
+  }
+  return out;
+}
+/** 能开口的人：在岗的店员 + 街上走着的邻居，都要求此刻在画面里 */
+function chatterPeople(){
+  const out = [];
+  for (const c of CLERKS){
+    clerkSpotFor(c);
+    if (!c.spot || !clerkOnDuty(c)) continue;
+    if (!tileOnScreen(c.fx, c.fy, 120)) continue;
+    out.push({ p: c, name: c.name });
+  }
+  for (const n of NEIGHBORS){
+    if (!n || !tileOnScreen(n.fx, n.fy, 120)) continue;
+    out.push({ p: n, name: n.name });
+  }
+  return out;
+}
+/** 找一对站得够近的人；离得最近的那几对优先（隔着五格喊话不合常理） */
+function chatterPair(){
+  const cfg = chatterCfg();
+  const range = Math.max(2, Number(cfg.rangeTiles) || 5);
+  const list = chatterPeople();
+  const pairs = [];
+  for (let i = 0; i < list.length; i++){
+    for (let j = i + 1; j < list.length; j++){
+      const d = Math.abs(list[i].p.fx - list[j].p.fx) + Math.abs(list[i].p.fy - list[j].p.fy);
+      if (d <= range) pairs.push([list[i], list[j], d]);
+    }
+  }
+  if (!pairs.length) return null;
+  pairs.sort((x, y) => x[2] - y[2]);
+  const near = pairs.slice(0, Math.min(3, pairs.length));
+  return near[Math.floor(Math.random() * near.length)];
+}
+/** 一句话该挂多久：字多的读得久，但有上下限，太短来不及看、太长又拖节奏 */
+function chatterLineSec(text){
+  const n = String(text || '').length;
+  return Math.max(2.4, Math.min(4.8, 1.6 + n * 0.18));
+}
+function startChatter(lines, a, b){
+  if (!a || !Array.isArray(lines) || !lines.length) return null;
+  CHATTER = {
+    a, b: b || null, lines, i: 0, t: 0,
+    dur: chatterLineSec(lines[0].t), solo: !b
+  };
+  _chatTick++;
+  /* 转头看向对方：不用文字也能看出这两个人在说话 */
+  for (const q of [a, b]){
+    if (!q || !q.p) continue;
+    const other = (q === a) ? b : a;
+    if (!other || !other.p) continue;
+    const dx = other.p.fx - q.p.fx;
+    if (Math.abs(dx) > 0.2) q.p.dir = dx > 0 ? 1 : -1;
+  }
+  return CHATTER;
+}
+function stopChatter(){ CHATTER = null; }
+/** 有面板开着就先别说话：画布被盖住了，说了也是白画、还白刷帧 */
+function anyPanelVisible(){
+  for (const id of PANEL_IDS){
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('open')) return true;
+  }
+  return false;
+}
+/** 到点就找机会说话；返回是否正在说话 */
+function chatterTry(force){
+  const cfg = chatterCfg();
+  const cd = Math.max(6, Number(cfg.cooldownMinutes) || 26);
+  const jit = Math.max(0, Number(cfg.cooldownJitter) || 22);
+  if (!force && MINUTE < _chatNext) return null;
+  if (scene !== 'street' || (typeof busRide !== 'undefined' && busRide)){ _chatNext = MINUTE + 8; return null; }
+  if (!force && anyPanelVisible()){ _chatNext = MINUTE + 4; return null; }
+  const pair = chatterPair();
+  if (pair){
+    const topics = chatterTopics();
+    if (topics.length){
+      const t = topics[Math.floor(Math.random() * topics.length)];
+      _chatNext = MINUTE + cd + Math.random() * jit;
+      return startChatter(t.lines, pair[0], pair[1]);
+    }
+  }
+  /* 附近没人对话：让一个人自己嘀咕一句，空街上也不至于死气沉沉 */
+  const people = chatterPeople();
+  const solos = chatterSolos();
+  if (people.length && solos.length){
+    const who = people[Math.floor(Math.random() * people.length)];
+    const text = solos[Math.floor(Math.random() * solos.length)];
+    _chatNext = MINUTE + cd + Math.random() * jit;
+    return startChatter([{ s: 'a', t: text }], who, null);
+  }
+  _chatNext = MINUTE + 6;
+  return null;
+}
+function tickChatter(dt){
+  if (CHATTER){
+    CHATTER.t += dt;
+    if (CHATTER.t >= CHATTER.dur){
+      CHATTER.i++;
+      CHATTER.t = 0;
+      if (CHATTER.i >= CHATTER.lines.length) CHATTER = null;
+      else CHATTER.dur = chatterLineSec(CHATTER.lines[CHATTER.i].t);
+    }
+    return !!CHATTER;
+  }
+  return !!chatterTry(false);
+}
+/** 当前正在说话的那个人（给点击/测试用） */
+function chatterSpeaker(){
+  if (!CHATTER) return null;
+  const line = CHATTER.lines[CHATTER.i];
+  if (!line) return null;
+  return (line.s === 'b' && CHATTER.b) ? CHATTER.b : CHATTER.a;
+}
+/** 对话气泡：米白底、木色描边、下方一个小尖角指着说话的人 */
+function drawSpeechBubble(text, gx, gy, alpha){
+  const s = String(text || '');
+  if (!s || alpha <= 0.01) return;
+  const c = tileCenter(gx, gy);
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, alpha);
+  ctx.font = 'bold 13px ' + FONT_UI;
+  /* 内容里已经限了 16 字，这里折行只是兜底：手改内容写长了也不会画成一长条。
+   * 折行按"均分"算——直接按最大宽度切，最后一行常剩一两个字，读着像断气。 */
+  const maxW = 216;
+  const fullW = ctx.measureText(s).width;
+  const rows = Math.max(1, Math.ceil(fullW / maxW));
+  const target = fullW / rows;
+  const lines = [];
+  let cur = '';
+  /* 避头点：逗号句号不能落在行首，宁可让这一行多超一两个字 */
+  const NO_HEAD = '，。！？、；：）］｝”’」』…—';
+  for (const ch of s){
+    if (cur && lines.length < rows - 1 && ctx.measureText(cur + ch).width > target
+        && NO_HEAD.indexOf(ch) < 0){
+      lines.push(cur); cur = ch;
+    } else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  let tw = 0;
+  for (const l of lines) tw = Math.max(tw, ctx.measureText(l).width);
+  const padX = 9, padY = 6, lh = 16;
+  const bw = Math.round(tw + padX * 2), bh = lines.length * lh + padY * 2 - 2;
+  const bx = Math.round(c.x - bw / 2);
+  const by = Math.round(c.y - CHAR_AY - 9 - bh);   // 贴在头顶上方，别压住脸
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 7); else ctx.rect(bx, by, bw, bh);
+  ctx.fillStyle = 'rgba(253,249,240,.97)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(122,96,60,.55)';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  /* 尖角：先填掉底边那一小段（不然会留一道横线），再只描两条斜边 */
+  const tipY = by + bh + 6;
+  ctx.beginPath();
+  ctx.moveTo(c.x - 5, by + bh - 0.5);
+  ctx.lineTo(c.x, tipY);
+  ctx.lineTo(c.x + 5, by + bh - 0.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(c.x - 5, by + bh - 0.5);
+  ctx.lineTo(c.x, tipY);
+  ctx.lineTo(c.x + 5, by + bh - 0.5);
+  ctx.stroke();
+  ctx.fillStyle = '#3a2c18';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < lines.length; i++){
+    ctx.fillText(lines[i], bx + padX, by + padY + lh * (i + 0.5) - 1);
+  }
+  ctx.restore();
+}
+function drawChatter(){
+  if (!CHATTER) return;
+  const line = CHATTER.lines[CHATTER.i];
+  if (!line) return;
+  const who = (line.s === 'b' && CHATTER.b) ? CHATTER.b : CHATTER.a;
+  if (!who || !who.p) return;
+  if (!tileOnScreen(who.p.fx, who.p.fy, 260)) return;
+  /* 淡入淡出：整句都亮着的时间留够，只在头尾各 0.2 秒过渡 */
+  const a = Math.max(0, Math.min(1, CHATTER.t / 0.2, (CHATTER.dur - CHATTER.t) / 0.3));
+  drawSpeechBubble(line.t, who.p.fx, who.p.fy, a);
 }
 
 /* ---------- 邻居之家（可进门参观） ---------- */
@@ -10117,6 +10344,8 @@ const VERB_HOOKS = {
   npcTalk(ctx){
     const n = ctx.npc;
     STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 10));
+    /* 玩家自己开口了，就把路过听见的那句闲话收掉，两个气泡不会叠在一起 */
+    stopChatter();
     /* 台词挂在 NPC 头顶，情绪反馈挂在玩家头上，两个位置分开不打架 */
     const line = npcLine(n, 'street') || npcLine(n, 'visit');
     if (line) showFloat(n.name + '："' + line + '"', n.fx, n.fy, 3.2);

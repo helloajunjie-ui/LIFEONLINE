@@ -3954,6 +3954,100 @@
             WX.rainOn = bak.rain;
           }
 
+          // ---------- CB：街坊之间闲聊（纯表现层：不写存档、不动数值） ----------
+          {
+            const bak = { chatter: CHATTER, next: _chatNext, rain: WX.rainOn,
+                          money: MONEY, emo: STATS.emotion, min: MINUTE, sc: scene,
+                          people: chatterPeople };
+            const cfg = chatterCfg();
+            const topics = cfg.topics || [];
+            const okShape = topics.length >= 8 && topics.every(t =>
+              t.id && Array.isArray(t.lines) && t.lines.length >= 2 &&
+              t.lines.some(l => l.s === 'a') && t.lines.some(l => l.s === 'b') &&
+              t.lines.every(l => l.t && String(l.t).length <= 16));
+            P('CB1 chatter pack has enough exchanges and every one has two speakers',
+              okShape, 'topics=' + topics.length + ' solos=' + ((cfg.solos || []).length));
+
+            /* 时段与天气：夜里的池子不该有"早班车"的话题，雨天独有的只在雨天进池 */
+            WX.rainOn = false; MINUTE = 3 * 60;
+            const nightPool = chatterTopics().map(t => t.id);
+            WX.rainOn = true;
+            const wetPool = chatterTopics().map(t => t.id);
+            WX.rainOn = false; MINUTE = 8 * 60;
+            const mornPool = chatterTopics().map(t => t.id);
+            P('CB2 topics follow the clock and the rain',
+              nightPool.indexOf('bus-morning') < 0 && mornPool.indexOf('bus-morning') >= 0 &&
+              wetPool.indexOf('rain-endless') >= 0 && nightPool.indexOf('rain-endless') < 0 &&
+              wetPool.length > nightPool.length && nightPool.length >= 10,
+              'night=' + nightPool.length + ' wet=' + wetPool.length + ' morn=' + mornPool.length);
+
+            /* 配对只认距离：两格该配上，三十格不该凑一桌 */
+            const realPeople = chatterPeople;
+            chatterPeople = () => [{ p: { fx: 10, fy: 10 } }, { p: { fx: 12, fy: 10 } }, { p: { fx: 60, fy: 10 } }];
+            const nearPair = chatterPair();
+            chatterPeople = () => [{ p: { fx: 10, fy: 10 } }, { p: { fx: 40, fy: 10 } }];
+            const farPair = chatterPair();
+            chatterPeople = realPeople;
+            P('CB3 only people standing close enough strike up a conversation',
+              !!nearPair && nearPair[0].p.fx === 10 && nearPair[1].p.fx === 12 && farPair === null,
+              'near=' + (nearPair ? nearPair.length : 'null') + ' far=' + (farPair ? 'pair' : 'null'));
+
+            /* 一句一句轮着说，说完就散；速度有上下限，太快看不清、太慢拖节奏 */
+            const pA = { fx: 10, fy: 10, dir: 1 }, pB = { fx: 11, fy: 10, dir: 1 };
+            const topic = topics[0];
+            const ch = startChatter(topic.lines, { p: pA }, { p: pB });
+            const durOk = !!ch && ch.dur >= 2.4 && ch.dur <= 4.8 && ch.solo === false &&
+                          pA.dir === 1 && pB.dir === -1;
+            const firstWho = chatterSpeaker();
+            tickChatter(ch.dur + 0.01);
+            const secondWho = chatterSpeaker();
+            let guard = 0;
+            while (CHATTER && guard++ < 40) tickChatter((CHATTER.dur || 1) + 0.01);
+            P('CB4 lines take turns, both turn to face each other, then they part',
+              durOk && firstWho === ch.a && secondWho && secondWho !== firstWho && CHATTER === null,
+              'dur=' + (ch && ch.dur.toFixed(2)) + ' turn=' + pA.dir + '/' + pB.dir +
+              ' who=' + (firstWho === ch.a) + '/' + (!!secondWho && secondWho !== firstWho));
+
+            /* 一个人自言自语时没有"对方"，气泡不该指错人 */
+            const soloCh = startChatter([{ s: 'a', t: '一个人嘀咕一句。' }], { p: pA }, null);
+            const soloOk = !!soloCh && soloCh.solo === true && soloCh.b === null && chatterSpeaker() === soloCh.a;
+            stopChatter();
+            P('CB5 a lone mutter has no partner to point at', soloOk);
+
+            /* 气泡：短句一行、长句折行、alpha=0 干脆不画 */
+            const rows = [];
+            const realFill = ctx.fillText;
+            ctx.fillText = function (t) { rows.push(String(t)); };
+            drawSpeechBubble('短句', 10, 10, 1);
+            const nShort = rows.length;
+            rows.length = 0;
+            drawSpeechBubble('这一句故意写得非常非常长，长到一行绝对放不下', 10, 10, 1);
+            const nLong = rows.length;
+            rows.length = 0;
+            drawSpeechBubble('看不见', 10, 10, 0);
+            const nInvisible = rows.length;
+            ctx.fillText = realFill;
+            P('CB6 a long line wraps into rows and alpha 0 draws nothing',
+              nShort === 1 && nLong >= 2 && nInvisible === 0,
+              'short=' + nShort + ' long=' + nLong + ' invisible=' + nInvisible);
+
+            /* 这一层只表演：说完一句，钱、情绪、日期一格都不动 */
+            chatterPeople = () => [{ p: { fx: 10, fy: 10, dir: 1 } }, { p: { fx: 11, fy: 10, dir: 1 } }];
+            const m0 = MONEY, e0 = STATS.emotion, d0 = DAY;
+            MINUTE = 9 * 60; _chatNext = 0; scene = 'street';
+            const fired = chatterTry(true);
+            const pure = MONEY === m0 && STATS.emotion === e0 && DAY === d0;
+            chatterPeople = bak.people;
+            stopChatter();
+            P('CB7 chatter is pure presentation: no money, no stats, no day change',
+              !!fired && fired.lines.length >= 2 && pure,
+              'fired=' + (!!fired) + ' pure=' + pure);
+
+            CHATTER = bak.chatter; _chatNext = bak.next; WX.rainOn = bak.rain;
+            MONEY = bak.money; STATS.emotion = bak.emo; MINUTE = bak.min; scene = bak.sc;
+            chatterPeople = bak.people;
+          }
+
 
           // ---------- AU：可以向街坊打听事 ----------
           {
