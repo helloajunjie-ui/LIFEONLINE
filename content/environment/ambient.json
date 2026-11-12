@@ -49,7 +49,7 @@
     "waterBonusMinutes": 240
   },
   "traffic": {
-    "note": "车流：位置 = f(当前秒, 车道, 车号)，不需要服务端广播，也不需要存档。speedPerMinute 是游戏分钟口径（很慢，只用于逻辑推演），实际观感用 speedPerSecond。 types 是车型表：weight 是相对权重，where=arterial 只跑主干道（中央大道/南环路），speedMul 是相对速度。",
+    "note": "车流：位置 = f(当前秒, 车道, 车号)，不需要服务端广播，也不需要存档。speedPerMinute 是游戏分钟口径（很慢，只用于逻辑推演），实际观感用 speedPerSecond。 types 是车型表：weight 是相对权重，where=arterial 只跑主干道（中央大道/南环路），speedMul 是相对速度。 nearZones 让车型按路段加权：靠近哪类设施，那类车就多。",
     "speedPerMinute": 0.08,
     "speedPerSecond": 2.4,
     "carsPerLane": 3,
@@ -83,7 +83,11 @@
         "color": "#2f6f5a",
         "roofColor": "#f2ede2",
         "beacon": "#e8d47a",
-        "note": "绿牌网约车，车顶小灯常亮（不闪，跟警灯区分）"
+        "note": "绿牌网约车，车顶小灯常亮（不闪，跟警灯区分）",
+        "nearZones": {
+          "plaza": 2,
+          "shop_car": 1
+        }
       },
       {
         "id": "car.van",
@@ -96,7 +100,13 @@
         "len": 1.25,
         "wid": 1.06,
         "boxy": true,
-        "note": "方厢小货车，跑得比轿车慢一点；快递站在东商业街，送货车满街都是才合理"
+        "note": "方厢小货车，跑得比轿车慢一点；快递站在东商业街，送货车满街都是才合理",
+        "nearZones": {
+          "shop4": 2,
+          "shop_super": 1.5,
+          "shop3": 1.5
+        },
+        "nearNote": "靠近快递站/超市/菜市场的路段，快递车权重 ×3——送货车应该聚在要送货的地方，而不是均匀撒满全图"
       },
       {
         "id": "car.bus",
@@ -122,7 +132,10 @@
         "stripe": "#2a3a55",
         "beacon": "#3a6ee8",
         "flash": true,
-        "note": "白底蓝条，车顶蓝灯闪。比普通车快一点，但不快过救护车"
+        "note": "白底蓝条，车顶蓝灯闪。比普通车快一点，但不快过救护车",
+        "nearZones": {
+          "police": 2
+        }
       },
       {
         "id": "car.ambulance",
@@ -135,7 +148,10 @@
         "stripe": "#c0392b",
         "beacon": "#e0453a",
         "flash": true,
-        "note": "白底红条，车顶红灯闪，全场最快——社区医院就在小区里，救护车该跑得急"
+        "note": "白底红条，车顶红灯闪，全场最快——社区医院就在小区里，救护车该跑得急",
+        "nearZones": {
+          "hospital": 2
+        }
       },
       {
         "id": "car.sanitation",

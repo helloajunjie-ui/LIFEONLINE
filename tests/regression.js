@@ -4039,6 +4039,29 @@
               'amb=' + spd('car.ambulance') + ' sedan=' + spd('car.sedan') + ' bus=' + spd('car.bus'));
           }
 
+          // ---------- AX：车型跟路段联动 ----------
+          {
+            const lanesNear = TRAFFIC_LANES.filter(l => l.nearZones && l.nearZones.size);
+            const nearExpress = TRAFFIC_LANES.some(l => l.nearZones && l.nearZones.has('shop4'));
+            P('AX1 lanes know which facilities they pass',
+              lanesNear.length >= 4 && nearExpress,
+              'withNear=' + lanesNear.length + '/' + TRAFFIC_LANES.length + ' express=' + nearExpress);
+
+            /* 罕见车的保底槽位必须落在不同车道上，否则警车救护车会排成一列停在同一条街 */
+            const slots = trafficRareSlots();
+            const laneIds = new Set();
+            let resolved = 0;
+            for (const key of slots.keys()){
+              laneIds.add(key.split('#')[0]);
+              if (TRAFFIC_TYPE_BY_ID[slots.get(key)]) resolved++;
+            }
+            P('AX2 rare vehicles are spread over different lanes',
+              slots.size === GUARANTEED_TRAFFIC.length && laneIds.size === slots.size &&
+              resolved === slots.size,
+              'slots=' + slots.size + ' lanes=' + laneIds.size + ' resolved=' + resolved);
+          }
+
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

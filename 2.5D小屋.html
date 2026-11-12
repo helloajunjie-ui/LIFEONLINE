@@ -5015,8 +5015,25 @@ const TRAFFIC_TYPES = (() => {
 })();
 const TRAFFIC_TYPE_BY_ID = {};
 for (const t of TRAFFIC_TYPES) TRAFFIC_TYPE_BY_ID[t.id] = t;
-/* 必须有、且不能靠运气出现的车型 */
+/* 必须有、且不能靠运气出现的车型：每型一辆，分散在互不相邻的车道上 */
 const GUARANTEED_TRAFFIC = ['car.police', 'car.ambulance', 'car.sanitation'];
+/* 惰性算：TRAFFIC_LANES 在本文件后面才初始化，这里直接引用会踩 TDZ
+ * （报错还不是报 TRAFFIC_LANES，而是把后面所有顶层声明一起搞挂） */
+let _trafficRareSlots = null;
+function trafficRareSlots(){
+  if (_trafficRareSlots) return _trafficRareSlots;
+  const map = new Map();
+  const n = TRAFFIC_LANES.length;
+  if (n){
+    GUARANTEED_TRAFFIC.forEach((id, k) => {
+      /* 均匀取车道：12 条车道 → 第 2、6、10 条，彼此隔着好几段路 */
+      const lane = TRAFFIC_LANES[Math.floor((k + 0.5) * n / GUARANTEED_TRAFFIC.length) % n];
+      if (lane) map.set(lane.id + '#0', id);
+    });
+  }
+  _trafficRareSlots = map;
+  return map;
+}
 function trafficTypeFor(lane, i){
   /* 车型按 (车道, 车号) 做稳定散列挑：同一辆车每次算出来都是同一型，
    * 不会开着开着从公交车变成警车。 */
@@ -5025,24 +5042,33 @@ function trafficTypeFor(lane, i){
   const busType = TRAFFIC_TYPES.find(t => t.id === 'car.bus');
   if (busType && lane.arterial && i === 0) return busType;
   /* 罕见车（警车/救护车/环卫车）按权重随机分配时经常会一辆都排不上——
-   * 全场只有三十几辆车，4% 的权重很容易整段落空。这里直接给它们保底槽位：
-   * 头几个车槽轮流坐庄，每种各出现一次，剩下的再按权重铺。
-   * 稀有车"该有就一定会有"，比"理论上 4%"重要。 */
-  const gs = (Number(lane.ordinal) || 0) * 3 + i;
-  if (gs < GUARANTEED_TRAFFIC.length){
-    const gt = TRAFFIC_TYPE_BY_ID[GUARANTEED_TRAFFIC[gs % GUARANTEED_TRAFFIC.length]];
-    if (gt) return gt;
-  }
+   * 全场只有三十几辆车，4% 的权重很容易整段落空。
+   * 所以给它们固定的槽位，但必须**分散到不同路段**：
+   * 第一版把三个槽位连着排，结果警车救护车环卫车全挤在同一条短路上。 */
+  const rare = trafficRareSlots().get(lane.id + '#' + i);
+  if (rare) { const rt = TRAFFIC_TYPE_BY_ID[rare]; if (rt) return rt; }
   const pool = TRAFFIC_TYPES.filter(t => t.where !== 'arterial' || lane.arterial);
   if (!pool.length) return TRAFFIC_TYPES[0] || null;
-  const total = pool.reduce((s, t) => s + Math.max(1, Number(t.weight) || 1), 0);
+  /* 靠近某类设施的路段，对应车型权重要放大：快递车聚在快递站那条街，
+   * 警车偏向派出所那条街。没有这一条，车型就只是"均匀撒"，跟地图没关系。 */
+  const weightOf = (t) => {
+    const base = Math.max(1, Number(t.weight) || 1);
+    const near = lane.nearZones;
+    if (!near || !t.nearZones) return base;
+    let mul = 1;
+    for (const zid in t.nearZones){
+      if (near.has(zid)) mul = Math.max(mul, Number(t.nearZones[zid]) || 1);
+    }
+    return base * mul;
+  };
+  const total = pool.reduce((s, t) => s + weightOf(t), 0);
   /* 黄金比例低差异序列：把 (车道序号, 车号) 铺到 [0,1) 上，
    * 三十几辆车也能均匀覆盖所有权重区间——用散列做不到，会整段漏掉罕见车型。 */
   const slot = (Number(lane.ordinal) || 0) * 3 + i;
   const u = ((slot + 1) * 0.6180339887498949) % 1;
   let r = u * total;
   for (const t of pool){
-    r -= Math.max(1, Number(t.weight) || 1);
+    r -= weightOf(t);
     if (r <= 0) return t;
   }
   return pool[pool.length - 1];
@@ -5082,6 +5108,24 @@ const TRAFFIC_LANES = (() => {
       }
       pushRun(a1);
     }
+  }
+  /* 每条车道记下"沿途挨着哪些设施"：车型按路段加权要用它。
+   * 判定很简单——设施矩形和车道平行 4 格以内、纵向有重叠，就算挨着。 */
+  for (const lane of lanes){
+    const near = new Set();
+    for (const z of STREET_ZONES){
+      if (z.kind !== 'shop' && z.kind !== 'civic' && z.kind !== 'plaza' && z.kind !== 'housing') continue;
+      if (lane.axis === 'x'){
+        const zx0 = z.x, zx1 = z.x + z.w - 1;
+        const gapY = Math.min(Math.abs(lane.fixed - z.y), Math.abs(lane.fixed - (z.y + z.h - 1)));
+        if (gapY <= 4 && !(zx1 < lane.from || zx0 > lane.to)) near.add(z.id);
+      } else {
+        const zy0 = z.y, zy1 = z.y + z.h - 1;
+        const gapX = Math.min(Math.abs(lane.fixed - z.x), Math.abs(lane.fixed - (z.x + z.w - 1)));
+        if (gapX <= 4 && !(zy1 < lane.from || zy0 > lane.to)) near.add(z.id);
+      }
+    }
+    lane.nearZones = near;
   }
   return lanes;
 })();
