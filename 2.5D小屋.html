@@ -7925,15 +7925,22 @@ function renderAch(){
     const list = ACHIEVEMENTS.filter(a => (a.group || '') === g.id);
     if (!list.length) continue;
     const gd = list.filter(a => achUnlocked(a.id)).length;
+    /* 已达成的不再占一整块：压成一行带 ✓，把版面留给还没做完的。
+     * 26 条目标全铺开时面板要滚三屏，玩家根本看不到下面还有什么。 */
+    const openList = list.filter(a => !achUnlocked(a.id));
+    const doneList = list.filter(a => achUnlocked(a.id));
     html.push('<div class="sgroup">' + g.name + ' · ' + gd + '/' + list.length + '</div>');
-    for (const a of list){
+    for (const a of doneList){
+      html.push('<div class="acell mini done"><span class="chk">✓</span>' +
+        '<span class="an">' + a.name + '</span></div>');
+    }
+    for (const a of openList){
       const p = achProgress(a);
-      const ok = achUnlocked(a.id);
-      const pct = ok ? 100 : Math.max(0, Math.min(100, Math.round(p.cur / p.target * 100)));
+      const pct = Math.max(0, Math.min(100, Math.round(p.cur / p.target * 100)));
       const reward = (a.reward && a.reward.money) ? ' · 奖励 ¥' + a.reward.money : '';
-      html.push('<div class="acell' + (ok ? ' done' : '') + '">' +
+      html.push('<div class="acell">' +
         '<div class="atop"><span class="an">' + a.name + '</span><span class="ap">' +
-        (ok ? '已达成' : (p.cur + '/' + p.target)) + '</span></div>' +
+        (p.cur + '/' + p.target) + '</span></div>' +
         '<div class="ad">' + a.desc + reward + '</div>' +
         '<div class="abar"><i style="width:' + pct + '%"></i></div></div>');
     }

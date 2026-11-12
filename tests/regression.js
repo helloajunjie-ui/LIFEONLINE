@@ -1252,8 +1252,8 @@
       renderAch();
       const html = achList ? achList.innerHTML : '';
       P('A8 panel renders groups and cells',
-        html.includes('生活') && html.includes('十件家当') && html.includes('已达成'),
-        'len=' + html.length);
+        html.includes('生活') && html.includes('十件家当') && html.includes('mini done'),
+        'len=' + html.length + ' miniDone=' + html.includes('mini done'));
 
       // 还原现场
       ACH = bak.ach; MONEY = bak.money; DAY = bak.day; placed = bak.placed; scene = bak.scene;
