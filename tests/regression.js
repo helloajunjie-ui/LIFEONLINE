@@ -1472,6 +1472,11 @@
         JSON.stringify({ url: seenUrl, rooms }));
 
       // B2 目录渲染：楼层、房号、住户、我家、空房
+      /* 把住址钉死：这组断言依赖"玩家住在公寓楼"，而前面 D 组会改 RESIDENCE 再还原。
+       * 只要有一次还原不干净，这里就会偶发失败（实测出现过一次，排查时只剩一个 len）。 */
+      const bakB2 = { res: RESIDENCE, addr: ADDRESS };
+      RESIDENCE = { buildingId: 'house.公寓楼', floor: 18, room: 1 };
+      ADDRESS = residenceAddress();
       const oldBR = SOCIAL.buildingRooms;
       SOCIAL.buildingRooms = async () => rooms;
       await renderBuilding();
@@ -1485,6 +1490,7 @@
         !lost.length && (html.indexOf('待售') >= 0 || html.indexOf('待租') >= 0),
         'len=' + html.length + ' missing=' + (lost.join(',') || '-') +
         ' states=' + (html.match(/data-state="\w+"/g) || []).length);
+      RESIDENCE = bakB2.res; ADDRESS = bakB2.addr;
 
       // B3 从小区进别人家，离开后回到小区（不是回家）
       scene = 'street'; PLAYER.fx = 6; PLAYER.fy = 43;

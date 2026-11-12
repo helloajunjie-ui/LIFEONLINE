@@ -57,6 +57,8 @@ node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 **跑门禁**（提交前一套）：
 
 ```bash
+node tools/guard.mjs              # 提交前体检：行尾被翻、行数暴涨、同一行重复 8 次以上
+node tools/doccheck.mjs           # 文档数字对账：README 写的包数/家具/人物…和内容包实算是否一致
 node tools/dupcheck.mjs           # 重复的顶层函数 / 测试分组；三处年龄枚举是否一致
 node tools/charcheck.mjs          # 撞衫：年龄/性别/制服/配饰/发型五项全同的两个人
 node tools/genidentity.mjs --check # 身份体检：小孩上班、护士在便利店收银这类不合理
