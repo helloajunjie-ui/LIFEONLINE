@@ -51,6 +51,14 @@
   button.chip:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
 
   /* 底部提示 */
+  /* 状态跌破警戒：整行轻微呼吸，比"条子变红"更容易被余光注意到 */
+  /* 注意：状态条不在 #hud 里（#hud 只装身份条和钱），所以别加祖先选择器 */
+  .stat.is-crit{animation:critPulse 1.6s ease-in-out infinite;}
+  .stat.is-crit .val{color:#b8392c; font-weight:800;}
+  @keyframes critPulse{
+    0%,100%{opacity:1; transform:translateX(0);}
+    50%{opacity:.72; transform:translateX(-1px);}
+  }
   #tip{
     position:absolute; bottom:14px; left:50%; transform:translateX(-50%); z-index:10;
     background:rgba(251,245,234,.94); color:var(--accent2);
@@ -1718,6 +1726,11 @@ const EMOTION_DECAY = RULE.EMOTION_DECAY;// 情绪自然下降
 const WORK_PAY = RULE.WORK_PAY;          // 每次工作赚的钱
 const WORK_TIME = RULE.WORK_TIME;        // 工作时长（现实秒，干完才发钱）
 const WORK_COST = RULE.WORK_COST;        // 完成后消耗
+
+/* 画布字体锚点：中文字形在 Windows/macOS 上的默认 sans-serif 不一致，
+ * 有的环境会掉到衬线体。统一成一份字体栈，所有 canvas 文字都引用它——
+ * 这就是美术规范里的"风格锚点只写一次，别散落成十几份魔法字符串"。 */
+const FONT_UI = '"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif';
 
 const canvas = document.getElementById('world');
 /* canvas 上下文参数（都是零成本收益，来源：MDN getContext + canvas-ultrafast 实测）
@@ -3622,7 +3635,7 @@ function drawShop(p){
   ctx.strokeStyle = 'rgba(120,95,60,.35)'; ctx.lineWidth = 1;
   ctx.strokeRect(c.x - halfW * 0.66, c.y - halfH - wallH * 1.04, halfW * 1.32, wallH * 0.28);
   ctx.fillStyle = shade(tint, 0.62);
-  ctx.font = 'bold 11px sans-serif';
+  ctx.font = 'bold 11px ' + FONT_UI;
   ctx.textAlign = 'center';
   ctx.fillText(p.label || '店铺', c.x, c.y - halfH - wallH * 0.87);
 
@@ -3742,7 +3755,7 @@ function drawCivic(p){
   ctx.strokeStyle = 'rgba(110,95,70,.35)'; ctx.lineWidth = 1;
   ctx.strokeRect(c.x - halfW * 0.8, c.y - halfH - wallH * 1.06, halfW * 1.6, wallH * 0.24);
   ctx.fillStyle = shade(tint, 0.62);
-  ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+  ctx.font = 'bold 11px ' + FONT_UI; ctx.textAlign = 'center';
   ctx.fillText(p.label || '公共建筑', c.x, c.y - halfH - wallH * 0.9);
 
   // 门廊：台阶 + 雨棚 + 玻璃门
@@ -4037,7 +4050,7 @@ function drawStreetHouse(h){
       ctx.beginPath(); ctx.moveTo(c.x, eaveR + dropF * t); ctx.lineTo(rightEdgeX, eaveL + dropF * t); ctx.stroke();
     }
     ctx.fillStyle = 'rgba(70,55,35,.55)';
-    ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+    ctx.font = 'bold 9px ' + FONT_UI; ctx.textAlign = 'center';
     const chars = String(h.name || '').slice(0, 4);
     const sx = c.x - w2*h.w*0.62;
     for (let i = 0; i < chars.length; i++) ctx.fillText(chars[i], sx, bottomL - 42 + i * 10);
@@ -4051,7 +4064,7 @@ function drawStreetHouse(h){
 
   // 门牌
   ctx.fillStyle = 'rgba(70,55,35,.66)';
-  ctx.font = '10px sans-serif'; ctx.textAlign='center';
+  ctx.font = '10px ' + FONT_UI; ctx.textAlign='center';
   ctx.fillText(h.name, c.x, bottomL + 4);
 
   // 前门（左立面下方，木门 + 把手）
@@ -4068,7 +4081,7 @@ function drawStreetHouse(h){
     ctx.strokeStyle = 'rgba(120,80,45,.5)'; ctx.lineWidth = 1;
     ctx.strokeRect(bx - 11, by - 27, 22, 8);
     ctx.fillStyle = '#a4552f';
-    ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center';
+    ctx.font = 'bold 8px ' + FONT_UI; ctx.textAlign = 'center';
     ctx.fillText('家', bx, by - 20.5);
     if (nightFactor() > 0.2){
       const g = ctx.createRadialGradient(bx, by - 30, 2, bx, by - 30, 26);
@@ -4739,6 +4752,7 @@ function render(){
   renderWorld();
   drawHoverHighlight();
   drawActionProgress();      // 进行中动作的小进度条要盖在一切之上
+  drawFade();                // 转场黑场盖在最上；和进度条互不影响（各画各的）
 }
 
 /* ---------- 进行中的动作：角色头顶一条细进度条 ----------
@@ -4772,7 +4786,7 @@ function drawActionProgress(){
 
   ctx.save();
   if (p.label){
-    ctx.font = '600 11px "PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+    ctx.font = '600 11px ' + FONT_UI;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.lineWidth = 3;
@@ -5467,12 +5481,27 @@ function shopVisualTop(p, c){
   const halfH = TILE_H * ((p.h || 3) / 4 + 0.12);
   return c.y - halfH - wallH;
 }
+/* 圆角矩形路径（Edge 新版有 ctx.roundRect，但别指望所有环境都有） */
+function roundedRectPath(x, y, w, h, r){
+  const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.lineTo(x + w - rr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+  ctx.lineTo(x + w, y + h - rr);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+  ctx.lineTo(x + rr, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+  ctx.lineTo(x, y + rr);
+  ctx.quadraticCurveTo(x, y, x + rr, y);
+  ctx.closePath();
+}
 function drawShopSigns(){
   if (scene !== 'street') return;
   const px = PLAYER.fx, py = PLAYER.fy;
   ctx.save();
   ctx.textAlign = 'center';
-  ctx.font = 'bold 12px sans-serif';
+  ctx.font = 'bold 12px ' + FONT_UI;
   for (const p of STREET_PROPS){
     if (p.kind !== 'shop' && p.kind !== 'civic') continue;
     const d = Math.max(Math.abs(p.gx - px), Math.abs(p.gy - py));
@@ -5481,11 +5510,35 @@ function drawShopSigns(){
     const c = tileCenter(p.gx, p.gy);
     const y = shopVisualTop(p, c) - 6;
     ctx.globalAlpha = d <= 4 ? 0.96 : 0.55;              // 近处实、远处淡，不抢画面
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,250,240,.9)';
-    ctx.strokeText(p.label, c.x, y);
-    ctx.fillStyle = 'rgba(72,50,28,.95)';
+    /* 招牌做成一块牌子，而不是一行描边字：楼体本身已经花，
+     * 光靠白描边压不住背景。商铺用木色、公共建筑用冷灰，一眼能分类。 */
+    const tw = ctx.measureText(p.label).width;
+    const pw = tw + 14, ph = 18, px0 = c.x - pw / 2, py0 = y - 13;
+    roundedRectPath(px0, py0, pw, ph, 6);
+    ctx.fillStyle = p.kind === 'civic' ? 'rgba(38,50,60,.88)' : 'rgba(62,44,24,.88)';
+    ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(246,236,216,.30)';
+    ctx.stroke();
+    ctx.fillStyle = p.kind === 'civic' ? '#dbe7ef' : '#f6ecd8';
     ctx.fillText(p.label, c.x, y);
   }
+  ctx.restore();
+}
+
+/* ---------- 场景转场 ----------
+ * 家 → 小区是硬切：镜头位置、色温、声景一起变，画面会"跳"一下。
+ * 用 0.26 秒黑场接一下，玩家只会觉得"过去了"，不会注意到切的那一帧。
+ * 转场是纯视觉层，不参与任何状态判定——卡帧也只会让黑场慢一点。 */
+let _fade = 0;                 // 1 = 全黑，0 = 正常
+const FADE_SEC = 0.26;
+function startFade(){ _fade = 1; }
+function tickFade(dt){ if (_fade > 0) _fade = Math.max(0, _fade - dt / FADE_SEC); }
+function drawFade(){
+  if (_fade <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, _fade) * 0.88;
+  ctx.fillStyle = '#17120e';
+  ctx.fillRect(0, 0, viewW, viewH);
   ctx.restore();
 }
 
@@ -5518,7 +5571,7 @@ function drawShopSigns(){
     drawables.push({depth: op.gx+op.gy, fn:()=>{
       drawWalker(op.gx, op.gy, r.owner.appearance, false, 0, 1);
       const c = tileCenter(op.gx, op.gy);
-      ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+      ctx.font = 'bold 11px ' + FONT_UI; ctx.textAlign = 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,250,240,.85)';
       ctx.strokeText(r.owner.name, c.x, c.y - TILE_H*1.75);
       ctx.fillStyle = '#5a4632';
@@ -5573,7 +5626,6 @@ function drawBuildHint(){
         highlightTile(x, y, 'rgba(80,140,220,.35)');
   }
 }
-/* 昼夜氛围：夜晚冷蓝、黄昏暖橙（叠加在场景上，不影响 HUD 和浮动文字） */
 /* 昼夜氛围：夜晚冷蓝、黄昏暖橙（叠加在场景上，不影响 HUD 和浮动文字） */
 /* ---------- 天气粒子（屏幕空间，对象池复用） ----------
  * 天气是算出来的（seed+时间），所以粒子只是"把它画出来"，不进存档。
@@ -6564,6 +6616,8 @@ function loop(now){
     floats[i].y -= 18*dt;
     if (floats[i].life <= 0) floats.splice(i,1);
   }
+  // 转场黑场（纯视觉，和状态无关）
+  tickFade(dt);
   // 粒子
   updateParticles(dt);
   // 天气粒子（雨雪/闪电）
@@ -6596,7 +6650,7 @@ function loop(now){
     || (scene === 'street' && NEIGHBORS.some(nb => nb.moving || nb.target));
   const animating = !!(PLAYER.moving || sceneAnimated || camMovedNow
     || floats.length || particles.length || work.active || interacting || weatherActive()
-    || pendingTalk || pendingVisit);
+    || pendingTalk || pendingVisit || _fade > 0);
   const needDraw = animating || wasAnimating || renderRev !== lastDrawRev
     || (now - lastDrawAt) > IDLE_REDRAW_MS;
 
@@ -6606,7 +6660,7 @@ function loop(now){
     // 浮动文字（叠加在画布上，带描边保证可读）
     for (const f of floats){
       const alpha = Math.min(1, f.life*2);
-      ctx.font = 'bold 13px sans-serif'; ctx.textAlign='center';
+      ctx.font = 'bold 13px ' + FONT_UI; ctx.textAlign='center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,250,240,.85)';
       ctx.strokeText(f.text, f.x, f.y);
       ctx.fillStyle = 'rgba(60,40,20,'+alpha+')';
@@ -7034,7 +7088,7 @@ function drawHoverHighlight(){
 
   // 名字标签：挂在菱形最上方
   const label = t.name + (t.hint ? ' · ' + t.hint : '');
-  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.font = 'bold 12px ' + FONT_UI;
   const tw = ctx.measureText(label).width;
   const bx = a.x + (b.x - a.x) / 2 - tw / 2 - 8;
   const by = a.y - 32;
@@ -7241,6 +7295,7 @@ function switchScene(to, houseIdx){
   }
   /* 声景跟着场景走：小区/别人家是户外底噪，自己家是室内底噪。淡变由 SND 内部处理 */
   try { SND.ambience(scene === 'home' ? 'home' : 'street'); } catch(e){}
+  try { startFade(); } catch(e){}        // 黑场接一下，别让画面硬跳
   /* 「第一次出门」只记一次：事件无法从当前状态反推，只能在发生的这一刻打标 */
   if (scene === 'street'){ try { firstMark('street'); } catch(e){} }
   // 立即把相机对准角色
@@ -7687,6 +7742,10 @@ function updateHUD(){
     s.val.textContent = Math.round(v);
     s.bar.style.width = Math.round(v / max * 100) + '%';
     s.bar.style.background = v < crit ? '#c0392b' : ((s.def && s.def.color) || '#d2691e');
+    /* 跌破警戒线时整行轻轻呼吸一下：条子变红在余光里是看不出来的，
+     * 但"心脏跳动"这种节奏变化能。只在跨过阈值那一刻切类，不逐帧写 DOM。 */
+    const wanted = v < crit;
+    if (s._crit !== wanted){ s._crit = wanted; s.el.classList.toggle('is-crit', wanted); }
   }
 
   statsEl.money.val.textContent = '¥' + MONEY;
@@ -12212,7 +12271,7 @@ function drawMailbox(){
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,250,244,.92)'; ctx.lineWidth = 1.4; ctx.stroke();
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 9.5px sans-serif';
+    ctx.font = 'bold 9.5px ' + FONT_UI;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(n > 9 ? '9+' : String(n), cx + bw / 2 - 1, by - 2.5);
   }
@@ -13453,7 +13512,7 @@ function drawPeerBadge(){
   const label = peerRoom.preview
     ? '看房 ' + peerRoom.address + ' · 空房 · 点院子出口离开'
     : '正在参观 ' + (peerRoom.address || (peerRoom.name + ' 的家')) + ' · 装修度 ' + peerRoom.cozyScore + ' · 点院子出口离开';
-  ctx.font = 'bold 13px sans-serif';
+  ctx.font = 'bold 13px ' + FONT_UI;
   ctx.textAlign = 'center';
   const w = ctx.measureText(label).width + 28;
   const x = viewW / 2, y = 132;

@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.50.0",
+  "appVersion": "1.51.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "1a5b9402ca0e",
-  "builtAt": "2026-11-12T08:56:39.767Z",
+  "builtAt": "2026-11-12T09:02:46.284Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,

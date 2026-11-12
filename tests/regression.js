@@ -3963,6 +3963,32 @@
             ACH = bak.ach; floats.length = bak.floats;
           }
 
+          // ---------- AV：视觉层的可验证部分（转场 / 店招 / 字体锚点） ----------
+          {
+            const bak = _fade;
+            _fade = 0;
+            startFade();
+            const a = _fade;
+            tickFade(FADE_SEC * 0.5);
+            const half = _fade;
+            tickFade(FADE_SEC);
+            const done = _fade;
+            P('AV1 scene transition fades from black to clear',
+              a === 1 && Math.abs(half - 0.5) < 0.02 && done === 0,
+              'start=' + a + ' half=' + half.toFixed(2) + ' end=' + done);
+            _fade = bak;
+          }
+          {
+            const signs = STREET_PROPS.filter(p => p.kind === 'shop' || p.kind === 'civic');
+            const bad = signs.filter(p => !p.label || !isFinite(shopVisualTop(p, tileCenter(p.gx, p.gy))));
+            P('AV2 every shop has a label with a finite sign position',
+              signs.length >= 12 && bad.length === 0,
+              'signs=' + signs.length + ' bad=' + bad.length);
+            P('AV3 canvas font anchor prefers CJK faces',
+              typeof FONT_UI === 'string' && FONT_UI.indexOf('PingFang SC') >= 0 && FONT_UI.indexOf('YaHei') >= 0,
+              FONT_UI);
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;
