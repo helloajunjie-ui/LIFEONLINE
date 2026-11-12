@@ -1455,6 +1455,78 @@ function validate(){
       }
     }
 
+    /* V4.31 身份合理性：随机安排身份最容易出的就是"小孩跑去上班"、
+     * "退休的人站在柜台后面收银"、"护士在便利店收银"。规则全写在
+     * jobs[]（ages/where/zones/kind）和 placeAges 里，这里逐人核对。 */
+    {
+      const jobs = Array.isArray(pk.jobs) ? pk.jobs : [];
+      const byId = {};
+      for (const j of jobs) if (j && j.id) byId[j.id] = j;
+      const STAGES = ['child', 'youth', 'middle', 'senior'];
+      const WHERE = ['any', 'shop', 'civic', 'street', 'outdoor'];
+      const OUTDOOR = new Set(['park', 'court', 'sand', 'pond', 'garden', 'plaza']);
+      const zoneKind = {};
+      for (const [rel, m] of Object.entries(packs)){
+        if (!rel.startsWith('maps/') || !m || !Array.isArray(m.zones)) continue;
+        for (const z of m.zones) zoneKind[z.id] = z.kind;
+      }
+      for (const j of jobs){
+        if (!Array.isArray(j.ages) || !j.ages.length)
+          problems.push('[职业] ' + j.id + ' 缺少 ages（允许的年龄阶段）——等于谁都能干');
+        else for (const a of j.ages)
+          if (!STAGES.includes(a)) problems.push('[职业] ' + j.id + ' 的 ages 里有非法阶段「' + a + '」');
+        if (!Array.isArray(j.where) || !j.where.length)
+          problems.push('[职业] ' + j.id + ' 缺少 where（允许的工作地点）');
+        else for (const w of j.where)
+          if (!WHERE.includes(w)) problems.push('[职业] ' + j.id + ' 的 where 里有非法地点「' + w + '」');
+        if (j.kind != null && j.kind !== 'work' && j.kind !== 'idle')
+          problems.push('[职业] ' + j.id + ' 的 kind 只能是 work（在岗）/ idle（不在岗）');
+        if (j.zones != null){
+          if (!Array.isArray(j.zones) || !j.zones.length)
+            problems.push('[职业] ' + j.id + ' 的 zones 必须是非空数组');
+          else for (const z of j.zones)
+            if (!zoneKind[z]) problems.push('[职业] ' + j.id + ' 的 zones 里「' + z + '」不是地图上的地点');
+        }
+      }
+      const placeAges = pk.placeAges || {};
+      for (const [z, list] of Object.entries(placeAges)){
+        if (!zoneKind[z]) problems.push('[场所] placeAges 里的「' + z + '」不是地图上的地点');
+        for (const a of (list || []))
+          if (!STAGES.includes(a)) problems.push('[场所] ' + z + ' 的年龄偏好里有非法阶段「' + a + '」');
+      }
+      const whereOk = (j, kind) => {
+        const w = Array.isArray(j.where) ? j.where : ['any'];
+        return w.includes('any') || w.includes(kind) || (OUTDOOR.has(kind) && w.includes('outdoor'));
+      };
+      const checkOne = (p, role) => {
+        const ap = p.appearance || {};
+        const j = byId[ap.job];
+        if (!j) return;                                  // 缺职业由 V4.30 报过
+        const age = ap.age || 'middle';
+        const nm = p.name || p.id;
+        if (Array.isArray(j.ages) && !j.ages.includes(age))
+          problems.push('[身份] ' + nm + ' 是「' + age + '」，但「' + j.name + '」只收 ' + j.ages.join('/') + '——小孩不能跑去上班');
+        if (age === 'child' && ap.job !== 'student')
+          problems.push('[身份] ' + nm + ' 是儿童却干着「' + j.name + '」，儿童只能是学生');
+        if (role === 'clerk' && j.kind === 'idle')
+          problems.push('[身份] ' + nm + ' 守店，但「' + j.name + '」不是在岗职业');
+        if (role === 'site' && j.kind !== 'idle')
+          problems.push('[身份] ' + nm + ' 只是待在场地上，不该有岗位「' + j.name + '」');
+        if (role !== 'neighbor' && p.zoneId){
+          const kind = zoneKind[p.zoneId];
+          if (kind && !whereOk(j, kind))
+            problems.push('[身份] ' + nm + ' 是「' + j.name + '」，却在 ' + p.zoneId + '（' + kind + '）');
+          if (Array.isArray(j.zones) && j.zones.length && !j.zones.includes(p.zoneId))
+            problems.push('[身份] ' + nm + ' 是「' + j.name + '」，' + p.zoneId + ' 这一家不该有这个人');
+        }
+        if (role === 'site' && Array.isArray(placeAges[p.zoneId]) && !placeAges[p.zoneId].includes(age))
+          problems.push('[身份] ' + nm + ' 是「' + age + '」，但 ' + p.zoneId + ' 通常是 ' + placeAges[p.zoneId].join('/'));
+      };
+      for (const p of (pk.npcs || [])) checkOne(p, 'neighbor');
+      for (const p of (pk.clerks || [])) checkOne(p, 'clerk');
+      for (const p of (pk.sites || [])) checkOne(p, 'site');
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');

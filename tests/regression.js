@@ -4104,6 +4104,31 @@
                 line);
             }
 
+            /* 身份可以随机安排，但不能出现"小孩跑去上班" */
+            {
+              const jobs = HomeCore.content.jobs() || [];
+              const byId = {};
+              for (const j of jobs) byId[j.id] = j;
+              const all = [...(HomeCore.content.npcs() || []), ...(HomeCore.content.clerks() || []),
+                           ...(HomeCore.content.sites() || [])];
+              const shaped = jobs.length >= 10 && jobs.every(j =>
+                Array.isArray(j.ages) && j.ages.length &&
+                Array.isArray(j.where) && j.where.length &&
+                (j.kind === 'work' || j.kind === 'idle'));
+              const kidWorking = all.filter(p => {
+                const a = p.appearance || {};
+                return a.age === 'child' && a.job !== 'student';
+              });
+              const clerkOk = CLERKS.filter(c => c.role === 'clerk')
+                .every(c => (byId[(c.appearance || {}).job] || {}).kind === 'work');
+              const siteOk = CLERKS.filter(c => c.role === 'site')
+                .every(c => (byId[(c.appearance || {}).job] || {}).kind === 'idle');
+              P('CB12 identities stay plausible: no child on a shift, no idle job behind a counter',
+                shaped && !kidWorking.length && clerkOk && siteOk && all.length === 25,
+                'jobs=' + jobs.length + ' kidWorking=' + kidWorking.length +
+                ' clerkOk=' + clerkOk + ' siteOk=' + siteOk);
+            }
+
             CHATTER = bak.chatter; _chatNext = bak.next; WX.rainOn = bak.rain;
             MONEY = bak.money; STATS.emotion = bak.emo; MINUTE = bak.min; scene = bak.sc;
             chatterPeople = bak.people;

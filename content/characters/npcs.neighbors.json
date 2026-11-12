@@ -1067,68 +1067,245 @@
     }
   ],
   "sitesNote": "sites = 场所里的人（学校门口/球场/公园/儿童乐园）。和 clerk 的区别：他们不守店，只是\"这个地方本来就该有人\"。站位在场地内部找可走格，不做门的逻辑；台词只讲这个场所的实话，不许承诺点不到的功能。",
-  "identityNote": "人物身份是三个字段，所有 NPC 与玩家共用同一套：age 年龄阶段（child 儿童 / youth 青年 / middle 中年 / senior 老年，改头身比、眼睛大小与眉毛粗细）、sex 性别（f 女 / m 男 / x 保密，改肩宽与睫毛）、job 职业（引用顶层 jobs[] 的 id，决定说什么话、穿什么制服）。uniform 是制服的画法，可以省略；有值时应当和职业的默认制服一致（校验器会查）。",
+  "identityNote": "人物身份是三个字段，所有 NPC 与玩家共用同一套：age 年龄阶段（child 儿童 / youth 青年 / middle 中年 / senior 老年）、sex 性别（f 女 / m 男 / x 保密）、job 职业（引用 jobs[] 的 id）。jobs[] 里的 ages / where / zones 是\"这个职业允许什么年龄、什么地点、哪家店\"：ages 挡住\"小孩跑去上班\"，where 挡住\"护士在便利店收银\"，zones 精确到门牌（快递员只可能在快递站、警察只可能在派出所）。playerOnly 的职业只有玩家能选，NPC 不会随机到。uniform 是制服的画法，可省略；有值时应当和职业默认制服一致（V4.30 会查）。 jobs[].kind 区分\"在岗职业\"（work）和\"不在岗的人\"（idle：学生/退休/自由职业）：守店的店员必须是 work，公园球场沙地上闲着的必须是 idle——这样随机安排也不会出现\"退休的人站在柜台后面收银\"。 placeAges 是场所的年龄偏好：沙地是小孩的、球场是年轻人、公园是老人。",
   "jobs": [
     {
       "id": "student",
-      "name": "学生"
+      "name": "学生",
+      "ages": [
+        "child",
+        "youth"
+      ],
+      "where": [
+        "any"
+      ],
+      "kind": "idle"
     },
     {
       "id": "retiree",
-      "name": "退休"
+      "name": "退休",
+      "ages": [
+        "senior"
+      ],
+      "where": [
+        "any"
+      ],
+      "kind": "idle"
     },
     {
       "id": "shopclerk",
       "name": "店员",
-      "uniform": "shop"
+      "uniform": "shop",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "shop"
+      ],
+      "kind": "work",
+      "zones": [
+        "shop1",
+        "shop2",
+        "shop3",
+        "shop5",
+        "shop_super",
+        "shop_lottery",
+        "shop_pet"
+      ]
     },
     {
       "id": "server",
       "name": "餐饮店员",
-      "uniform": "food"
+      "uniform": "food",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "shop"
+      ],
+      "kind": "work",
+      "zones": [
+        "shop2",
+        "shop3",
+        "shop5",
+        "shop_restaurant"
+      ]
     },
     {
       "id": "chef",
       "name": "厨师",
-      "uniform": "chef"
+      "uniform": "chef",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "shop"
+      ],
+      "zones": [
+        "shop_restaurant"
+      ],
+      "kind": "work"
     },
     {
       "id": "officeworker",
       "name": "白领",
-      "uniform": "office"
+      "uniform": "office",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "shop",
+        "civic"
+      ],
+      "zones": [
+        "shop_bank",
+        "shop_stock",
+        "property"
+      ],
+      "kind": "work"
     },
     {
       "id": "nurse",
       "name": "护士",
-      "uniform": "medical"
+      "uniform": "medical",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "civic"
+      ],
+      "zones": [
+        "hospital"
+      ],
+      "kind": "work"
     },
     {
       "id": "officer",
       "name": "警察",
-      "uniform": "uniform"
+      "uniform": "uniform",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "civic"
+      ],
+      "zones": [
+        "police"
+      ],
+      "kind": "work"
     },
     {
       "id": "guard",
       "name": "门卫",
-      "uniform": "uniform"
+      "uniform": "uniform",
+      "ages": [
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "civic"
+      ],
+      "zones": [
+        "school",
+        "property"
+      ],
+      "kind": "work"
     },
     {
       "id": "courier",
       "name": "快递员",
-      "uniform": "delivery"
+      "uniform": "delivery",
+      "ages": [
+        "youth",
+        "middle"
+      ],
+      "where": [
+        "shop",
+        "street"
+      ],
+      "zones": [
+        "shop4"
+      ],
+      "kind": "work"
     },
     {
       "id": "sales",
       "name": "销售",
-      "uniform": "office"
+      "uniform": "office",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "shop"
+      ],
+      "zones": [
+        "shop_car"
+      ],
+      "kind": "work"
     },
     {
       "id": "freelance",
-      "name": "自由职业"
+      "name": "自由职业",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "any"
+      ],
+      "playerOnly": true,
+      "kind": "idle"
     },
     {
       "id": "founder",
-      "name": "创业者"
+      "name": "创业者",
+      "ages": [
+        "youth",
+        "middle",
+        "senior"
+      ],
+      "where": [
+        "any"
+      ],
+      "playerOnly": true,
+      "kind": "idle"
     }
-  ]
+  ],
+  "placeAges": {
+    "school": [
+      "child",
+      "youth"
+    ],
+    "sand": [
+      "child"
+    ],
+    "court": [
+      "youth",
+      "middle"
+    ],
+    "park": [
+      "middle",
+      "senior"
+    ],
+    "plaza": [
+      "youth",
+      "middle",
+      "senior"
+    ]
+  }
 }

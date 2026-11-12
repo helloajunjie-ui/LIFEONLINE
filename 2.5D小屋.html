@@ -10691,7 +10691,17 @@ let actMenuTarget = null;
 
 function openActMenu(t, acts, sx, sy){
   actMenuTarget = t;
-  actMenuEl.querySelector('.head .t').textContent = t.name || '可做的事';
+  /* 菜单标题带上身份：点开任何一个人，就能读到"他多大、干什么的"。
+   * 这三个字段不该只躺在数据里——玩家看到的应该是人，不是 id。 */
+  const headEl = actMenuEl.querySelector('.head .t');
+  headEl.textContent = t.name || '可做的事';
+  const idLine = (t.npc && t.npc.appearance) ? personIdentity(t.npc.appearance) : '';
+  if (idLine){
+    const s2 = document.createElement('small');
+    s2.textContent = idLine;
+    s2.style.cssText = 'display:block;font-weight:400;font-size:11px;color:#9a8a6a;margin-top:1px;';
+    headEl.appendChild(s2);
+  }
   const list = actMenuEl.querySelector('.list');
   list.innerHTML = '';
   for (const act of acts){

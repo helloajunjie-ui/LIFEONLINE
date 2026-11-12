@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-12T15:01:04.999Z",
+  "generatedAt": "2026-11-12T15:07:19.898Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -44,9 +44,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "characters/npcs.neighbors.json": {
-      "version": 27,
-      "hash": "505c3ac1b1e4",
-      "updatedAt": "2026-11-12T15:00:54.699Z"
+      "version": 28,
+      "hash": "71cf816415ea",
+      "updatedAt": "2026-11-12T15:07:09.028Z"
     },
     "characters/palettes.json": {
       "version": 1,
