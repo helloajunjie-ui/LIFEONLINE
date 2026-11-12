@@ -4446,6 +4446,43 @@
             FAVOR = bak.favor; DAY = bak.day; MONEY = bak.money; COUNTER_ZONE = bak.cz;
           }
 
+          // ---------- JC：熟练等级（内容驱动） ----------
+          {
+            const bak = { career: JSON.parse(JSON.stringify(CAREER)) };
+            const job = CAREERS[0];
+            const per = careerShiftsPerLevel(job);
+            const maxLv = CAREER_MAX_LV;
+            const step = CAREER_PAY_STEP;
+
+            /* 满级：再多班次也不会超过 maxLevel */
+            CAREER = { shiftsByJob: {}, total: 0 };
+            CAREER.shiftsByJob[job.id] = per * (maxLv + 5);
+            const capLv = careerLevel(job);
+            const capPay = careerPay(job);
+            const wantPay = Math.round(job.payPerTask * (1 + step * maxLv));
+            P('JC1 proficiency stops at the configured max level',
+              capLv === maxLv && capPay === wantPay,
+              'lv=' + capLv + '/' + maxLv + ' pay=' + capPay + ' want=' + wantPay +
+              ' step=' + step + ' per=' + per);
+
+            /* 面板上的"再几班升级"与实际所需班次一致 */
+            CAREER.shiftsByJob[job.id] = per * 2;            // 正好 Lv.2
+            const leftAtLv2 = careerNextText(job);
+            CAREER.shiftsByJob[job.id] = per * 2 + 1;
+            const leftAtLv2b = careerNextText(job);
+            P('JC2 the panel tells you how many shifts are left',
+              leftAtLv2 === '再 ' + per + ' 班升 Lv.3' && leftAtLv2b === '再 ' + (per - 1) + ' 班升 Lv.3',
+              leftAtLv2 + ' | ' + leftAtLv2b);
+
+            /* 满级后文案换成"熟练满级"，不能再提示升级 */
+            CAREER.shiftsByJob[job.id] = per * maxLv;
+            P('JC3 maxed jobs stop advertising a next level',
+              careerNextText(job) === '熟练满级' && careerShiftsToMax(job) === per * maxLv,
+              careerNextText(job) + ' / ' + careerShiftsToMax(job));
+
+            CAREER = bak.career;
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

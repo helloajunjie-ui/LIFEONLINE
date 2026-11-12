@@ -6704,12 +6704,34 @@ function jobAtPlayer(){
 /* 存档里的职业进度：只记"每个岗位干过几个整班"，等级由它推导 */
 let CAREER = { shiftsByJob: {}, total: 0 };
 function careerShifts(jobId){ return CAREER.shiftsByJob[jobId] || 0; }
-function careerLevel(job){
-  const per = Math.max(1, job.promoShifts || 3);
-  return Math.min(5, Math.floor(careerShifts(job.id) / per));
+/* 熟练等级规则来自内容（careers/*.json 的 career 块）：
+ * 满级几级、每级涨多少、几个班升一级都写在数据里，调平衡不用改代码。
+ * 岗位自己的 promoShifts 仍然可以覆盖"几班升一级"。 */
+const CAREER_CFG = (HomeCore.content.careerCfg && HomeCore.content.careerCfg()) || {};
+const CAREER_MAX_LV = Math.max(1, Math.min(10, Math.round(Number(CAREER_CFG.maxLevel) || 5)));
+const CAREER_PAY_STEP = Math.max(0, Math.min(0.5, Number(CAREER_CFG.payPerLevel != null ? CAREER_CFG.payPerLevel : 0.10)));
+const CAREER_LV_SHIFTS = Math.max(1, Math.min(20, Math.round(Number(CAREER_CFG.shiftsPerLevel) || 3)));
+
+function careerShiftsPerLevel(job){
+  return Math.max(1, Math.min(20, Math.round(Number(job && job.promoShifts) || CAREER_LV_SHIFTS)));
 }
-/** 实发单价 = 基础单价 × (1 + 15% × 熟练等级) */
-function careerPay(job){ return Math.round(job.payPerTask * (1 + 0.15 * careerLevel(job))); }
+function careerLevel(job){
+  return Math.min(CAREER_MAX_LV, Math.floor(careerShifts(job.id) / careerShiftsPerLevel(job)));
+}
+/** 实发单价 = 基础单价 × (1 + 每级涨幅 × 熟练等级) */
+function careerPay(job){
+  return Math.round(job.payPerTask * (1 + CAREER_PAY_STEP * careerLevel(job)));
+}
+/** 升到满级要几个班：面板上直接告诉玩家，别让人猜 */
+function careerShiftsToMax(job){ return careerShiftsPerLevel(job) * CAREER_MAX_LV; }
+/** 离下一级还有几个班；满级时返回空串 */
+function careerNextText(job){
+  const lv = careerLevel(job);
+  if (lv >= CAREER_MAX_LV) return '熟练满级';
+  const per = careerShiftsPerLevel(job);
+  const left = per - (careerShifts(job.id) % per);
+  return '再 ' + left + ' 班升 Lv.' + (lv + 1);
+}
 /** 一整班能拿多少：单价 × 单数 + 整班奖。月薪按 22 个工作日折算，只用于面板展示。 */
 function careerDailyPay(job){ return Math.round(careerPay(job) * (job.tasks || 1) + (job.completionBonus || 0)); }
 function careerMonthlyPay(job){
@@ -8358,7 +8380,7 @@ function renderWork(){
     const running = SHIFT.timer > 0;
     html.push('<div class="wcard">');
     html.push('<div class="wjob">' + job.name + '<span class="wtag">上班中</span></div>');
-    html.push('<div class="wmeta">' + jobZoneLabel(job) + ' · 班次 ' + shiftText(job) + ' · 熟练 Lv.' + careerLevel(job) + '</div>');
+    html.push('<div class="wmeta">' + jobZoneLabel(job) + ' · 班次 ' + shiftText(job) + ' · 熟练 Lv.' + careerLevel(job) + '/' + CAREER_MAX_LV + '</div>');
     html.push('<div class="wbar"><i id="workBar" style="width:' + pct + '%"></i></div>');
     if (running){
       const tp = Math.round((1 - SHIFT.timer / (job.taskSeconds || 1)) * 100);
@@ -8437,8 +8459,9 @@ function renderWork(){
       '<div class="ib"><div class="in">' + job.name + (here ? ' · 就在旁边' : '') + '</div>' +
       '<div class="id">' + zl + ' · ' + shiftText(job) + ' · 日薪 ¥' + careerDailyPay(job) +
       '（月 ¥' + careerMonthlyPay(job) + '）' +
-      (shiftUsedToday() && LAST_SHIFT_JOB === job.id ? ' · 今天上过' : '') + '</div></div>' +
-      '<div class="price">Lv.' + careerLevel(job) + '</div></div>');
+      (shiftUsedToday() && LAST_SHIFT_JOB === job.id ? ' · 今天上过' : '') +
+      ' · ' + careerNextText(job) + '</div></div>' +
+      '<div class="price">Lv.' + careerLevel(job) + '/' + CAREER_MAX_LV + '</div></div>');
   }
 
   workList.innerHTML = html.join('');

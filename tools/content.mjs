@@ -1328,6 +1328,30 @@ function validate(){
     }
   }
 
+  /* V4.23 熟练等级：这套规则以前硬编码在 careerPay 里，现在放内容里了，得有人管 */
+  {
+    const cj = packs['careers/jobs.json'] || {};
+    const c = cj.career;
+    if (!c){
+      problems.push('[职业] 缺少 career 块（maxLevel / payPerLevel / shiftsPerLevel）');
+    } else {
+      const lv = Number(c.maxLevel), step = Number(c.payPerLevel), per = Number(c.shiftsPerLevel);
+      if (!(lv >= 1 && lv <= 10)) problems.push('[职业] career.maxLevel 应在 1~10（现在 ' + c.maxLevel + '）');
+      if (!(step > 0 && step <= 0.5)) problems.push('[职业] career.payPerLevel 应在 0~0.5（现在 ' + c.payPerLevel + '），超过 0.5 一级太陡');
+      if (!(per >= 1 && per <= 20)) problems.push('[职业] career.shiftsPerLevel 应在 1~20（现在 ' + c.shiftsPerLevel + '）');
+      /* 满级总涨幅：太低等于没有成长，太高等于白送钱 */
+      const total = step * lv;
+      if (total < 0.1) problems.push('[职业] 满级只多 ' + Math.round(total * 100) + '%，升级几乎没有意义（建议 ≥ 10%）');
+      if (total > 1.0) problems.push('[职业] 满级多 ' + Math.round(total * 100) + '%，超过翻倍太陡（建议 ≤ 100%）');
+      /* 每级跨度太大：升一级从天到地 */
+      if (step > 0.25) problems.push('[职业] 每级 +' + Math.round(step * 100) + '% 太陡，建议 ≤ 25%');
+    }
+    for (const j of (cj.jobs || [])){
+      if (j.promoShifts != null && !(Number(j.promoShifts) >= 1 && Number(j.promoShifts) <= 20))
+        problems.push('[职业] ' + j.id + ' 的 promoShifts 应在 1~20');
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

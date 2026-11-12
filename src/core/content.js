@@ -115,8 +115,13 @@ function buildIndex(packs, meta){
   const seasons = packs['environment/seasons.json'] || { seasons: [] };
   // 职业：岗位绑定地图分区，走到那个分区就能上班
   const careers = [];
+  /* 熟练等级的规则（满级/每级涨多少/几班升一级）也放内容里：
+   * 这些数字以前硬编码在 careerPay 里，想调平衡得改代码。 */
+  let careerCfg = {};
   for (const [id, pack] of Object.entries(packs)){
-    if (id.startsWith('careers/') && Array.isArray(pack.jobs)) careers.push(...pack.jobs);
+    if (!id.startsWith('careers/')) continue;
+    if (Array.isArray(pack.jobs)) careers.push(...pack.jobs);
+    if (pack.career && typeof pack.career === 'object') careerCfg = pack.career;
   }
 
   // 成就：目标由引擎按 kind 从当前状态推导，数据只描述"要什么"和"给什么"
@@ -176,6 +181,7 @@ function buildIndex(packs, meta){
     ambient,
     seasons,
     careers,
+    careerCfg,
     achievements,
     achGroups,
     residence,
@@ -266,6 +272,8 @@ export function seasons(){ return content.seasons; }
 export function ambient(){ return content.ambient; }
 /** 职业岗位（绑定地图分区的可上班点） */
 export function careers(){ return content.careers; }
+/** 熟练等级规则：{ maxLevel, payPerLevel, shiftsPerLevel } */
+export function careerCfg(){ return content.careerCfg || {}; }
 /** 生活目标（成就）：目标由 kind 推导，进度不存档 */
 export function achievements(){ return content.achievements; }
 /** 成就分组（顺序即面板分组顺序） */

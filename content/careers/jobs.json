@@ -2,7 +2,7 @@
   "schema": "careers/1",
   "id": "careers.jobs.default",
   "note": "岗位直接绑定地图分区（zone.id）：走到那个分区就能打卡上班。改班次、工资、任务数只改这里，不用碰代码。",
-  "payNote": "实发日薪 = payPerTask × tasks + completionBonus；熟练等级每完成 promoShifts 次整班 +1（上限 5），每级 +15%。monthlyPay = 日薪 × 22 个工作日，只用于面板展示和数值校对（对标 2026 年最低工资第一档 2100-2740）。",
+  "payNote": "实发日薪 = payPerTask × tasks + completionBonus（基础）；熟练满级后单价 ×(1 + payPerLevel × maxLevel)，见 career。monthlyPay = 日薪 × 22 个工作日，只用于面板展示和数值校对。",
   "jobs": [
     {
       "id": "job.store",
@@ -423,5 +423,11 @@
       "monthlyPay": 4400
     }
   ],
-  "costNote": "costPerTask 是「每单带来的数值变化」，负数=消耗；finish / earlyLeave 同理"
+  "costNote": "costPerTask 是「每单带来的数值变化」，负数=消耗；finish / earlyLeave 同理",
+  "career": {
+    "maxLevel": 5,
+    "payPerLevel": 0.1,
+    "shiftsPerLevel": 3,
+    "note": "熟练等级：每完成 shiftsPerLevel 个整班升一级（岗位可用 promoShifts 单独覆盖），最高 maxLevel 级；每级实发单价 +payPerLevel。15% 一级太陡（满级 +75%，等于干同样的活多拿四分之三），5% 又几乎看不出来；10% 折中：满级 +50%，需要 15 个班次（约 6 小时真实时间）。"
+  }
 }
