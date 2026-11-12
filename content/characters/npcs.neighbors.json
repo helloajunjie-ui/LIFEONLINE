@@ -14,7 +14,9 @@
         "face": "#3b3226",
         "hairStyle": 0,
         "faceStyle": 2,
-        "acc": "band"
+        "acc": "band",
+        "age": "elder",
+        "sex": "m"
       },
       "spawn": {
         "x": 10,
@@ -83,7 +85,9 @@
         "face": "#3b3226",
         "hairStyle": 2,
         "faceStyle": 0,
-        "acc": "tote"
+        "acc": "tote",
+        "age": "adult",
+        "sex": "f"
       },
       "spawn": {
         "x": 38,
@@ -151,7 +155,10 @@
         "face": "#3b3226",
         "hairStyle": 1,
         "faceStyle": 1,
-        "acc": "scarf"
+        "acc": "scarf",
+        "age": "teen",
+        "sex": "m",
+        "uniform": "delivery"
       },
       "spawn": {
         "x": 14,
@@ -212,14 +219,17 @@
       "name": "王婶",
       "appearance": {
         "skin": "#f0b98e",
-        "hair": "#c9a2b8",
+        "hair": "#8d8478",
         "top": "#6fae6f",
         "bottom": "#5d5a78",
         "shoes": "#8a5a2b",
         "face": "#3b3226",
         "hairStyle": 3,
         "faceStyle": 0,
-        "acc": "apron"
+        "acc": "apron",
+        "age": "elder",
+        "sex": "f",
+        "uniform": "food"
       },
       "spawn": {
         "x": 46,
@@ -287,7 +297,9 @@
         "face": "#3b3226",
         "hairStyle": 0,
         "faceStyle": 2,
-        "acc": "band"
+        "acc": "cane",
+        "age": "elder",
+        "sex": "m"
       },
       "spawn": {
         "x": 18,
@@ -362,7 +374,10 @@
         "face": "#3b3226",
         "hairStyle": 2,
         "faceStyle": 1,
-        "acc": "apron"
+        "acc": "apron",
+        "age": "adult",
+        "sex": "f",
+        "uniform": "food"
       },
       "lines": {
         "hello": [
@@ -393,7 +408,10 @@
         "face": "#3b3226",
         "hairStyle": 1,
         "faceStyle": 0,
-        "acc": "apron"
+        "acc": "apron",
+        "age": "adult",
+        "sex": "m",
+        "uniform": "food"
       },
       "lines": {
         "hello": [
@@ -417,14 +435,17 @@
       ],
       "appearance": {
         "skin": "#e8a878",
-        "hair": "#4a3a2c",
+        "hair": "#8a8078",
         "top": "#c85a5a",
         "bottom": "#4a4a5e",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
         "hairStyle": 3,
         "faceStyle": 2,
-        "acc": "apron"
+        "acc": "apron",
+        "age": "elder",
+        "sex": "f",
+        "uniform": "food"
       },
       "lines": {
         "hello": [
@@ -455,7 +476,10 @@
         "face": "#3b3226",
         "hairStyle": 1,
         "faceStyle": 1,
-        "acc": "bag"
+        "acc": "bag",
+        "age": "teen",
+        "sex": "m",
+        "uniform": "delivery"
       },
       "lines": {
         "hello": [
@@ -486,7 +510,10 @@
         "face": "#3b3226",
         "hairStyle": 4,
         "faceStyle": 1,
-        "acc": "apron"
+        "acc": "apron",
+        "age": "teen",
+        "sex": "f",
+        "uniform": "food"
       },
       "lines": {
         "hello": [
@@ -510,14 +537,17 @@
       ],
       "appearance": {
         "skin": "#e0a070",
-        "hair": "#4a4038",
+        "hair": "#8f8a82",
         "top": "#e8e2d4",
         "bottom": "#3a3a48",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
         "hairStyle": 0,
         "faceStyle": 2,
-        "acc": "apron"
+        "acc": "apron",
+        "age": "elder",
+        "sex": "m",
+        "uniform": "food"
       },
       "lines": {
         "hello": [
@@ -547,7 +577,10 @@
         "face": "#3b3226",
         "hairStyle": 2,
         "faceStyle": 0,
-        "acc": "apron"
+        "acc": "apron",
+        "age": "adult",
+        "sex": "f",
+        "uniform": "food"
       },
       "lines": {
         "hello": [
@@ -577,7 +610,10 @@
         "face": "#3b3226",
         "hairStyle": 1,
         "faceStyle": 1,
-        "acc": "bag"
+        "acc": "bag",
+        "age": "adult",
+        "sex": "f",
+        "uniform": "office"
       },
       "lines": {
         "hello": [
@@ -600,14 +636,16 @@
       ],
       "appearance": {
         "skin": "#e8b088",
-        "hair": "#6a6a6a",
+        "hair": "#8a8a86",
         "top": "#8a6a3a",
         "bottom": "#3a3a4a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
         "hairStyle": 0,
         "faceStyle": 2,
-        "acc": "band"
+        "acc": "cane",
+        "age": "elder",
+        "sex": "m"
       },
       "lines": {
         "hello": [
@@ -637,7 +675,10 @@
         "face": "#3b3226",
         "hairStyle": 1,
         "faceStyle": 1,
-        "acc": "bag"
+        "acc": "bag",
+        "age": "adult",
+        "sex": "m",
+        "uniform": "office"
       },
       "lines": {
         "tip": [
@@ -667,7 +708,10 @@
         "face": "#3b3226",
         "hairStyle": 2,
         "faceStyle": 1,
-        "acc": "bag"
+        "acc": "bag",
+        "age": "adult",
+        "sex": "m",
+        "uniform": "office"
       },
       "lines": {
         "hello": [
@@ -697,7 +741,9 @@
         "face": "#3b3226",
         "hairStyle": 3,
         "faceStyle": 1,
-        "acc": "tote"
+        "acc": "tote",
+        "age": "adult",
+        "sex": "f"
       },
       "lines": {
         "hello": [
@@ -727,7 +773,10 @@
         "face": "#3b3226",
         "hairStyle": 1,
         "faceStyle": 0,
-        "acc": "scarf"
+        "acc": "scarf",
+        "age": "adult",
+        "sex": "f",
+        "uniform": "medical"
       },
       "lines": {
         "hello": [
@@ -750,14 +799,17 @@
       ],
       "appearance": {
         "skin": "#e2a878",
-        "hair": "#4a4a4a",
+        "hair": "#7e7a74",
         "top": "#2f3a55",
         "bottom": "#2a2e3a",
         "shoes": "#2b2b2b",
         "face": "#3b3226",
         "hairStyle": 0,
         "faceStyle": 2,
-        "acc": "bag"
+        "acc": "bag",
+        "age": "elder",
+        "sex": "m",
+        "uniform": "uniform"
       },
       "lines": {
         "hello": [
@@ -787,7 +839,10 @@
         "face": "#3b3226",
         "hairStyle": 2,
         "faceStyle": 1,
-        "acc": "bag"
+        "acc": "bag",
+        "age": "adult",
+        "sex": "f",
+        "uniform": "office"
       },
       "lines": {
         "hello": [
@@ -817,7 +872,10 @@
         "face": "#3b3226",
         "hairStyle": 0,
         "faceStyle": 2,
-        "acc": "band"
+        "acc": "band",
+        "age": "elder",
+        "sex": "m",
+        "uniform": "uniform"
       },
       "lines": {
         "hello": [
@@ -832,5 +890,6 @@
     }
   ],
   "clerksNote": "店员：站在自己门口，按 hours（24 小时制，含头不含尾）上下班。lines.hello 是打招呼，lines.tip 是\"这家店怎么用\"，新手不知道柜台能点的时候，问一句话比翻说明快。 便利店 24 小时（[0,24]），深夜也有人。 便利店 24 小时（[0,24]），深夜也有人。",
-  "accNote": "appearance.acc 是剪影配饰：apron 围裙 / band 发带 / bag 挎包 / tote 手提袋 / scarf 围巾。可省略（等于 none）。颜色已经有区分时，配饰负责\"远看也能分出是谁\"——美术规范里要求每个角色一条颜色线索 + 一条剪影线索。"
+  "accNote": "appearance.acc 是剪影配饰：apron 围裙 / band 发带 / bag 挎包 / tote 手提袋 / scarf 围巾 / cane 拐杖。可省略（等于 none）。颜色已经有区分时，配饰负责\"远看也能分出是谁\"——美术规范里要求每个角色一条颜色线索 + 一条剪影线索。",
+  "profNote": "appearance 的三层识别：age（kid/teen/adult/elder，改头身比与眼睛大小）、sex（f/m/x，改肩宽与睫毛）、uniform（food/office/medical/uniform/delivery，画制服层）。acc 是剪影配饰，和 uniform 叠加使用：制服管\"是干什么的\"，配饰管\"是谁\"。"
 }

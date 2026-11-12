@@ -1354,12 +1354,24 @@ function validate(){
 
   /* V4.24 剪影配饰：写错一个字母，那个人身上的配饰就静默消失（渲染层当作没有） */
   {
-    const ACC = ['none', 'apron', 'band', 'bag', 'tote', 'scarf'];
+    const ACC = ['none', 'apron', 'band', 'bag', 'tote', 'scarf', 'cane'];
+    const AGES = ['kid', 'teen', 'adult', 'elder'];
+    const SEXES = ['f', 'm', 'x'];
+    const UNIS = ['food', 'office', 'medical', 'uniform', 'delivery'];
+    const HAIRS = [0, 1, 2, 3, 4, 5];
+    /* 写错一个字母，那一层就静默不画——人物看不出年龄/职业，界面上不会有任何报错 */
     const check = (who, ap) => {
-      if (!ap || ap.acc == null) return;
-      if (!ACC.includes(ap.acc)){
+      if (!ap) return;
+      if (ap.acc != null && !ACC.includes(ap.acc))
         problems.push('[人物] ' + who + ' 的 appearance.acc「' + ap.acc + '」不在白名单（' + ACC.join('/') + '）');
-      }
+      if (ap.age != null && !AGES.includes(ap.age))
+        problems.push('[人物] ' + who + ' 的 appearance.age「' + ap.age + '」不在白名单（' + AGES.join('/') + '）');
+      if (ap.sex != null && !SEXES.includes(ap.sex))
+        problems.push('[人物] ' + who + ' 的 appearance.sex「' + ap.sex + '」只能是 f/m/x');
+      if (ap.uniform != null && !UNIS.includes(ap.uniform))
+        problems.push('[人物] ' + who + ' 的 appearance.uniform「' + ap.uniform + '」不在白名单（' + UNIS.join('/') + '）');
+      if (ap.hairStyle != null && !HAIRS.includes(ap.hairStyle))
+        problems.push('[人物] ' + who + ' 的 hairStyle 必须在 0~5（现在 ' + ap.hairStyle + '）');
     };
     const pk = packs['characters/npcs.neighbors.json'] || {};
     for (const n of (pk.npcs || [])) check(n.id || n.name, n.appearance);

@@ -2802,7 +2802,9 @@ function charKey(app, frame){
   /* 配饰必须进键：漏了它，改过配饰的人和没改的人会共用同一张缓存图，
    * 表现是"只有第一个人戴帽子，其他人都跟着变" */
   return [app.skin, app.hair, app.top, app.bottom, app.shoes, app.face,
-          app.hairStyle||0, app.faceStyle||0, app.acc||'none', frame].join('|');
+          app.hairStyle||0, app.faceStyle||0, app.acc||'none',
+          app.age||'adult', app.sex||'x', app.uniform||'',
+          app.glasses?'g':'', app.eye||'', frame].join('|');
 }
 
 /* ---------- 角色美术：命名色板 + 描边 + 剪影配饰 ----------
@@ -2843,6 +2845,12 @@ function accSVG(app, acc){
   <rect x="31.4" y="48.2" width="8.2" height="8.6" rx="1.7" fill="${P.tote}" stroke="${P.toteD}" stroke-width=".9"/>
   <rect x="31.4" y="50.4" width="8.2" height="1.3" fill="${P.toteD}" opacity=".55"/>`;
   }
+  if (acc === 'cane'){
+    /* 拐杖：一根竖线，比任何五官细节都更容易在远处认出"这是位老人" */
+    return `  <path d="M34.4,34 L34.4,62.4" stroke="${P.bagD}" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M34.4,34 Q34.4,31.4 31.8,31.6" stroke="${P.bagD}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M31.4,62.4 L37.4,62.4" stroke="${P.bagD}" stroke-width="1.4" stroke-linecap="round"/>`;
+  }
   if (acc === 'scarf'){
     return `  <rect x="20.4" y="30" width="7.2" height="3.8" rx="1.9" fill="${P.scarf}" stroke="${P.scarfD}" stroke-width=".8"/>
   <path d="M21.2,33.4 L19.9,39.8 L23.1,39.8 L23.4,33.4 Z" fill="${P.scarfD}"/>`;
@@ -2854,88 +2862,183 @@ function charSVG(app, frame){
   const hs = app.hairStyle || 0, fs = app.faceStyle || 0;
   const accG = accSVG(app, app.acc || 'none');
   const LINE = ACC_PAL.line;
+
+  /* ---------- 人物参数：年龄 / 性别 / 职业 ----------
+   * 三组变量各管一层，互不干扰：
+   *   年龄 → 头身比、眼睛大小、肩宽（小孩头大身窄、老人眼睛小一号）
+   *   性别 → 肩宽 ±、是否画睫毛（低分辨率下最好用的两条线索，不做夸张处理）
+   *   职业 → 制服层（领带/白大褂/肩章/反光条）+ 剪影配饰（围裙/挎包/手提袋）
+   * 只改宽度和头径，不做整体缩放——坐标全都锚在脚底，缩放会把脚抬离地面。 */
+  const AGE = {
+    kid:   { head: 10.8, sh: 6.8, eye: 1.20, brow: .82 },
+    teen:  { head: 9.9,  sh: 7.4, eye: 1.12, brow: .92 },
+    adult: { head: 9.3,  sh: 8.0, eye: 1.00, brow: 1.00 },
+    elder: { head: 9.2,  sh: 7.5, eye: 0.88, brow: 1.15 }
+  };
+  const SEX = {
+    f: { sh: -0.7, lash: 1 },
+    m: { sh: 0.6,  lash: 0 },
+    x: { sh: 0,    lash: 0 }
+  };
+  const A = AGE[app.age] || AGE.adult;
+  const S = SEX[app.sex] || SEX.x;
+  const sh = Math.max(5.8, Math.min(9.6, A.sh + S.sh));
+  const head = A.head;
+  const eyeK = A.eye;
+  const browW = A.brow;
+  const armR = 24 + sh - 2.6, armL = 24 - sh - 2.1;
+  const earX = head - 0.9;
+
   const topD  = shade(app.top, 0.84);
   const botD  = shade(app.bottom, 0.85);
   const shoeD = shade(app.shoes, 0.72);
   const skinD = shade(app.skin, 0.9);
   const hairD = shade(app.hair, 0.8);
   const hairL = shade(app.hair, 1.2);
-  // 发型部件：后发（长发）/ 刘海 / 鬓角 / 侧发
+  const blouse = shade(app.top, 0.90);
+  const iris  = app.eye || shade(app.hair, 0.55);
+  const pupil = shade(app.face, 0.75);
+
+  // ---------- 头发 ----------
   let backHair = '', bangs = '', extraHair = '';
-  if (hs === 0){   // 短发：鬓角 + 高光发丝
-    extraHair = `<rect x="14.9" y="25.5" width="2.6" height="4" rx="1.2" fill="${app.hair}"/>
-  <rect x="30.5" y="25.5" width="2.6" height="4" rx="1.2" fill="${app.hair}"/>
-  <path d="M18.5,17.6 Q24,15.8 29.5,17.6" stroke="${hairL}" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
-  } else if (hs === 1){   // 中发：刘海 + 侧发
-    bangs = `<path d="M14.6,24.6 Q15.6,19.4 24,18.9 Q32.4,19.4 33.4,24.6 Q31,22.4 28.4,23.5 Q26,21.7 23.5,23.2 Q20.4,21.5 17.7,23.5 Q16,22.6 14.6,24.6 Z" fill="${app.hair}"/>`;
-    extraHair = `<rect x="13.5" y="21.8" width="3.4" height="9.5" rx="1.7" fill="${app.hair}"/>
-  <rect x="31.1" y="21.8" width="3.4" height="9.5" rx="1.7" fill="${app.hair}"/>
-  <rect x="14.2" y="22.4" width="1.2" height="7.5" rx=".6" fill="${hairL}"/>`;
-  } else if (hs === 2){   // 长发：刘海 + 垂肩长发 + 脑后发
-    bangs = `<path d="M14.6,24.6 Q15.6,19.4 24,18.9 Q32.4,19.4 33.4,24.6 Q31,22.4 28.4,23.5 Q26,21.7 23.5,23.2 Q20.4,21.5 17.7,23.5 Q16,22.6 14.6,24.6 Z" fill="${app.hair}"/>`;
-    extraHair = `<path d="M13.6,21.5 Q12.2,33 14.6,41 L18.4,41 Q16.8,32 17.6,23.5 Z" fill="${app.hair}"/>
-  <path d="M34.4,21.5 Q35.8,33 33.4,41 L29.6,41 Q31.2,32 30.4,23.5 Z" fill="${app.hair}"/>
-  <path d="M13.9,24 Q13.2,32 14.8,38.5" stroke="${hairD}" stroke-width="1" fill="none"/>`;
-    backHair = `<path d="M13.2,21 Q11.6,38 15,45 L33,45 Q36.4,38 34.8,21 Q29,17.5 24,17.6 Q19,17.5 13.2,21 Z" fill="${app.hair}"/>`;
-  } else {          // 卷发：云朵状发团
-    extraHair = `<circle cx="16" cy="22" r="3.5" fill="${app.hair}"/><circle cx="20" cy="17.8" r="3.7" fill="${app.hair}"/>
-  <circle cx="24" cy="16.6" r="3.9" fill="${app.hair}"/><circle cx="28" cy="17.8" r="3.7" fill="${app.hair}"/>
-  <circle cx="32" cy="22" r="3.5" fill="${app.hair}"/><circle cx="14.3" cy="25.6" r="2.7" fill="${app.hair}"/>
-  <circle cx="33.7" cy="25.6" r="2.7" fill="${app.hair}"/>
-  <circle cx="21" cy="17.4" r="1.5" fill="${hairL}"/><circle cx="26.5" cy="16.6" r="1.4" fill="${hairL}"/>`;
+  const BANGS_M = '<path d="M14.6,24.6 Q15.6,19.4 24,18.9 Q32.4,19.4 33.4,24.6 Q31,22.4 28.4,23.5 Q26,21.7 23.5,23.2 Q20.4,21.5 17.7,23.5 Q16,22.6 14.6,24.6 Z" fill="' + app.hair + '"/>';
+  const BANGS_S = '<path d="M14.9,24.4 Q15.9,19.9 24,19.4 Q32.1,19.9 33.1,24.4 Q30.4,22.8 27.6,23.6 Q24,22 20.4,23.6 Q17.6,22.8 14.9,24.4 Z" fill="' + app.hair + '"/>';
+
+  if (hs === 0){        // 短发：鬓角 + 发丝高光
+    extraHair = '<rect x="14.9" y="25.5" width="2.6" height="4" rx="1.2" fill="' + app.hair + '"/>'
+      + '<rect x="30.5" y="25.5" width="2.6" height="4" rx="1.2" fill="' + app.hair + '"/>'
+      + '<path d="M18.5,17.6 Q24,15.8 29.5,17.6" stroke="' + hairL + '" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
+  } else if (hs === 1){  // 中发
+    bangs = BANGS_M;
+    extraHair = '<rect x="13.5" y="21.8" width="3.4" height="9.5" rx="1.7" fill="' + app.hair + '"/>'
+      + '<rect x="31.1" y="21.8" width="3.4" height="9.5" rx="1.7" fill="' + app.hair + '"/>'
+      + '<rect x="14.2" y="22.4" width="1.2" height="7.5" rx=".6" fill="' + hairL + '"/>';
+  } else if (hs === 2){  // 长发
+    bangs = BANGS_M;
+    extraHair = '<path d="M13.6,21.5 Q12.2,33 14.6,41 L18.4,41 Q16.8,32 17.6,23.5 Z" fill="' + app.hair + '"/>'
+      + '<path d="M34.4,21.5 Q35.8,33 33.4,41 L29.6,41 Q31.2,32 30.4,23.5 Z" fill="' + app.hair + '"/>'
+      + '<path d="M13.9,24 Q13.2,32 14.8,38.5" stroke="' + hairD + '" stroke-width="1" fill="none"/>';
+    backHair = '<path d="M13.2,21 Q11.6,38 15,45 L33,45 Q36.4,38 34.8,21 Q29,17.5 24,17.6 Q19,17.5 13.2,21 Z" fill="' + app.hair + '"/>';
+  } else if (hs === 3){  // 卷发
+    extraHair = '<circle cx="16" cy="22" r="3.5" fill="' + app.hair + '"/><circle cx="20" cy="17.8" r="3.7" fill="' + app.hair + '"/>'
+      + '<circle cx="24" cy="16.6" r="3.9" fill="' + app.hair + '"/><circle cx="28" cy="17.8" r="3.7" fill="' + app.hair + '"/>'
+      + '<circle cx="32" cy="22" r="3.5" fill="' + app.hair + '"/><circle cx="14.3" cy="25.6" r="2.7" fill="' + app.hair + '"/>'
+      + '<circle cx="33.7" cy="25.6" r="2.7" fill="' + app.hair + '"/>'
+      + '<circle cx="21" cy="17.4" r="1.5" fill="' + hairL + '"/><circle cx="26.5" cy="16.6" r="1.4" fill="' + hairL + '"/>';
+  } else if (hs === 4){  // 双马尾
+    bangs = BANGS_S;
+    backHair = '<path d="M14.2,23 Q7.8,28.5 9.4,40.5 Q11.2,44.5 14.4,43.2 Q12.4,32 16.4,24.6 Z" fill="' + app.hair + '"/>'
+      + '<path d="M33.8,23 Q40.2,28.5 38.6,40.5 Q36.8,44.5 33.6,43.2 Q35.6,32 31.6,24.6 Z" fill="' + app.hair + '"/>';
+    extraHair = '<ellipse cx="13.4" cy="23.4" rx="2.2" ry="2.6" fill="' + app.hair + '"/>'
+      + '<ellipse cx="34.6" cy="23.4" rx="2.2" ry="2.6" fill="' + app.hair + '"/>'
+      + '<circle cx="13.1" cy="22.6" r="1.5" fill="' + ACC_PAL.scarf + '"/>'
+      + '<circle cx="34.9" cy="22.6" r="1.5" fill="' + ACC_PAL.scarf + '"/>';
+  } else {               // 短刺（背头）
+    extraHair = '<path d="M15.2,22.4 L17.4,13.6 L19.8,20.2 L23,12.8 L25,19.6 L28.2,13.4 L29.4,20.2 L32.4,16.4 L32.8,23 Q24,17.4 15.2,22.4 Z" fill="' + app.hair + '"/>'
+      + '<path d="M17.4,19.4 L19.2,15 L20.4,19.2" stroke="' + hairD + '" stroke-width=".8" fill="none"/>'
+      + '<rect x="14.4" y="27.2" width="2.2" height="3.2" rx="1" fill="' + app.hair + '"/>'
+      + '<rect x="31.4" y="27.2" width="2.2" height="3.2" rx="1" fill="' + app.hair + '"/>';
   }
-  // 表情（嘴型）
-  const mouth = fs===0 ? `<path d="M21.8,30.2 Q24,32.4 26.2,30.2" stroke="${app.face}" stroke-width="1.3" fill="none" stroke-linecap="round"/>`
-    : fs===1 ? `<path d="M21.5,29.9 Q24,33.7 26.5,29.9 Z" fill="${app.face}"/>`
-    : fs===2 ? `<path d="M22,30.9 L26,30.9" stroke="${app.face}" stroke-width="1.3" stroke-linecap="round"/>`
-    : `<circle cx="24" cy="30.8" r="1.7" fill="none" stroke="${app.face}" stroke-width="1.2"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="136" viewBox="0 0 48 68">
-  <defs>
-    <linearGradient id="tG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(app.top,1.08)}"/><stop offset="1" stop-color="${app.top}"/></linearGradient>
-  </defs>
-  ${backHair}
-  <g transform="rotate(${-swing*14} 31.6 38)">
-    <rect x="29.4" y="36.5" width="4.7" height="13.5" rx="2.3" fill="${topD}" stroke="${LINE}" stroke-width=".95"/>
-    <circle cx="31.7" cy="50.4" r="2.7" fill="${skinD}" stroke="${LINE}" stroke-width=".8"/>
-  </g>
-  <g transform="rotate(${swing*10} 20 49)">
-    <rect x="16.6" y="46" width="6.4" height="14" rx="2.6" fill="${app.bottom}" stroke="${LINE}" stroke-width="1"/>
-    <rect x="15.4" y="58.8" width="8" height="3.8" rx="1.9" fill="${app.shoes}" stroke="${LINE}" stroke-width=".9"/>
-    <rect x="15.4" y="61.2" width="8" height="1.4" rx=".7" fill="${shoeD}"/>
-  </g>
-  <g transform="rotate(${-swing*10} 28 49)">
-    <rect x="25" y="46" width="6.4" height="14" rx="2.6" fill="${botD}" stroke="${LINE}" stroke-width="1"/>
-    <rect x="24.6" y="58.8" width="8" height="3.8" rx="1.9" fill="${app.shoes}" stroke="${LINE}" stroke-width=".9"/>
-    <rect x="24.6" y="61.2" width="8" height="1.4" rx=".7" fill="${shoeD}"/>
-  </g>
-  <rect x="22.3" y="30.2" width="3.4" height="4.5" rx="1.5" fill="${skinD}"/>
-  <rect x="16" y="33.2" width="16" height="21.5" rx="5.5" fill="url(#tG)" stroke="${LINE}" stroke-width="1.15"/>
-  <path d="M19.4,33.9 Q24,37.6 28.6,33.9" stroke="${topD}" stroke-width="1.4" fill="none"/>
-  <circle cx="24" cy="44.5" r="1" fill="rgba(255,255,255,.4)"/>
-  <circle cx="24" cy="48.6" r="1" fill="rgba(255,255,255,.4)"/>
-  <g transform="rotate(${swing*14} 16.4 38)">
-    <rect x="13.9" y="36.5" width="4.7" height="13.5" rx="2.3" fill="${app.top}" stroke="${LINE}" stroke-width=".95"/>
-    <circle cx="16.3" cy="50.4" r="2.7" fill="${app.skin}" stroke="${LINE}" stroke-width=".8"/>
-  </g>
-  <circle cx="15.6" cy="27" r="2.1" fill="${app.skin}"/>
-  <circle cx="32.4" cy="27" r="2.1" fill="${app.skin}"/>
-  <circle cx="24" cy="24.6" r="10.1" fill="${app.hair}"/>
-  <circle cx="24" cy="26.2" r="9.3" fill="${app.skin}" stroke="${LINE}" stroke-width="1.15"/>
-  ${bangs}${extraHair}
-  <ellipse cx="20.6" cy="25.9" rx="2" ry="2.5" fill="#ffffff"/>
-  <ellipse cx="27.4" cy="25.9" rx="2" ry="2.5" fill="#ffffff"/>
-  <circle cx="21.1" cy="26.3" r="1.15" fill="${app.face}"/>
-  <circle cx="27.9" cy="26.3" r="1.15" fill="${app.face}"/>
-  <circle cx="20.7" cy="25.7" r=".42" fill="#ffffff"/>
-  <circle cx="27.5" cy="25.7" r=".42" fill="#ffffff"/>
-  <path d="M18.9,23.2 Q20.6,22.4 22.3,23.1" stroke="${app.face}" stroke-width="1" fill="none" stroke-linecap="round"/>
-  <path d="M25.7,23.1 Q27.4,22.4 29.1,23.2" stroke="${app.face}" stroke-width="1" fill="none" stroke-linecap="round"/>
-  <ellipse cx="17.7" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>
-  <ellipse cx="30.3" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>
-  ${mouth}
-  ${accG}
-</svg>`;
+
+  // ---------- 制服层（职业） ----------
+  const UNI = {
+    office:   '<path d="M21.6,33.5 L24,36.6 L26.4,33.5 L25,33.1 L23,33.1 Z" fill="#f4f6f8"/>'
+            + '<path d="M23.5,36.4 L24.5,36.4 L25.1,44.4 L24,45.8 L22.9,44.4 Z" fill="#6a4a3a"/>'
+            + '<path d="M20.8,33.4 L23.2,33.4 L24,35.2 L21.6,37.6 Z" fill="#eef2f5" opacity=".9"/>',
+    medical:  '<path d="M' + (24-sh+1).toFixed(1) + ',33.3 L' + (24-sh+3).toFixed(1) + ',33.3 L' + (24-sh+3.6).toFixed(1) + ',54.2 L' + (24-sh+1.4).toFixed(1) + ',54.2 Z" fill="#f2f4f6" opacity=".96"/>'
+            + '<path d="M' + (24+sh-1).toFixed(1) + ',33.3 L' + (24+sh-3).toFixed(1) + ',33.3 L' + (24+sh-3.6).toFixed(1) + ',54.2 L' + (24+sh-1.4).toFixed(1) + ',54.2 Z" fill="#f2f4f6" opacity=".96"/>'
+            + '<path d="M24,35 L24,52" stroke="#cdd6dd" stroke-width=".9" fill="none"/>',
+    uniform:  '<rect x="' + (24-sh+0.6).toFixed(1) + '" y="34.2" width="3.2" height="1.8" rx=".6" fill="#2f3a55"/>'
+            + '<rect x="' + (24+sh-3.8).toFixed(1) + '" y="34.2" width="3.2" height="1.8" rx=".6" fill="#2f3a55"/>'
+            + '<rect x="' + (24-sh+0.8).toFixed(1) + '" y="49.8" width="' + (sh*2-1.6).toFixed(1) + '" height="2.2" rx=".8" fill="#2f3a55"/>',
+    delivery: '<rect x="' + (24-sh+1.2).toFixed(1) + '" y="39.6" width="' + (sh*2-2.4).toFixed(1) + '" height="2.4" rx="1" fill="#e8d47a" opacity=".92"/>'
+            + '<rect x="' + (24+sh-4.6).toFixed(1) + '" y="35" width="3.4" height="2.2" rx=".7" fill="#e8d47a"/>',
+    food:     ''
+  };
+  const uniG = UNI[app.uniform] || '';
+
+  // ---------- 表情 ----------
+  const mouth = fs===0 ? '<path d="M21.8,30.2 Q24,32.4 26.2,30.2" stroke="' + app.face + '" stroke-width="1.3" fill="none" stroke-linecap="round"/>'
+    : fs===1 ? '<path d="M21.5,29.9 Q24,33.7 26.5,29.9 Z" fill="' + app.face + '"/>'
+    : fs===2 ? '<path d="M22,30.9 L26,30.9" stroke="' + app.face + '" stroke-width="1.3" stroke-linecap="round"/>'
+    : '<circle cx="24" cy="30.8" r="1.7" fill="none" stroke="' + app.face + '" stroke-width="1.2"/>';
+
+  const glasses = app.glasses ? '<g fill="none" stroke="' + ACC_PAL.bagD + '" stroke-width="1">'
+    + '<rect x="18.2" y="23.8" width="5.4" height="4.8" rx="2.2"/>'
+    + '<rect x="24.4" y="23.8" width="5.4" height="4.8" rx="2.2"/>'
+    + '<path d="M23.6,26 L24.4,26"/>'
+    + '<path d="M18.2,25.4 L15.4,26.2"/><path d="M29.8,25.4 L32.6,26.2"/>'
+    + '</g>'
+    + '<rect x="18.6" y="24.2" width="4.6" height="4" rx="1.9" fill="rgba(210,235,245,.22)"/>'
+    + '<rect x="24.8" y="24.2" width="4.6" height="4" rx="1.9" fill="rgba(210,235,245,.22)"/>' : '';
+
+  /* 睫毛：性别的第二条线索（第一条是肩宽）。低分辨率下比"脸型"可靠得多 */
+  const lashes = S.lash ? '<path d="M18.6,24.2 L17.4,23.3 M29.4,24.2 L30.6,23.3" stroke="' + app.face + '" stroke-width=".85" stroke-linecap="round" fill="none"/>' : '';
+
+  const shX = (24 - sh).toFixed(1), shW = (sh * 2).toFixed(1), shR = (sh * 0.69).toFixed(1);
+  const eyeRx = (2 * eyeK).toFixed(2), eyeRy = (2.5 * eyeK).toFixed(2);
+  const irisR = (1.45 * eyeK).toFixed(2), pupR = (0.72 * eyeK).toFixed(2);
+  const browSW = (1 * browW).toFixed(2);
+
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="136" viewBox="0 0 48 68">'
+  + '<defs>'
+  + '<linearGradient id="tG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + shade(app.top,1.08) + '"/><stop offset="1" stop-color="' + app.top + '"/></linearGradient>'
+  + '<linearGradient id="sG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.20)"/><stop offset=".55" stop-color="rgba(255,255,255,0)"/><stop offset="1" stop-color="rgba(60,40,20,.13)"/></linearGradient>'
+  + '</defs>'
+  + backHair
+  + '<g transform="rotate(' + (swing*10) + ' 20 49)">'
+  +   '<rect x="16.6" y="46" width="6.4" height="14" rx="2.6" fill="' + app.bottom + '" stroke="' + LINE + '" stroke-width="1"/>'
+  +   '<rect x="15.4" y="58.8" width="8" height="3.8" rx="1.9" fill="' + app.shoes + '" stroke="' + LINE + '" stroke-width=".9"/>'
+  +   '<rect x="15.4" y="61.2" width="8" height="1.4" rx=".7" fill="' + shoeD + '"/>'
+  + '</g>'
+  + '<g transform="rotate(' + (-swing*10) + ' 28 49)">'
+  +   '<rect x="25" y="46" width="6.4" height="14" rx="2.6" fill="' + botD + '" stroke="' + LINE + '" stroke-width="1"/>'
+  +   '<rect x="24.6" y="58.8" width="8" height="3.8" rx="1.9" fill="' + app.shoes + '" stroke="' + LINE + '" stroke-width=".9"/>'
+  +   '<rect x="24.6" y="61.2" width="8" height="1.4" rx=".7" fill="' + shoeD + '"/>'
+  + '</g>'
+  + '<g transform="rotate(' + (-swing*14) + ' ' + (armR+2.3).toFixed(1) + ' 38)">'
+  +   '<rect x="' + armR.toFixed(1) + '" y="36.5" width="4.7" height="13.5" rx="2.3" fill="' + topD + '" stroke="' + LINE + '" stroke-width=".95"/>'
+  +   '<rect x="' + (armR+0.3).toFixed(1) + '" y="46.6" width="4.1" height="2.1" rx="1" fill="' + blouse + '"/>'
+  +   '<circle cx="' + (armR+2.3).toFixed(1) + '" cy="50.4" r="2.7" fill="' + skinD + '" stroke="' + LINE + '" stroke-width=".8"/>'
+  + '</g>'
+  + '<rect x="22.3" y="30.2" width="3.4" height="4.5" rx="1.5" fill="' + skinD + '"/>'
+  + '<rect x="' + shX + '" y="33.2" width="' + shW + '" height="21.5" rx="' + shR + '" fill="url(#tG)" stroke="' + LINE + '" stroke-width="1.15"/>'
+  + '<rect x="' + shX + '" y="33.2" width="' + shW + '" height="21.5" rx="' + shR + '" fill="url(#sG)"/>'
+  + '<path d="M' + (24-sh+0.6).toFixed(1) + ',54 L' + (24+sh-0.6).toFixed(1) + ',54 L' + (24+sh-1.4).toFixed(1) + ',55.2 L' + (24-sh+1.4).toFixed(1) + ',55.2 Z" fill="' + blouse + '" opacity=".9"/>'
+  + '<path d="M' + (24-sh*0.55).toFixed(1) + ',33.6 Q24,37.8 ' + (24+sh*0.55).toFixed(1) + ',33.6" stroke="' + blouse + '" stroke-width="1.8" fill="none" stroke-linecap="round"/>'
+  + uniG
+  + '<circle cx="24" cy="44.5" r="1" fill="rgba(255,255,255,.4)"/>'
+  + '<circle cx="24" cy="48.6" r="1" fill="rgba(255,255,255,.4)"/>'
+  + '<g transform="rotate(' + (swing*14) + ' ' + (armL+2.5).toFixed(1) + ' 38)">'
+  +   '<rect x="' + armL.toFixed(1) + '" y="36.5" width="4.7" height="13.5" rx="2.3" fill="' + app.top + '" stroke="' + LINE + '" stroke-width=".95"/>'
+  +   '<rect x="' + (armL+0.3).toFixed(1) + '" y="46.6" width="4.1" height="2.1" rx="1" fill="' + blouse + '"/>'
+  +   '<circle cx="' + (armL+2.4).toFixed(1) + '" cy="50.4" r="2.7" fill="' + app.skin + '" stroke="' + LINE + '" stroke-width=".8"/>'
+  + '</g>'
+  + '<circle cx="' + (24-earX).toFixed(1) + '" cy="27" r="2.1" fill="' + app.skin + '" stroke="' + LINE + '" stroke-width=".7"/>'
+  + '<circle cx="' + (24+earX).toFixed(1) + '" cy="27" r="2.1" fill="' + app.skin + '" stroke="' + LINE + '" stroke-width=".7"/>'
+  + '<circle cx="24" cy="24.6" r="' + (head+0.8).toFixed(1) + '" fill="' + app.hair + '"/>'
+  + '<circle cx="24" cy="26.2" r="' + head.toFixed(1) + '" fill="' + app.skin + '" stroke="' + LINE + '" stroke-width="1.15"/>'
+  + bangs + extraHair
+  + '<ellipse cx="20.6" cy="25.9" rx="' + eyeRx + '" ry="' + eyeRy + '" fill="#ffffff"/>'
+  + '<ellipse cx="27.4" cy="25.9" rx="' + eyeRx + '" ry="' + eyeRy + '" fill="#ffffff"/>'
+  + '<circle cx="21.1" cy="26.3" r="' + irisR + '" fill="' + iris + '"/>'
+  + '<circle cx="27.9" cy="26.3" r="' + irisR + '" fill="' + iris + '"/>'
+  + '<circle cx="21.1" cy="26.4" r="' + pupR + '" fill="' + pupil + '"/>'
+  + '<circle cx="27.9" cy="26.4" r="' + pupR + '" fill="' + pupil + '"/>'
+  + '<circle cx="20.6" cy="25.7" r=".48" fill="#ffffff"/>'
+  + '<circle cx="27.4" cy="25.7" r=".48" fill="#ffffff"/>'
+  + lashes
+  + '<path d="M18.9,23.2 Q20.6,22.4 22.3,23.1" stroke="' + app.face + '" stroke-width="' + browSW + '" fill="none" stroke-linecap="round"/>'
+  + '<path d="M25.7,23.1 Q27.4,22.4 29.1,23.2" stroke="' + app.face + '" stroke-width="' + browSW + '" fill="none" stroke-linecap="round"/>'
+  + '<path d="M23.6,28 Q24.9,28.8 23.9,29.3" stroke="' + shade(app.skin,0.84) + '" stroke-width=".9" fill="none" stroke-linecap="round"/>'
+  + '<ellipse cx="17.7" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>'
+  + '<ellipse cx="30.3" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>'
+  + mouth
+  + glasses
+  + accG
+  + '</svg>';
 }
+
 function charImage(app, frame, onready){
   const k = charKey(app, frame);
   let img = charCache[k];

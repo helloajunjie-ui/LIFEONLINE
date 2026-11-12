@@ -4508,6 +4508,43 @@
               'keys=' + (kA === kB) + '/' + (kA === kC));
 
             /* 描边：躯干与头都该有轮廓，不然在花地上会糊成一团 */
+            /* 年龄：头径与眼睛大小必须真的分档（这三档是"能看出多大"的全部依据） */
+            const base0 = { skin: '#e8a878', hair: '#2f2a26', top: '#5fae62', bottom: '#3a3a4a',
+                            shoes: '#2b2b2b', face: '#3b3226', hairStyle: 0, faceStyle: 0 };
+            const svgOf = (o) => charSVG(Object.assign({}, base0, o), 'idle');
+            const headOf = (t) => parseFloat((t.match(/cy="26\.2" r="([0-9.]+)"/) || [])[1] || 0);
+            const eyeOf = (t) => parseFloat((t.match(/cy="25\.9" rx="([0-9.]+)"/) || [])[1] || 0);
+            const k = svgOf({ age: 'kid' }), a = svgOf({ age: 'adult' }), e = svgOf({ age: 'elder' });
+            P('AT9 age changes head size and eye size in the right direction',
+              headOf(k) > headOf(a) && headOf(a) >= headOf(e) && eyeOf(k) > eyeOf(a) && eyeOf(a) > eyeOf(e),
+              'head kid/adult/elder=' + headOf(k) + '/' + headOf(a) + '/' + headOf(e) +
+              ' eye=' + eyeOf(k) + '/' + eyeOf(a) + '/' + eyeOf(e));
+
+            /* 性别：肩宽 + 睫毛（低分辨率下这两条最可靠） */
+            const ff = svgOf({ sex: 'f' }), mm = svgOf({ sex: 'm' });
+            const widthOf = (t) => parseFloat((t.match(/y="33\.2" width="([0-9.]+)"/) || [])[1] || 0);
+            P('AT10 sex changes shoulder width and adds lashes',
+              widthOf(ff) < widthOf(mm) && ff.indexOf('M18.6,24.2 L17.4,23.3') > 0 &&
+              mm.indexOf('M18.6,24.2 L17.4,23.3') < 0,
+              'f=' + widthOf(ff) + ' m=' + widthOf(mm));
+
+            /* 职业：四种制服层各画各的；未知值不画 */
+            P('AT11 each uniform draws its own markers',
+              svgOf({ uniform: 'office' }).indexOf('L24,36.6') > 0 &&
+              svgOf({ uniform: 'medical' }).indexOf('#f2f4f6') > 0 &&
+              svgOf({ uniform: 'uniform' }).indexOf('#2f3a55') > 0 &&
+              svgOf({ uniform: 'delivery' }).indexOf('#e8d47a') > 0 &&
+              svgOf({ uniform: 'food' }) === a && svgOf({ uniform: 'nope' }) === a,
+              'food/unknown = plain');
+
+            /* 拐杖：老人最远的识别线索 */
+            P('AT12 the cane accessory draws and cache keys cover every layer',
+              svgOf({ acc: 'cane' }).indexOf('M34.4,34 L34.4,62.4') > 0 &&
+              charKey(Object.assign({}, base0, { age: 'kid' }), 'idle') !== charKey(base0, 'idle') &&
+              charKey(Object.assign({}, base0, { sex: 'f' }), 'idle') !== charKey(base0, 'idle') &&
+              charKey(Object.assign({}, base0, { uniform: 'office' }), 'idle') !== charKey(base0, 'idle'),
+              'keys differ');
+
             P('AT8 characters get a consistent outline',
               noneG.indexOf('stroke="' + ACC_PAL.line + '"') > 0 &&
               (noneG.split('stroke="' + ACC_PAL.line + '"').length - 1) >= 6,
