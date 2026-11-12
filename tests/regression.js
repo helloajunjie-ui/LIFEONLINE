@@ -4144,6 +4144,16 @@
               tip.indexOf(c0.name) === 0 && tip.length > c0.name.length + 3 && seen.size >= 2,
               'greet=' + greet.slice(0, 20) + ' | tip=' + tip.slice(0, 20) + ' | distinct=' + seen.size);
             floats.length = bak.floats;
+
+            /* 招牌亮度跟着作息走：银行 3 点该暗、便利店 3 点该亮、没配店员的建筑当常开 */
+            P('AZ4 shop signs follow the clerks out the door',
+              shopOpenNow('shop_bank', 12 * 60) === true &&
+              shopOpenNow('shop_bank', 3 * 60) === false &&
+              shopOpenNow('shop1', 3 * 60) === true &&
+              shopOpenNow('no.such.zone', 3 * 60) === true,
+              'bank@12=' + shopOpenNow('shop_bank', 12 * 60) +
+              ' bank@3=' + shopOpenNow('shop_bank', 3 * 60) +
+              ' mart@3=' + shopOpenNow('shop1', 3 * 60));
           }
 
           placed = dc.placed;

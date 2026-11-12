@@ -1174,7 +1174,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T09:53:01.447Z */
+/* 由 tools/build.mjs 生成：2026-11-12T09:54:37.893Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2674,12 +2674,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.58.0",
+  "appVersion": "1.59.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "39cb468b293b",
-  "builtAt": "2026-11-12T09:53:01.440Z",
+  "builtAt": "2026-11-12T09:54:37.881Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -7494,6 +7494,13 @@ function clerkAt(gx, gy){
   return null;
 }
 
+/** 这家店现在有没有人：没有配店员的建筑当作一直开着 */
+function shopOpenNow(zoneId, minute){
+  const c = CLERKS.find(q => q.zoneId === zoneId);
+  if (!c) return true;
+  return clerkOnDuty(c, minute);
+}
+
 /** 抽一句台词，尽量不和上一句重复 */
 function clerkLine(c, pool){
   const arr = (c.lines && c.lines[pool]) || [];
@@ -7579,13 +7586,17 @@ function drawShopSigns(){
     if (!tileOnScreen(p.gx, p.gy, 340)) continue;
     const c = tileCenter(p.gx, p.gy);
     const y = shopVisualTop(p, c) - 6;
-    ctx.globalAlpha = d <= 4 ? 0.96 : 0.55;              // 近处实、远处淡，不抢画面
+    /* 店员下班了招牌就该暗下去：白天亮着、深夜还亮着的店，
+     * 和"门口没人"放在一起看就假了 */
+    const openNow = (typeof shopOpenNow === 'function') ? shopOpenNow(p.zoneId) : true;
+    ctx.globalAlpha = (d <= 4 ? 0.96 : 0.55) * (openNow ? 1 : 0.42);   // 近处实、远处淡，不抢画面
     /* 招牌做成一块牌子，而不是一行描边字：楼体本身已经花，
      * 光靠白描边压不住背景。商铺用木色、公共建筑用冷灰，一眼能分类。 */
     const tw = ctx.measureText(p.label).width;
     const pw = tw + 14, ph = 18, px0 = c.x - pw / 2, py0 = y - 13;
     roundedRectPath(px0, py0, pw, ph, 6);
-    ctx.fillStyle = p.kind === 'civic' ? 'rgba(38,50,60,.88)' : 'rgba(62,44,24,.88)';
+    ctx.fillStyle = !openNow ? 'rgba(46,46,50,.88)'
+                  : (p.kind === 'civic' ? 'rgba(38,50,60,.88)' : 'rgba(62,44,24,.88)');
     ctx.fill();
     ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(246,236,216,.30)';
     ctx.stroke();
