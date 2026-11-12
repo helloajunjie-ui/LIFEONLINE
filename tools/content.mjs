@@ -1227,6 +1227,54 @@ function validate(){
     }
   }
 
+  /* V4.20 小店柜台：店员说"柜台能买"，那柜台就得真的存在。
+   * 之前便利店/咖啡店/奶茶店没有货架、菜市场连柜台都开不出来（食材数据配了却进不去），
+   * 店员台词就成了空话。这里把"每个店员所在的店必须能交互"变成硬约束。 */
+  {
+    const eco = packs['rules/economy.json'] || {};
+    const jobs = (packs['careers/jobs.json'] || {}).jobs || [];
+    const jobZones = new Set(jobs.map(j => j.zone).filter(Boolean));
+    const counterZones = new Set();
+    for (const m of (Array.isArray(eco.marts) ? eco.marts : [])){
+      if (!m || !m.zone) continue;
+      if (counterZones.has(m.zone)) problems.push('[柜台] marts 里 zone 重复: ' + m.zone);
+      counterZones.add(m.zone);
+      if (!m.name) problems.push('[柜台] ' + m.zone + ' 缺少 name');
+      const goods = Array.isArray(m.goods) ? m.goods : [];
+      if (!goods.length) problems.push('[柜台] ' + m.zone + ' 一件货都没有，货架会是空的');
+      const gid = new Set();
+      for (const g of goods){
+        if (!g.id) { problems.push('[柜台] ' + m.zone + ' 有商品缺少 id'); continue; }
+        if (gid.has(g.id)) problems.push('[柜台] ' + m.zone + ' 商品 id 重复: ' + g.id);
+        gid.add(g.id);
+        if (!g.name) problems.push('[柜台] ' + g.id + ' 缺少 name');
+        if (!(Number(g.price) >= 1)) problems.push('[柜台] ' + g.id + ' 价格必须 ≥ 1');
+        const eff = (Number(g.hunger) || 0) + (Number(g.thirst) || 0) + (Number(g.emotion) || 0);
+        if (eff <= 0) problems.push('[柜台] ' + g.id + ' 没有任何效果，买了等于白花钱');
+      }
+    }
+    for (const g of (Array.isArray(eco.groceries) ? eco.groceries : [])){
+      if (!g || !g.zone) continue;
+      counterZones.add(g.zone);              // 只卖食材的店也算有柜台
+      if (!(Number(g.pack) >= 1) || !(Number(g.price) >= 1))
+        problems.push('[食材] ' + g.zone + ' 的 pack/price 必须 ≥ 1');
+    }
+    if (eco.mart && eco.mart.zone) counterZones.add(eco.mart.zone);
+    if (eco.restaurant && eco.restaurant.zone) counterZones.add(eco.restaurant.zone);
+
+    /* 这五家店点开是各自的专用面板（银行/证券/彩票/4S/宠物），没有柜台也没有岗位 */
+    const PANEL_ONLY = new Set(['shop_bank', 'shop_stock', 'shop_lottery', 'shop_car', 'shop_pet']);
+
+    const pk = packs['characters/npcs.neighbors.json'] || {};
+    for (const c of (pk.clerks || [])){
+      const z = c.zoneId;
+      if (!z) continue;
+      if (counterZones.has(z) || jobZones.has(z) || PANEL_ONLY.has(z)) continue;
+      problems.push('[店员] ' + c.id + ' 所在的「' + z + '」既没有柜台也没有岗位，' +
+        '店员说的"柜台能买"会是空话');
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

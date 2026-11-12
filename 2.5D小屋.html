@@ -12164,6 +12164,9 @@ function buyGroceries(zoneId, packs){
  * 两个店共用一个面板，靠 zone 决定卖什么。所有价格、恢复量都在内容层。 */
 const RESTAURANT_DEF = ECON.restaurant || null;
 const MART_DEF = ECON.mart || null;
+/* 小店货架：便利店/咖啡店/奶茶店也卖东西。结构和超市的 mart 一致，
+ * 只是按 zone 分了几份——之前只有超市有柜台，那三家的货架等于不存在。 */
+const MARTS = (Array.isArray(ECON.marts) ? ECON.marts : []).filter(m => m && m.zone);
 const counterEl = document.getElementById('counter');
 const counterList = document.getElementById('counterList');
 const counterTitleEl = document.getElementById('counterTitle');
@@ -12174,8 +12177,14 @@ let COUNTER_ZONE = null;
 function counterZoneDef(zoneId){
   if (RESTAURANT_DEF && RESTAURANT_DEF.zone === zoneId)
     return { kind: 'restaurant', name: RESTAURANT_DEF.name || '饭馆', def: RESTAURANT_DEF };
+  const mk = MARTS.find(m => m.zone === zoneId);
+  if (mk) return { kind: 'mart', name: mk.name || '小店', def: mk };
   if (MART_DEF && MART_DEF.zone === zoneId)
     return { kind: 'mart', name: MART_DEF.name || '超市', def: MART_DEF };
+  /* 只卖食材、没有货架的店（菜市场）：groceries 里配了数据却没有柜台，
+   * 等于"卖菜的地方进不去"。这里有食材包就算有柜台。 */
+  const gr = groceryFor(zoneId);
+  if (gr) return { kind: 'mart', name: gr.name || '小店', def: { goods: [], note: gr.desc || '' } };
   return null;
 }
 /** 有没有柜台可开（地图上点店铺时用来判断走哪个面板） */
@@ -12243,7 +12252,7 @@ function renderCounter(){
     out.push('<div class="sgroup">货架</div>');
     for (const g of (z.def.goods || [])){
       const can = MONEY >= (Number(g.price) || 0);
-      const food = fxText({ hunger: g.hunger, thirst: g.thirst });
+      const food = fxText({ hunger: g.hunger, thirst: g.thirst, emotion: g.emotion });
       out.push('<div class="item"><div class="ib">' +
         '<div class="in">' + g.name + '</div>' +
         '<div class="id">' + (g.desc || '') + '</div>' +
@@ -12263,6 +12272,30 @@ function renderCounter(){
         '<button class="sbtn" data-grocery="1"' + (can ? '' : ' disabled') + '>' +
         (MONEY < gr.price ? '差 ¥' + (gr.price - MONEY)
           : (bagRoom() < gr.pack ? '背不动' : '¥' + gr.price)) + '</button></div>');
+    }
+  }
+
+  /* 这几家店既能买东西、也招人。柜台上必须有上班入口，
+   * 否则"给店铺加柜台"会把原来的打卡面板挡掉——玩家突然上不了班。 */
+  {
+    const job = JOB_BY_ZONE[COUNTER_ZONE];
+    if (job){
+      const active = SHIFT.active && SHIFT.job && SHIFT.job.id === job.id;
+      const used = shiftUsedToday() && LAST_SHIFT_JOB === job.id;
+      out.push('<div class="sgroup">打工</div>');
+      if (active){
+        out.push('<div class="cnote">正在上班：已做 ' + SHIFT.done + '/' + job.tasks + ' 单。</div>');
+        out.push('<div class="item"><div class="ib"><div class="in">上班中</div>' +
+          '<div class="id">点开工作面板能做下一单、也能提前下班</div></div>' +
+          '<button class="sbtn" data-workopen="1">看进度</button></div>');
+      } else if (used || shiftUsedToday()){
+        out.push('<div class="cnote">今天这一班已经上过了，明天再来。</div>');
+      } else {
+        out.push('<div class="item"><div class="ib">' +
+          '<div class="in">' + job.name + '</div>' +
+          '<div class="id">' + shiftText(job) + ' · 一天 ' + job.tasks + ' 单 · ¥' + careerDailyPay(job) + '</div></div>' +
+          '<button class="sbtn" data-clockin="1">打卡上班</button></div>');
+      }
     }
   }
 
@@ -12297,7 +12330,8 @@ function takeGood(id){
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
   if (MONEY < g.price){ showFloat('还差 ¥' + (g.price - MONEY), px, py); SND.err(); return false; }
   debit(g.price, 'food', g.name);
-  applyFx({ hunger: g.hunger, thirst: g.thirst }, { gx: px, gy: py });
+  /* emotion 也要生效：咖啡和奶茶主要是给情绪的 */
+  applyFx({ hunger: g.hunger, thirst: g.thirst, emotion: g.emotion }, { gx: px, gy: py });
   showFloat(g.name + ' · ¥' + g.price, px, py);
   if (Number(g.hunger) > 0){ try { firstMark('meal'); } catch(e){} }
   SND.coin();
@@ -12314,6 +12348,12 @@ if (counterEl){
     if (b.hasAttribute('data-dish')) eatDish(b.getAttribute('data-dish'));
     else if (b.hasAttribute('data-good')) takeGood(b.getAttribute('data-good'));
     else if (b.hasAttribute('data-grocery')) buyGroceries(COUNTER_ZONE, 1);
+    else if (b.hasAttribute('data-clockin')){
+      const job = JOB_BY_ZONE[COUNTER_ZONE];
+      if (job && clockIn(job)) toggleWork(true);      // toggleWork 会顺手关掉柜台
+      else renderCounter();
+    }
+    else if (b.hasAttribute('data-workopen')) toggleWork(true);
   });
 }
 

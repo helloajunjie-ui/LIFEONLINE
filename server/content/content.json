@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-12T09:52:16.492Z",
+  "generatedAt": "2026-11-12T10:06:02.219Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -44,9 +44,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "characters/npcs.neighbors.json": {
-      "version": 10,
-      "hash": "9c58bee71595",
-      "updatedAt": "2026-11-12T09:52:16.484Z"
+      "version": 11,
+      "hash": "7a576b37e150",
+      "updatedAt": "2026-11-12T10:06:02.207Z"
     },
     "characters/palettes.json": {
       "version": 1,
@@ -119,9 +119,9 @@
       "updatedAt": "2026-11-05T19:17:35.958Z"
     },
     "rules/economy.json": {
-      "version": 5,
-      "hash": "44301bbfc094",
-      "updatedAt": "2026-11-05T19:40:49.807Z"
+      "version": 6,
+      "hash": "1ba7b3eada81",
+      "updatedAt": "2026-11-12T10:06:02.212Z"
     },
     "rules/survival.json": {
       "version": 6,

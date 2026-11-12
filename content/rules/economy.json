@@ -190,5 +190,98 @@
         "cooldownMinutes": 30
       }
     ]
-  }
+  },
+  "marts": [
+    {
+      "zone": "shop1",
+      "name": "便利店",
+      "note": "货架小、单价高，胜在 24 小时。",
+      "goods": [
+        {
+          "id": "good.onigiri",
+          "name": "饭团",
+          "price": 8,
+          "hunger": 22,
+          "desc": "冷的，能顶一阵"
+        },
+        {
+          "id": "good.oden",
+          "name": "关东煮",
+          "price": 11,
+          "hunger": 26,
+          "thirst": 8,
+          "desc": "热汤，冷天最实在"
+        },
+        {
+          "id": "good.cannedcoffee",
+          "name": "罐装咖啡",
+          "price": 7,
+          "emotion": 8,
+          "desc": "苦得很直接"
+        }
+      ]
+    },
+    {
+      "zone": "shop2",
+      "name": "咖啡店",
+      "note": "坐一会儿比喝了什么更要紧。",
+      "goods": [
+        {
+          "id": "good.americano",
+          "name": "美式",
+          "price": 15,
+          "emotion": 12,
+          "thirst": 10,
+          "desc": "苦，但醒"
+        },
+        {
+          "id": "good.latte",
+          "name": "拿铁",
+          "price": 18,
+          "emotion": 14,
+          "thirst": 12,
+          "hunger": 5,
+          "desc": "奶味重，暖手"
+        },
+        {
+          "id": "good.croissant",
+          "name": "可颂",
+          "price": 12,
+          "hunger": 20,
+          "desc": "早上配咖啡"
+        }
+      ]
+    },
+    {
+      "zone": "shop5",
+      "name": "奶茶店",
+      "note": "甜的东西让人心情好一点。",
+      "goods": [
+        {
+          "id": "good.bobatea",
+          "name": "珍珠奶茶",
+          "price": 14,
+          "thirst": 22,
+          "emotion": 10,
+          "desc": "三分糖，去冰"
+        },
+        {
+          "id": "good.lemonade",
+          "name": "柠檬水",
+          "price": 10,
+          "thirst": 25,
+          "desc": "酸，解渴"
+        },
+        {
+          "id": "good.cake",
+          "name": "小蛋糕",
+          "price": 15,
+          "hunger": 18,
+          "emotion": 6,
+          "desc": "一口一个"
+        }
+      ]
+    }
+  ],
+  "martsNote": "小店的货架：和超市 mart 同一套结构（zone/name/goods）。有柜台的店，点门面就能买；如果这家还招人，柜台底下会多一个「打卡上班」。"
 }

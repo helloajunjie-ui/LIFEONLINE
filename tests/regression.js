@@ -4251,6 +4251,53 @@
             applySave(orig);
           }
 
+          // ---------- SH：小店柜台（便利店/咖啡店/菜市场/奶茶店） ----------
+          {
+            const small = ['shop1', 'shop2', 'shop3', 'shop5'];
+            const defs = small.map(z => counterZoneDef(z));
+            const allCounter = defs.every(d => d && d.kind === 'mart');
+            const hasGoods = ['shop1', 'shop2', 'shop5'].every(z =>
+              (counterZoneDef(z).def.goods || []).length >= 2);
+            /* 菜市场只有食材包——它的 groceries 数据一直存在，
+             * 但以前没有柜台，等于"卖菜的地方进不去" */
+            const marketOnly = (counterZoneDef('shop3').def.goods || []).length === 0 &&
+              !!groceryFor('shop3');
+            P('SH1 every small shop opens a counter', allCounter && hasGoods && marketOnly,
+              defs.map((d, i) => small[i] + ':' + ((d && d.def.goods) || []).length).join(' '));
+
+            const bak = { money: MONEY, emo: STATS.emotion, cz: COUNTER_ZONE,
+                          bag: BAG, pantry: PANTRY, day: LAST_SHIFT_DAY, job: LAST_SHIFT_JOB };
+            COUNTER_ZONE = 'shop2'; MONEY = 100; STATS.emotion = 40;
+            const price = (counterZoneDef('shop2').def.goods.find(g => g.id === 'good.americano') || {}).price;
+            const bought = takeGood('good.americano');
+            const paidRight = (100 - MONEY) === price;
+            const emoUp = STATS.emotion > 40;
+            P('SH2 a counter charges the listed price and applies its effects',
+              bought && paidRight && emoUp, 'paid=' + (100 - MONEY) + '/' + price + ' emo=' + STATS.emotion);
+
+            COUNTER_ZONE = 'shop3'; PANTRY = 0; BAG = 0; MONEY = 100;
+            const gained = buyGroceries('shop3', 1);
+            const gDef = groceryFor('shop3');
+            P('SH3 the market really sells ingredients',
+              gained === gDef.pack && BAG === gained && MONEY === 100 - gDef.price,
+              'gained=' + gained + ' bag=' + BAG + ' money=' + MONEY);
+
+            /* 这几家店同时招人：柜台里必须有打卡入口，
+             * 否则"加柜台"会把原来的上班面板挡掉 */
+            COUNTER_ZONE = 'shop1'; LAST_SHIFT_DAY = 0; LAST_SHIFT_JOB = '';
+            renderCounter();
+            const canClock = !!counterList.querySelector('[data-clockin]');
+            LAST_SHIFT_DAY = DAY; LAST_SHIFT_JOB = 'job.store';
+            renderCounter();
+            const afterWork = !counterList.querySelector('[data-clockin]') &&
+              /上过/.test(counterList.textContent || '');
+            P('SH4 a shop counter still lets you clock in, and says so after a shift',
+              canClock && afterWork, 'before=' + canClock + ' afterShift=' + afterWork);
+
+            MONEY = bak.money; STATS.emotion = bak.emo; COUNTER_ZONE = bak.cz;
+            BAG = bak.bag; PANTRY = bak.pantry; LAST_SHIFT_DAY = bak.day; LAST_SHIFT_JOB = bak.job;
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;
