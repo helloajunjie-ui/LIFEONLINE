@@ -1159,7 +1159,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T07:37:08.216Z */
+/* 由 tools/build.mjs 生成：2026-11-12T07:52:15.985Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2652,12 +2652,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.40.0",
+  "appVersion": "1.41.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 19,
   "contentVersion": 1,
   "contentHash": "11a55bcc4a84",
-  "builtAt": "2026-11-12T07:37:08.209Z",
+  "builtAt": "2026-11-12T07:52:15.977Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
@@ -3395,26 +3395,42 @@ let DPR = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
 
 /* ---------- 音效系统（WebAudio 合成，无外部文件） ---------- */
 const SND = {
-  ctx: null, on: true,
+  ctx: null, on: true, master: null,
   ensure(){
     if (!this.on) return null;
     if (!this.ctx){
       try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
       catch(e){ return null; }
+      /* 主总线：所有声音（音效 + 声景）都从这里出，末端挂一个限幅器。
+       * 原来是每个音各自连 destination，连点几次按钮就会叠出爆音。 */
+      try {
+        const comp = this.ctx.createDynamicsCompressor();
+        comp.threshold.value = -18; comp.knee.value = 12; comp.ratio.value = 4;
+        comp.attack.value = 0.004; comp.release.value = 0.18;
+        const master = this.ctx.createGain();
+        master.gain.value = 0.9;
+        master.connect(comp); comp.connect(this.ctx.destination);
+        this.master = master;
+      } catch(e){ this.master = null; }
     }
     if (this.ctx.state === 'suspended'){ try{ this.ctx.resume(); }catch(e){} }
     return this.ctx;
   },
+  out(ac){ return this.master || ac.destination; },
   tone(freq, dur, type, vol, slideTo){
     const ac = this.ensure(); if (!ac) return;
     try {
+      /* 同一件事每次听感都不一样：音高 ±2.5%、音量 ±18%。
+       * 固定频率重复触发是"电子音"最容易让人腻的地方。 */
+      const f = freq * (0.975 + Math.random() * 0.05);
+      const v = (vol || 0.08) * (0.82 + Math.random() * 0.36);
       const o = ac.createOscillator(), g = ac.createGain();
       o.type = type || 'sine';
-      o.frequency.setValueAtTime(freq, ac.currentTime);
-      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo), ac.currentTime + dur);
-      g.gain.setValueAtTime(vol || 0.08, ac.currentTime);
+      o.frequency.setValueAtTime(f, ac.currentTime);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo * (0.97 + Math.random() * 0.06)), ac.currentTime + dur);
+      g.gain.setValueAtTime(v, ac.currentTime);
       g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
-      o.connect(g); g.connect(ac.destination);
+      o.connect(g); g.connect(this.out(ac));
       o.start(); o.stop(ac.currentTime + dur + 0.02);
     } catch(e){}
   },
@@ -3448,12 +3464,14 @@ const SND = {
       const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 340;
       const lp = ac.createBiquadFilter(); lp.type = 'lowpass';  lp.frequency.value = 1200; lp.Q.value = 0.5;
       const g = ac.createGain(); g.gain.value = 0;
-      src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(ac.destination);
+      src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(this.out(ac));
       src.start();
       this._rainSrc = src; this._rainGain = g;
     }
     const target = (this.on && on) ? (vol == null ? 0.1 : vol) : 0;
     try { this._rainGain.gain.setTargetAtTime(target, ac.currentTime, 0.5); } catch (e){}
+    /* 雨一开，风声自动让位（低频不叠在一起） */
+    this._ambTarget(this._ambKind);
   },
   /** 雷声：低频噪声 + 快速衰减，像远处的闷雷 */
   thunder(){
@@ -3468,8 +3486,122 @@ const SND = {
     const src = ac.createBufferSource(); src.buffer = buf;
     const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240;
     const g = ac.createGain(); g.gain.value = 0.24;
-    src.connect(lp); lp.connect(g); g.connect(ac.destination);
+    src.connect(lp); lp.connect(g); g.connect(this.out(ac));
     src.start();
+  },
+
+  /* ---------- 声景（环境音床）----------
+   * 晴天走进小区原本是完全静音的，那是最"像 Demo"的地方。
+   * 这里补一层程序化底噪：街上是风 + 鸟（夜里有虫），家里是极轻的房间底噪。
+   * 全部由噪声 + 滤波器合成，不加载任何音频文件，仍然是单文件离线可玩。
+   *
+   * 两条规范要点：
+   *  1) 切换场景不能硬切——用 1.5s 时间常数淡入淡出，玩家只会"感觉到"变化；
+   *  2) 昼夜用同一个参数驱动（nightFactor），而不是另外存一份时间。 */
+  _amb: null, _ambKind: null, _nextCritter: 0,
+  _noiseBuf(ac, sec){
+    if (this._nb && this._nb.ac === ac) return this._nb.buf;
+    const len = Math.floor(ac.sampleRate * (sec || 2));
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    /* 棕噪声（随机游走）：比白噪声更接近风，低频更厚、高频不刺 */
+    let last = 0;
+    for (let i = 0; i < len; i++){
+      last = (last + (Math.random() * 2 - 1) * 0.02) * 0.995;
+      d[i] = last;
+    }
+    this._nb = { ac: ac, buf: buf };
+    return buf;
+  },
+  /** 切换声景。kind: 'street' | 'home' | null(静音) */
+  ambience(kind){
+    if (!this.on){ this._ambKind = kind; this._ambTarget(null); return; }
+    const ac = this.ensure();
+    this._ambKind = kind;
+    if (!ac) return;
+    if (!this._amb){
+      try {
+        const src = ac.createBufferSource();
+        src.buffer = this._noiseBuf(ac, 3); src.loop = true;
+        const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 85;
+        const lp = ac.createBiquadFilter(); lp.type = 'lowpass';  lp.frequency.value = 420; lp.Q.value = 0.6;
+        const g = ac.createGain(); g.gain.value = 0;
+        /* 0.07Hz 的慢速起伏，避免风变成一条死线 */
+        const lfo = ac.createOscillator(); lfo.frequency.value = 0.07;
+        const lfoG = ac.createGain(); lfoG.gain.value = 110;
+        lfo.connect(lfoG); lfoG.connect(lp.frequency);
+        src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(this.out(ac));
+        src.start(); lfo.start();
+        this._amb = { src: src, lp: lp, g: g, lfo: lfo };
+      } catch(e){ return; }
+    }
+    this._ambTarget(kind);
+  },
+  _ambTarget(kind){
+    const ac = this.ctx, a = this._amb;
+    if (!ac || !a) return;
+    const street = kind === 'street';
+    /* 下雨时风本来就被雨盖住，压到三成，避免低频糊成一团 */
+    const duck = (typeof WX !== 'undefined' && WX.rainOn) ? 0.3 : 1;
+    const target = (!this.on || !kind) ? 0 : (street ? 0.07 : 0.024) * duck;
+    const tc = target === 0 ? 0.35 : 1.5;
+    try {
+      a.g.gain.setTargetAtTime(target, ac.currentTime, tc);
+      a.lp.frequency.setTargetAtTime(street ? 430 : 230, ac.currentTime, tc);
+    } catch(e){}
+  },
+  /** 一只鸟：2–4 声短促上滑。夜里换成虫鸣。 */
+  _bird(){
+    const ac = this.ensure(); if (!ac) return;
+    try {
+      const n = 2 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < n; i++){
+        const t = ac.currentTime + i * 0.1 + Math.random() * 0.05;
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'sine';
+        const f = 2300 + Math.random() * 1100;
+        o.frequency.setValueAtTime(f, t);
+        o.frequency.exponentialRampToValueAtTime(f * 1.3, t + 0.05);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.016, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+        o.connect(g); g.connect(this.out(ac));
+        o.start(t); o.stop(t + 0.09);
+      }
+    } catch(e){}
+  },
+  _cricket(){
+    const ac = this.ensure(); if (!ac) return;
+    try {
+      for (let i = 0; i < 3; i++){
+        const t = ac.currentTime + i * 0.055;
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'square';
+        o.frequency.value = 4200 + Math.random() * 500;
+        g.gain.setValueAtTime(0.006, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.032);
+        o.connect(g); g.connect(this.out(ac));
+        o.start(t); o.stop(t + 0.04);
+      }
+    } catch(e){}
+  },
+  /** 每帧调用（很便宜：一次 performance.now 比较）。只在户外、没下雨、窗口可见时出声。 */
+  ambientTick(){
+    if (!this.on || !this.ctx || this.ctx.state !== 'running') return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    const outdoor = (typeof scene !== 'undefined') && (scene === 'street' || scene === 'visit');
+    if (!outdoor) return;
+    if (typeof WX !== 'undefined' && WX.rainOn) return;
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    if (now < this._nextCritter) return;
+    const nf = (typeof nightFactor === 'function') ? nightFactor() : 0;
+    if (nf < 0.35){
+      this._bird();
+      this._nextCritter = now + 2600 + Math.random() * 5600;
+    } else {
+      this._cricket();
+      this._nextCritter = now + 900 + Math.random() * 1700;
+    }
   }
 };
 const sndBtn = document.getElementById('sndBtn');
@@ -3479,9 +3611,21 @@ sndBtn.addEventListener('click', ()=>{
   refreshSndBtn();
   if (!SND.on){ try { SND.rain(false); } catch(e){} }
   else if (WX.rainOn){ try { SND.rain(true, 0.09); } catch(e){} }
+  /* 声景跟着开关走：关掉时淡出到 0，打开时按当前场景淡回来 */
+  try { SND.ambience(scene === 'street' || scene === 'visit' ? 'street' : 'home'); } catch(e){}
   if (SND.on) SND.click();
   saveGame();
 });
+/* 浏览器不允许在用户操作之前起 AudioContext，所以声景只能在第一次点击/按键时挂上去。
+ * 只挂一次：之后换场景由 switchScene 自己接管。 */
+let _sndKicked = false;
+function kickAmbience(){
+  if (_sndKicked) return;
+  _sndKicked = true;
+  try { SND.ambience(scene === 'home' ? 'home' : 'street'); } catch(e){}
+}
+document.addEventListener('pointerdown', kickAmbience, { once: true });
+document.addEventListener('keydown', kickAmbience, { once: true });
 
 /* ---------- 房间 / 墙定义 ----------
  * 家 = 房子（外墙围合）+ 院子（外圈围栏）。坐标 gx 向右、gy 向下。 */
@@ -7926,6 +8070,8 @@ function loop(now){
     _lastSceneTag = scene;
     if (scene === 'home' && typeof stashBag === 'function') stashBag();
   }
+  /* 声景的鸟/虫按"下一次该叫的时间"调度，这里只是每帧看一眼，开销是一次比较 */
+  SND.ambientTick();
   /* 银行利息 / 定期到期 / 贷款扣款：挂在主循环里检测"结算日落后了"，
    * 而不是在三个跨天点各调一次。financeTick 自带游标，重复调用无害。 */
   if (typeof financeTick === 'function' && BANK.lastDay !== DAY) financeTick();
@@ -8660,6 +8806,8 @@ function switchScene(to, houseIdx){
     // 回到院子里（院子出口内侧一格）
     PLAYER.fx = DOOR_YARD.gx; PLAYER.fy = DOOR_YARD.gy - 1;
   }
+  /* 声景跟着场景走：小区/别人家是户外底噪，自己家是室内底噪。淡变由 SND 内部处理 */
+  try { SND.ambience(scene === 'home' ? 'home' : 'street'); } catch(e){}
   // 立即把相机对准角色
   const pc = worldToScreen(PLAYER.fx, PLAYER.fy);
   cam.x = viewW/2 - pc.x;

@@ -3742,6 +3742,31 @@
               end.map(x => x.id + ':' + x.g.toFixed(2)).join(' '));
           }
 
+          // ---------- AO：声景（没音频设备 / 静音 / 未获手势授权时必须是安全空转） ----------
+          {
+            const has = ['ensure', 'out', 'ambience', 'ambientTick'].every(k => typeof SND[k] === 'function');
+            let threw = null;
+            try {
+              SND.ambience('street');
+              SND.ambience('home');
+              for (let i = 0; i < 50; i++) SND.ambientTick();
+            } catch(e){ threw = String(e); }
+            P('AO1 ambience hooks exist and never throw', has && !threw && SND._ambKind === 'home',
+              'has=' + has + ' kind=' + SND._ambKind + ' err=' + threw);
+          }
+          {
+            const before = SND.on;
+            let threw = null;
+            try {
+              SND.on = false;
+              SND.click(); SND.coin(); SND.err(); SND.pay(); SND.build();
+              SND.ambience('street');
+              SND.ambientTick();
+            } catch(e){ threw = String(e); }
+            SND.on = before;
+            P('AO2 muted audio is a safe no-op', !threw, 'err=' + threw);
+          }
+
           placed = dc.placed; inventory = dc.inv; ESTATES = dc.estates;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

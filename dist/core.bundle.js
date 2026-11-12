@@ -1,4 +1,4 @@
-/* 由 tools/build.mjs 生成：2026-11-12T07:37:08.216Z */
+/* 由 tools/build.mjs 生成：2026-11-12T07:52:15.985Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -1491,12 +1491,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.40.0",
+  "appVersion": "1.41.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 19,
   "contentVersion": 1,
   "contentHash": "11a55bcc4a84",
-  "builtAt": "2026-11-12T07:37:08.209Z",
+  "builtAt": "2026-11-12T07:52:15.977Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 2,
