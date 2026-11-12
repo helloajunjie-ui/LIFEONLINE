@@ -1174,7 +1174,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T09:54:55.682Z */
+/* 由 tools/build.mjs 生成：2026-11-12T09:57:02.352Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2674,12 +2674,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.59.0",
+  "appVersion": "1.60.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "39cb468b293b",
-  "builtAt": "2026-11-12T09:54:55.675Z",
+  "builtAt": "2026-11-12T09:57:02.342Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -7501,13 +7501,14 @@ function shopOpenNow(zoneId, minute){
   return clerkOnDuty(c, minute);
 }
 
-/** 抽一句台词，尽量不和上一句重复 */
-function clerkLine(c, pool){
+/** 抽一句台词，尽量不和上一句重复；skip 用来避开"初次见面"那一句 */
+function clerkLine(c, pool, skip){
   const arr = (c.lines && c.lines[pool]) || [];
   if (!arr.length) return '……';
   if (arr.length === 1) return arr[0];
-  let i = Math.floor(Math.random() * arr.length);
-  if (i === c._lastLine) i = (i + 1) % arr.length;
+  const from = (skip >= 0 && arr.length > skip + 1) ? skip + 1 : 0;
+  let i = from + Math.floor(Math.random() * (arr.length - from));
+  if (i === c._lastLine) i = from + ((i - from + 1) % (arr.length - from));
   c._lastLine = i;
   return arr[i];
 }
@@ -11383,7 +11384,13 @@ const VERB_HOOKS = {
   clerkHello(ctx){
     const c = ctx.npc;
     STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 6));
-    showFloat(c.name + '："' + clerkLine(c, 'hello') + '"', c.fx, c.fy, 3.4);
+    /* 第一次来先说 hello[0]（那句是"初次见面"的口吻），之后就从第二句起抽。
+     * 记住这件事靠存档里的事件标签，不用新开字段——上限 40 装得下 16 个店员。 */
+    const tag = 'clerk.' + c.id;
+    const first = !achEventSeen(tag);
+    const line = first ? ((c.lines.hello || [])[0] || '……') : clerkLine(c, 'hello', 0);
+    if (first) { try { firstMark(tag); } catch(e){} }
+    showFloat(c.name + '："' + line + '"', c.fx, c.fy, 3.4);
     SND.talk();
     c.appearance.faceStyle = 1;
   },
@@ -11392,7 +11399,7 @@ const VERB_HOOKS = {
   clerkTip(ctx){
     const c = ctx.npc;
     STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 2));
-    showFloat(c.name + '："' + clerkLine(c, 'tip') + '"', c.fx, c.fy, 3.8);
+    showFloat(c.name + '："' + clerkLine(c, 'tip', -1) + '"', c.fx, c.fy, 3.8);
     SND.talk();
     c.appearance.faceStyle = 0;
   },

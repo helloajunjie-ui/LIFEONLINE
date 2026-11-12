@@ -4154,6 +4154,23 @@
               'bank@12=' + shopOpenNow('shop_bank', 12 * 60) +
               ' bank@3=' + shopOpenNow('shop_bank', 3 * 60) +
               ' mart@3=' + shopOpenNow('shop1', 3 * 60));
+
+            /* 熟人：第一次说 hello[0]，第二次换一句，并且记住"见过这个人"。
+             * 记住这件事走 ACH.events，不新开存档字段。 */
+            const bakA = ACH;
+            ACH = { unlocked: {}, visited: [], events: [] };
+            const cf = CLERKS.find(c => (c.lines.hello || []).length >= 2) || CLERKS[0];
+            floats.length = 0;
+            VERB_HOOKS.clerkHello({ npc: cf, effects: { emotion: 6 } });
+            const l1 = floats.length ? floats[floats.length - 1].text : '';
+            const marked = achEventSeen('clerk.' + cf.id);
+            VERB_HOOKS.clerkHello({ npc: cf, effects: { emotion: 6 } });
+            const l2 = floats.length ? floats[floats.length - 1].text : '';
+            P('AZ5 a clerk remembers you after the first hello',
+              marked && l1.indexOf(cf.lines.hello[0]) > 0 && l2 !== l1,
+              'marked=' + marked + ' first=' + l1.slice(0, 18) + ' second=' + l2.slice(0, 18));
+            ACH = bakA;
+            floats.length = bak.floats;
           }
 
           placed = dc.placed;
