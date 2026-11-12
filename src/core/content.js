@@ -316,9 +316,9 @@ export function toLegacyRules(){
   return {
     DECAY: {
       hunger: stats.hunger ? stats.hunger.decayPerGameMinute : 0.05,
-      thirst: stats.thirst ? stats.thirst.decayPerGameMinute : 0.07
+      thirst: stats.thirst ? stats.thirst.decayPerGameMinute : 0.05
     },
-    EMOTION_DECAY: stats.emotion ? stats.emotion.decayPerGameMinute : 0.06,
+    EMOTION_DECAY: stats.emotion ? stats.emotion.decayPerGameMinute : 0.025,
     WORK_PAY: (s.work && s.work.pay) ?? 60,
     WORK_TIME: (s.work && s.work.durationSec) ?? 5,
     WORK_COST: (s.work && s.work.cost) || { hunger: 1.5, thirst: 2 },

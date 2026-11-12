@@ -27,8 +27,22 @@
     const _vilN = HOUSE_LEVELS.filter(l => l.type === 'villa').length;
     P('C5 house levels from content', HOUSE_LEVELS.length === 8 && _aptN === 5 && _vilN === 3 && HOUSE_LEVELS[1].walls.length === 0 && HOUSE_LEVELS[1].w === 17, 'lv=' + HOUSE_LEVELS.length + ' apt=' + _aptN + ' villa=' + _vilN + ' lv1w=' + HOUSE_LEVELS[1].w);
     P('C6 styles from content', FLOOR_STYLES.length === 4 && WALL_STYLES.length === 4 && FLOOR_STYLES[1].pattern === 'tile');
-    P('C7 rules from content', Math.abs(DECAY.hunger - 0.05) < 1e-9 && Math.abs(EMOTION_DECAY - 0.06) < 1e-9 && WORK_PAY === 60,
-      JSON.stringify({ hunger: DECAY.hunger, emo: EMOTION_DECAY, pay: WORK_PAY }));
+    P('C7 rules from content', Math.abs(DECAY.hunger - 0.05) < 1e-9 && Math.abs(DECAY.thirst - 0.05) < 1e-9 &&
+      Math.abs(EMOTION_DECAY - 0.025) < 1e-9 && WORK_PAY === 60,
+      JSON.stringify({ hunger: DECAY.hunger, thirst: DECAY.thirst, emo: EMOTION_DECAY, pay: WORK_PAY }));
+    /* 日衰减必须落在满格的 25%~100%：0 就没有生存压力，>100% 则一整天都补不满。
+     * 三条状态都按"一天要做几次动作"反推，改数值时这张表要一起改。 */
+    {
+      const perDay = k => {
+        const def = (STATS_DEF.byId && STATS_DEF.byId[k]) || {};
+        const max = def.max || 100;
+        return def.decayPerGameMinute * 1440 / max;
+      };
+      const band = ['hunger', 'thirst', 'emotion'].map(perDay);
+      P('C7b daily drain sits inside the 25-100% band',
+        band.every(v => v >= 0.25 && v <= 1.0),
+        band.map(v => (v * 100).toFixed(0) + '%').join(' / '));
+    }
     // realtime 模式下 MINUTE 来自北京时间，game 模式才从 startMinute 开始
     const clockOk = (TIME_SOURCE === 'realtime')
       ? (MINUTE >= 0 && MINUTE < 1440)

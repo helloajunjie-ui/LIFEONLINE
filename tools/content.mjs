@@ -1069,6 +1069,63 @@ function validate(){
     }
   }
 
+  /* V4.16 生存数值：0-100 的三条状态，"每天掉多少"必须和"一次能补多少"对得上。
+   * 这两边任何一边写歪了都不会报错，只会让玩家永远渴着/永远不开心，或者反过来
+   * 吃一顿管三天，让吃饭喝水整套玩法形同虚设。
+   *   判据：日衰减 ÷ 该状态平均单次恢复 = 一天需要的动作次数，必须 ≤ 8 次。 */
+  {
+    const sv = packs['rules/survival.json'];
+    if (!sv) problems.push('[生存] 缺少 rules/survival.json');
+    else {
+      const stats = sv.stats || {};
+      const DAY_MIN = 1440;
+      /* 收集所有正向恢复来源：家具交互 + 三餐 + 饭馆 + 超市 + 门诊 */
+      const srcs = {};
+      const addFx = (eff) => {
+        for (const [k, v] of Object.entries(eff || {})){
+          if (!stats[k]) continue;
+          if (typeof v !== 'number' || v <= 0) continue;
+          (srcs[k] = srcs[k] || []).push(v);
+        }
+      };
+      for (const it of items){
+        const ix = it.interaction || {};
+        if (ix.effects) addFx(ix.effects);
+        for (const a of ix.acts || []) addFx(a.effects);
+      }
+      const eco = packs['rules/economy.json'] || {};
+      const food = eco.food || {};
+      for (const key of ['cook', 'meal', 'snack']) addFx(food[key]);
+      for (const d of (eco.restaurant || {}).menu || []) addFx(d);
+      for (const g of (eco.mart || {}).goods || []) addFx(g);
+      for (const s of (eco.clinic || {}).services || []) addFx(s.effects || {});
+
+      for (const [id, st] of Object.entries(stats)){
+        const max = Number(st.max) || 100;
+        const decay = Number(st.decayPerGameMinute) || 0;
+        const perDay = decay * DAY_MIN;
+        if (!(perDay >= max * 0.25 && perDay <= max * 1.0)){
+          problems.push('[生存] ' + id + ' 日衰减 ' + perDay.toFixed(1) +
+            ' 应在满格的 25%~100% 之间（太少没有生存感，太多必掉格）');
+        }
+        const list = srcs[id] || [];
+        if (list.length < 3){
+          problems.push('[生存] ' + id + ' 只有 ' + list.length + ' 个恢复来源，至少要有 3 个');
+        } else {
+          const avg = list.reduce((a, b) => a + b, 0) / list.length;
+          const need = perDay / avg;
+          if (need > 8){
+            problems.push('[生存] ' + id + ' 每天要补 ' + perDay.toFixed(1) + ' 点，平均单次只 +' +
+              avg.toFixed(1) + '，等于一天要做 ' + need.toFixed(1) + ' 次（上限 8）');
+          }
+          if (Math.max(...list) < max * 0.2){
+            problems.push('[生存] ' + id + ' 最大的单次恢复只有 ' + Math.max(...list) + '，没有一个能补到两成');
+          }
+        }
+      }
+    }
+  }
+
   /* V4 引用完整性：地图 → 房屋/NPC/目标地图 */
   const mapIds = new Set(all.filter(p => p.renderer).map(p => p.id));
   for (const p of all.filter(p => p.renderer)){

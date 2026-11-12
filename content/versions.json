@@ -120,9 +120,9 @@
     "updatedAt": "2026-11-05T19:40:49.807Z"
   },
   "rules/survival.json": {
-    "version": 5,
-    "hash": "1d0d3ccce7d0",
-    "updatedAt": "2026-11-05T19:42:27.307Z"
+    "version": 6,
+    "hash": "75e1f3ea0d42",
+    "updatedAt": "2026-11-12T08:55:33.995Z"
   },
   "stock/stock.json": {
     "version": 2,
