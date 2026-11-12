@@ -16,7 +16,8 @@
         "faceStyle": 2,
         "acc": "band",
         "age": "elder",
-        "sex": "m"
+        "sex": "m",
+        "facial": "stubble"
       },
       "spawn": {
         "x": 10,
@@ -87,7 +88,8 @@
         "faceStyle": 0,
         "acc": "tote",
         "age": "adult",
-        "sex": "f"
+        "sex": "f",
+        "earring": true
       },
       "spawn": {
         "x": 38,
@@ -299,7 +301,8 @@
         "faceStyle": 2,
         "acc": "cane",
         "age": "elder",
-        "sex": "m"
+        "sex": "m",
+        "facial": "mustache"
       },
       "spawn": {
         "x": 18,
@@ -513,7 +516,8 @@
         "acc": "apron",
         "age": "teen",
         "sex": "f",
-        "uniform": "food"
+        "uniform": "food",
+        "earring": true
       },
       "lines": {
         "hello": [
@@ -547,7 +551,8 @@
         "acc": "apron",
         "age": "elder",
         "sex": "m",
-        "uniform": "food"
+        "uniform": "food",
+        "facial": "mustache"
       },
       "lines": {
         "hello": [
@@ -613,7 +618,8 @@
         "acc": "bag",
         "age": "adult",
         "sex": "f",
-        "uniform": "office"
+        "uniform": "office",
+        "earring": true
       },
       "lines": {
         "hello": [
@@ -645,7 +651,8 @@
         "faceStyle": 2,
         "acc": "cane",
         "age": "elder",
-        "sex": "m"
+        "sex": "m",
+        "facial": "stubble"
       },
       "lines": {
         "hello": [
@@ -743,7 +750,8 @@
         "faceStyle": 1,
         "acc": "tote",
         "age": "adult",
-        "sex": "f"
+        "sex": "f",
+        "earring": true
       },
       "lines": {
         "hello": [
@@ -809,7 +817,8 @@
         "acc": "bag",
         "age": "elder",
         "sex": "m",
-        "uniform": "uniform"
+        "uniform": "uniform",
+        "facial": "stubble"
       },
       "lines": {
         "hello": [
@@ -875,7 +884,8 @@
         "acc": "band",
         "age": "elder",
         "sex": "m",
-        "uniform": "uniform"
+        "uniform": "uniform",
+        "facial": "beard"
       },
       "lines": {
         "hello": [
@@ -892,5 +902,6 @@
   "clerksNote": "店员：站在自己门口，按 hours（24 小时制，含头不含尾）上下班。lines.hello 是打招呼，lines.tip 是\"这家店怎么用\"，新手不知道柜台能点的时候，问一句话比翻说明快。 便利店 24 小时（[0,24]），深夜也有人。 便利店 24 小时（[0,24]），深夜也有人。",
   "accNote": "appearance.acc 是剪影配饰：apron 围裙 / band 发带 / bag 挎包 / tote 手提袋 / scarf 围巾 / cane 拐杖。可省略（等于 none）。颜色已经有区分时，配饰负责\"远看也能分出是谁\"——美术规范里要求每个角色一条颜色线索 + 一条剪影线索。",
   "profNote": "appearance 的三层识别：age（kid/teen/adult/elder，改头身比与眼睛大小）、sex（f/m/x，改肩宽与睫毛）、uniform（food/office/medical/uniform/delivery，画制服层）。acc 是剪影配饰，和 uniform 叠加使用：制服管\"是干什么的\"，配饰管\"是谁\"。",
-  "hairNote": "hairStyle 0~10：短发 / 中发 / 长发 / 卷发 / 双马尾 / 短刺 / 丸子头 / 齐耳短发 / 高马尾 / 短寸 / 麻花辫。0~5 的刘海在上方，6~10 各自有独立的剪影。"
+  "hairNote": "hairStyle 0~10：短发 / 中发 / 长发 / 卷发 / 双马尾 / 短刺 / 丸子头 / 齐耳短发 / 高马尾 / 短寸 / 麻花辫。0~5 的刘海在上方，6~10 各自有独立的剪影。",
+  "faceNote": "facial：胡茬 stubble / 小胡子 mustache / 络腮 beard（都不碰眼鼻）；earring：耳垂下一颗小金属点。这两样比再加发型更容易\"一眼认出是谁\"。"
 }

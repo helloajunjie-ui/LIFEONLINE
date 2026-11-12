@@ -4580,6 +4580,23 @@
                 'styles=' + Object.keys(seen).length + ' bad=' + bad.join(',') + ' out=' + outOf.join(','));
             }
 
+            /* 胡须与耳环：脸这一层最后补的两样，都必须在、且要进缓存键 */
+            {
+              const plain = charSVG(base0, 'idle');
+              const stub = charSVG(Object.assign({}, base0, { facial: 'stubble' }), 'idle');
+              const mus = charSVG(Object.assign({}, base0, { facial: 'mustache' }), 'idle');
+              const brd = charSVG(Object.assign({}, base0, { facial: 'beard' }), 'idle');
+              const err = charSVG(Object.assign({}, base0, { earring: true }), 'idle');
+              P('AT14 facial hair and earrings draw, and they reach the cache key',
+                stub !== plain && stub.indexOf('rgba(70,56,44,.22)') > 0 &&
+                mus.indexOf('M21.2,29.4') > 0 &&
+                (brd.split('M21.2,29.4').length - 1) === 1 && brd.indexOf('M19.4,30.6') > 0 &&
+                err.indexOf('#dcb86e') > 0 && plain.indexOf('#dcb86e') < 0 &&
+                charKey(Object.assign({}, base0, { facial: 'beard' }), 'idle') !== charKey(base0, 'idle') &&
+                charKey(Object.assign({}, base0, { earring: true }), 'idle') !== charKey(base0, 'idle'),
+                'stub/mus/brd/err = ' + [stub !== plain, mus !== plain, brd !== plain, err !== plain].join(','));
+            }
+
             P('AT8 characters get a consistent outline',
               noneG.indexOf('stroke="' + ACC_PAL.line + '"') > 0 &&
               (noneG.split('stroke="' + ACC_PAL.line + '"').length - 1) >= 6,

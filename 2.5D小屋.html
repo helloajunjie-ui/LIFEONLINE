@@ -2804,6 +2804,7 @@ function charKey(app, frame){
   return [app.skin, app.hair, app.top, app.bottom, app.shoes, app.face,
           app.hairStyle||0, app.faceStyle||0, app.acc||'none',
           app.age||'adult', app.sex||'x', app.uniform||'',
+          app.facial||'', app.earring?'e':'',
           app.glasses?'g':'', app.eye||'', frame].join('|');
 }
 
@@ -3008,6 +3009,21 @@ function charSVG(app, frame){
     + '<rect x="18.6" y="24.2" width="4.6" height="4" rx="1.9" fill="rgba(210,235,245,.22)"/>'
     + '<rect x="24.8" y="24.2" width="4.6" height="4" rx="1.9" fill="rgba(210,235,245,.22)"/>' : '';
 
+  /* 胡须：老/中年男性最省事的年龄线索（比"眼睛小一号"直观多了）。
+   * 三种：胡茬（一片阴影）/ 小胡子 / 络腮。都收在下半张脸，不碰眼鼻。 */
+  const FACIAL = {
+    stubble: '<path d="M18.9,30.4 Q24,34.4 29.1,30.4 Q28.2,33.8 24,34.6 Q19.8,33.8 18.9,30.4 Z" fill="rgba(70,56,44,.22)"/>',
+    mustache: '<path d="M21.2,29.4 Q24,27.8 26.8,29.4 Q24,30.6 21.2,29.4 Z" fill="' + app.hair + '"/>',
+    beard: '<path d="M21.2,29.4 Q24,27.8 26.8,29.4 Q24,30.6 21.2,29.4 Z" fill="' + app.hair + '"/>'
+         + '<path d="M19.4,30.6 Q24,35.4 28.6,30.6 Q28,33.8 24,34.8 Q20,33.8 19.4,30.6 Z" fill="' + app.hair + '" opacity=".85"/>'
+  };
+  const facialG = FACIAL[app.facial] || '';
+  /* 耳环：挂在耳垂下缘（耳在 y27 r2.1，下面刚好空出来），一点暖色金属 */
+  const earringG = app.earring
+    ? '<circle cx="' + (24-earX).toFixed(1) + '" cy="29.8" r="1.15" fill="#dcb86e" stroke="#a8853f" stroke-width=".5"/>'
+    + '<circle cx="' + (24+earX).toFixed(1) + '" cy="29.8" r="1.15" fill="#dcb86e" stroke="#a8853f" stroke-width=".5"/>'
+    : '';
+
   /* 睫毛：性别的第二条线索（第一条是肩宽）。低分辨率下比"脸型"可靠得多 */
   const lashes = S.lash ? '<path d="M18.6,24.2 L17.4,23.3 M29.4,24.2 L30.6,23.3" stroke="' + app.face + '" stroke-width=".85" stroke-linecap="round" fill="none"/>' : '';
 
@@ -3070,6 +3086,8 @@ function charSVG(app, frame){
   + '<ellipse cx="17.7" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>'
   + '<ellipse cx="30.3" cy="29.2" rx="2.1" ry="1.3" fill="rgba(240,130,140,.28)"/>'
   + mouth
+  + facialG
+  + earringG
   + glasses
   + accG
   + '</svg>';

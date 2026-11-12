@@ -1370,6 +1370,11 @@ function validate(){
         problems.push('[人物] ' + who + ' 的 appearance.sex「' + ap.sex + '」只能是 f/m/x');
       if (ap.uniform != null && !UNIS.includes(ap.uniform))
         problems.push('[人物] ' + who + ' 的 appearance.uniform「' + ap.uniform + '」不在白名单（' + UNIS.join('/') + '）');
+      const FACIALS = ['stubble', 'mustache', 'beard'];
+      if (ap.facial != null && !FACIALS.includes(ap.facial))
+        problems.push('[人物] ' + who + ' 的 appearance.facial「' + ap.facial + '」不在白名单（' + FACIALS.join('/') + '）');
+      if (ap.earring != null && typeof ap.earring !== 'boolean')
+        problems.push('[人物] ' + who + ' 的 appearance.earring 必须是 true/false');
       if (ap.hairStyle != null && !HAIRS.includes(ap.hairStyle))
         problems.push('[人物] ' + who + ' 的 hairStyle 必须在 0~10（现在 ' + ap.hairStyle + '）');
     };
