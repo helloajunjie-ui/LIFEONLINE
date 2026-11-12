@@ -4080,14 +4080,29 @@
             PLAYER.fx = BUS_STOPS[0].gx; PLAYER.fy = BUS_STOPS[0].gy;
             MONEY = 500;
             VERB_HOOKS.rideBus({ stop: BUS_STOPS[0], to: BUS_STOPS[1], act: { cost: 2 } });
-            const moved = PLAYER.fx === BUS_STOPS[1].gx && PLAYER.fy === BUS_STOPS[1].gy;
-            const paid = MONEY === 498;
+
+            /* 现在是"开过去"而不是瞬移：上车时人还在起点，全程要真的动起来 */
+            const started = !!busRide && MONEY === 498;
+            const startPos = { x: PLAYER.fx, y: PLAYER.fy };
+            tickBusRide(busRide.dur * 0.5);
+            const midPos = { x: PLAYER.fx, y: PLAYER.fy };
+            /* 中途必须在马路车道上——直线穿墙开过去，画面上就是"车飘过楼房" */
+            const onRoad = streetZoneKindShallow(Math.round(midPos.x), Math.round(midPos.y)) === 'road';
+            const travelled = Math.abs(midPos.x - startPos.x) + Math.abs(midPos.y - startPos.y) > 1;
+            tickBusRide(busRide.dur);
+            const arrived = !busRide && PLAYER.fx === BUS_STOPS[1].gx && PLAYER.fy === BUS_STOPS[1].gy;
+
+            /* 钱不够：连车都不该上 */
+            const beforeBroke = PLAYER.fx;
             MONEY = 0;
             VERB_HOOKS.rideBus({ stop: BUS_STOPS[1], to: BUS_STOPS[0], act: { cost: 2 } });
-            const blocked = PLAYER.fx === BUS_STOPS[1].gx && MONEY === 0;
-            P('AY3 riding charges the fare and moves you to the stop', moved && paid && blocked,
-              'moved=' + moved + ' paid=' + paid + ' brokeBlocked=' + blocked);
-            MONEY = bak.money; PLAYER.fx = bak.fx; PLAYER.fy = bak.fy; scene = bak.scene;
+            const blocked = !busRide && PLAYER.fx === beforeBroke && MONEY === 0;
+
+            P('AY3 riding charges the fare, drives along the road and drops you at the stop',
+              started && travelled && onRoad && arrived && blocked,
+              'started=' + started + ' travelled=' + travelled + ' onRoad=' + onRoad +
+              ' arrived=' + arrived + ' brokeBlocked=' + blocked);
+            MONEY = bak.money; PLAYER.fx = bak.fx; PLAYER.fy = bak.fy; scene = bak.scene; busRide = null;
           }
 
           placed = dc.placed;

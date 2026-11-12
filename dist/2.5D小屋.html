@@ -1174,7 +1174,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T09:41:51.622Z */
+/* 由 tools/build.mjs 生成：2026-11-12T09:48:48.136Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2667,12 +2667,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.56.0",
+  "appVersion": "1.57.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "a7a86b6cd22d",
-  "builtAt": "2026-11-12T09:41:51.612Z",
+  "builtAt": "2026-11-12T09:48:48.128Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -7283,7 +7283,10 @@ function renderStreet(){
     }) });
   }
   const pd = Math.round(PLAYER.fx) + Math.round(PLAYER.fy);
-  if (IN_CAR && MY_CAR){
+  if (busRide){
+    /* 坐着公交：画车不画人。位置已经是插值出来的，深度也跟着走 */
+    drawables.push({ depth: pd + 0.1, fn: () => drawBusRide() });
+  } else if (IN_CAR && MY_CAR){
     drawables.push({ depth: pd + 0.1, fn: () => drawCar({
       axis: 'x', dir: PLAYER.dir || 1, gx: PLAYER.fx, gy: PLAYER.fy,
       color: (carModel(MY_CAR.model) || {}).color
@@ -7320,6 +7323,112 @@ function busStopActs(st){
       verb: 'ride', label: '坐公交到「' + o.name + '」 · ¥' + BUS_FARE,
       durationSec: 0, sfx: 'door', hook: 'rideBus', to: o, cost: BUS_FARE, order: i
     }));
+}
+
+/* ---------- 坐公交的过场 ----------
+ * 原来点站牌是黑场瞬移。但"坐公交"这件事最好玩的就是路上那几秒——车型都做好了，
+ * 让玩家真的看见窗外开过的快递车、警车，这一整套才有意义。
+ * 路线：站牌 → 最近的一条横向道路 → 沿车道开到对面站 → 站牌。
+ * 位置全程线性插值（和车流一样是纯函数，中途被什么打断也不会跑偏）。 */
+let busRide = null;
+const BUS_RIDE_TILES_PER_SEC = 13;      // 一格/秒；8→9 秒走完全程会让人等得不耐烦
+
+/** 找一条同时覆盖两站的横向道路，返回它南侧车道的 y（和车流方向一致） */
+function busLaneY(from, to){
+  const x0 = Math.min(from.gx, to.gx), x1 = Math.max(from.gx, to.gx);
+  let best = null;
+  for (const z of STREET_ZONES){
+    if (z.kind !== 'road' || z.h > 3) continue;
+    if (x0 < z.x || x1 > z.x + z.w - 1) continue;
+    if (!best || z.w > best.w) best = z;
+  }
+  return best ? best.y + best.h - 1 : null;
+}
+
+function busRoutePoints(from, to){
+  const laneY = busLaneY(from, to);
+  const pts = [{ gx: from.gx, gy: from.gy }];
+  if (laneY != null) pts.push({ gx: from.gx, gy: laneY }, { gx: to.gx, gy: laneY });
+  pts.push({ gx: to.gx, gy: to.gy });
+  /* 去掉连续重复点：站牌本来就落在车道上时不必先停一下 */
+  return pts.filter((q, i) => i === 0 || q.gx !== pts[i-1].gx || q.gy !== pts[i-1].gy);
+}
+
+/** u∈[0,1] → 路线上的点（按格数等速，拐弯处不会突然加速） */
+function busRouteAt(ride, u){
+  if (!ride.pts || !ride.pts.length) return { gx: 0, gy: 0 };
+  const target = Math.max(0, Math.min(1, u)) * ride.total;
+  let acc = 0;
+  for (let i = 1; i < ride.pts.length; i++){
+    const a = ride.pts[i-1], b = ride.pts[i];
+    const seg = Math.abs(b.gx - a.gx) + Math.abs(b.gy - a.gy);
+    if (acc + seg >= target || i === ride.pts.length - 1){
+      const k = seg > 0 ? Math.max(0, Math.min(1, (target - acc) / seg)) : 1;
+      return { gx: a.gx + (b.gx - a.gx) * k, gy: a.gy + (b.gy - a.gy) * k };
+    }
+    acc += seg;
+  }
+  const last = ride.pts[ride.pts.length - 1];
+  return { gx: last.gx, gy: last.gy };
+}
+
+function startBusRide(from, to){
+  const pts = busRoutePoints(from, to);
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) total += Math.abs(pts[i].gx - pts[i-1].gx) + Math.abs(pts[i].gy - pts[i-1].gy);
+  busRide = {
+    from, to, pts, total,
+    t: 0, dur: Math.max(0.9, total / BUS_RIDE_TILES_PER_SEC),
+    dir: (to.gx >= from.gx) ? 1 : -1,
+    announced: false
+  };
+  /* 上车：先清掉走位状态，否则寻路会跟过场抢 PLAYER.fx */
+  PLAYER.path = []; PLAYER.target = null; PLAYER.moving = false;
+  PLAYER.fx = pts[0].gx; PLAYER.fy = pts[0].gy;
+  interacting = null; pendingTalk = null; pendingVisit = null;
+  try { closeActMenu(); } catch(e){}
+  try { startFade(); } catch(e){}          // 短暂黑一下，把"上车"这件事交代掉
+  SND.door();
+  return busRide;
+}
+
+function tickBusRide(dt){
+  if (!busRide) return false;
+  busRide.t += dt;
+  const u = Math.min(1, busRide.t / busRide.dur);
+  const pos = busRouteAt(busRide, u);
+  PLAYER.fx = pos.gx; PLAYER.fy = pos.gy;
+  PLAYER.dir = busRide.dir;
+  /* 中途报一次站：坐着车不知道要去哪儿会有点空 */
+  if (!busRide.announced && u >= 0.55){
+    busRide.announced = true;
+    showFloat('下一站 · ' + busRide.to.name, pos.gx, pos.gy - 1.4, 2.6);
+  }
+  if (u >= 1) finishBusRide();
+  return true;
+}
+
+function finishBusRide(){
+  if (!busRide) return;
+  const to = busRide.to;
+  busRide = null;
+  PLAYER.fx = to.gx; PLAYER.fy = to.gy;
+  PLAYER.path = []; PLAYER.target = null; PLAYER.moving = false;
+  showFloat('到站 · ' + to.name, to.gx, to.gy - 1);
+  spawnParticles(to.gx, to.gy, '#8fb4d8', 8);
+  SND.door();
+  updateHUD(); saveGame(); markDirty();
+}
+
+/** 车上的自己：画公交不画人，车窗里点一个头，证明"我在车上" */
+function drawBusRide(){
+  if (!busRide) return;
+  drawCar({ axis: 'x', dir: busRide.dir, gx: PLAYER.fx, gy: PLAYER.fy, kind: 'car.bus', tone: 0.34 });
+  const c = tileCenter(PLAYER.fx, PLAYER.fy);
+  ctx.save();
+  ctx.fillStyle = 'rgba(246,232,206,.92)';      // 车窗里的头
+  ctx.beginPath(); ctx.arc(c.x + busRide.dir * 6, c.y - 11, 3.1, 0, 6.2832); ctx.fill();
+  ctx.restore();
 }
 
 /* 店招：走到跟前才从"点开看"认出哪家是哪家，太费劲了。
@@ -8503,15 +8612,22 @@ function loop(now){
   // 屋檐滴水与涟漪
   updateDrips(dt);
 
+  // 公交过场：先推进位置，再让相机跟上去
+  const riding = tickBusRide(dt);
+
   // 相机平滑跟随角色（使角色保持在画面中）
   const pc = worldToScreen(PLAYER.fx, PLAYER.fy);
-  const cx = viewW/2 - pc.x;
+  /* 车上镜头预先看向前方：车头方向多留一点画面，读起来才像"望着窗外"。
+   * 同时把跟随系数抬高——过场是匀速直行，用平时的 0.06 会一直落后半屏。 */
+  const lead = riding ? busRide.dir * TILE_W * 1.6 : 0;
+  const cx = viewW/2 - pc.x - lead;
   /* 小区里把镜头抬高一点：街区有 18 层公寓，站在楼下时如果角色居中，
    * 楼顶一定被 HUD 切掉。让角色略偏下，能看到更多天际线。 */
   const camLift = (scene === 'street') ? 90 : 0;
   const cy = viewH/2 - pc.y - 20 + camLift;
-  cam.x += (cx - cam.x) * CAM_SPEED;
-  cam.y += (cy - cam.y) * CAM_SPEED;
+  const camSpeedNow = riding ? 0.32 : CAM_SPEED;
+  cam.x += (cx - cam.x) * camSpeedNow;
+  cam.y += (cy - cam.y) * camSpeedNow;
 
   /* ---------- 按需渲染（dirty flag） ----------
    * 原来每帧无条件整屏重绘：320–520 个地板菱形 + 全屏填充，静止时白烧 GPU。
@@ -8526,7 +8642,7 @@ function loop(now){
     || (scene === 'street' && NEIGHBORS.some(nb => nb.moving || nb.target));
   const animating = !!(PLAYER.moving || sceneAnimated || camMovedNow
     || floats.length || particles.length || work.active || interacting || weatherActive()
-    || pendingTalk || pendingVisit || _fade > 0);
+    || pendingTalk || pendingVisit || _fade > 0 || !!busRide);
   const needDraw = animating || wasAnimating || renderRev !== lastDrawRev
     || (now - lastDrawAt) > IDLE_REDRAW_MS;
 
@@ -8586,6 +8702,7 @@ function updatePlayer(dt){
 function clickHandler(e){
   // 菜单开着时，这一下点击只用来关菜单，不要再触发场景交互
   if (suppressCanvasClick) return;
+  if (busRide) return;                 // 车上不接受操作，别让玩家把车点穿了
   const rect = canvas.getBoundingClientRect();
   // 用逻辑（CSS）像素：ctx 已按 DPR 缩放，相机也是逻辑像素，否则高分屏点击错位
   const mx = e.clientX - rect.left;
@@ -9047,6 +9164,7 @@ function stepByDir(dx, dy){
 /** 每帧调用：按住方向键就一格一格走（走完上一格才迈下一步） */
 function updateKeyboardMove(){
   const sd = (typeof stickDir === 'function') ? stickDir() : null;
+  if (busRide) return;                 // 车在开，方向键不该把人从车上拽下来
   if (!sd && !keysHeld.size) return;
   if (buildMode !== 'normal') return;
   if (PLAYER.moving || (PLAYER.path && PLAYER.path.length) || PLAYER.target) return;
@@ -11149,17 +11267,9 @@ const VERB_HOOKS = {
       SND.err(); return;
     }
     debit(fare, 'transit', '公交 ' + st.name + '→' + to.name);
-    /* 先黑场再换位置：不用 setTimeout，_fade 已经是全黑，
-     * 这一帧直接把人放过去，玩家看到的是"到了"而不是"瞬移" */
-    startFade();
-    PLAYER.fx = to.gx; PLAYER.fy = to.gy;
-    PLAYER.path = []; PLAYER.target = null; PLAYER.moving = false;
-    const pc = worldToScreen(PLAYER.fx, PLAYER.fy);
-    cam.x = viewW / 2 - pc.x;
-    cam.y = viewH / 2 - pc.y - 20;
-    showFloat('到站 · ' + to.name, to.gx, to.gy - 1);
-    SND.door();
-    updateHUD(); saveGame();
+    /* 不再瞬移：交给过场沿路开过去，玩家能看见外面的车和楼 */
+    startBusRide(st, to);
+    updateHUD();
   },
 
   /** 打听工作：今天上过班就说别硬撑，没上过就报两家正在招人的店 */
