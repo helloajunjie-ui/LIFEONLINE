@@ -7801,7 +7801,11 @@ function addFavor(zoneId, n){
  * 16 家店原来一个人都没有：门口冷冷清清，"逛商业街"这件事就只有点面板。
  * 现在每家上班时间有个人站在门口，能打招呼、能问"这家店怎么用"——
  * 新手不知道柜台能点的时候，问一句话比翻说明快。
- * 只站不游走：商业街人一多，走来走去反而乱。 */
+ * 只站不游走：商业街人一多，走来走去反而乱。
+ *
+ * ⚠️ 这张表是**兜底**：正常人点 NPC 走的是 topics 包生成的话题菜单（npcTopicActs）。
+ * 只有内容里没有 characters/topics.json 时才会退回这里。改这两条不会改变游戏里的菜单，
+ * 别被骗了——要加问句请改 content/characters/topics.json。 */
 const CLERK_ACTS = [
   { verb: 'greet', label: '打个招呼', durationSec: 0, sfx: 'talk', hook: 'clerkHello',
     effects: { emotion: 6 }, order: 0 },
@@ -12499,7 +12503,10 @@ const VERB_HOOKS = {
   }
 };
 
-/* 邻居的动作表：内容层没给就用默认（聊天）。加"送礼/邀请"只需在 NPC 数据里加一条。 */
+/* 邻居的动作表：内容层没给就用默认（聊天）。加"送礼/邀请"只需在 NPC 数据里加一条。
+ *
+ * ⚠️ 同样是**兜底**：话题包存在时永远走话题菜单。里面的 npcTalk / npcAskNews 钩子
+ * 因此只在"内容缺包"时可达——留着是给降级场景用的，不是死代码，但也不是活路径。 */
 const DEFAULT_NPC_ACTS = [
   { verb: 'chat', label: '闲聊', durationSec: 0, sfx: 'talk', hook: 'npcTalk',
     effects: { emotion: 10 }, order: 0 },

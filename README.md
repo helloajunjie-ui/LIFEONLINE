@@ -57,6 +57,20 @@ node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 **热更新范围**：改 `catalog/` `house/` `ui/` 的内容，玩家刷新时会就地替换（不刷新页面）；
 改 `characters/` `maps/` `rules/` 需要重新加载页面——这些在启动时被建成对象图，假热更会"看着新、用着旧"。
 
+**量一下再改**：想动架构先看状态清单，别凭印象重构。
+
+```bash
+node tools/statemap.mjs           # 顶层可变状态：谁写了多少次、有没有入档
+node tools/statemap.mjs --top 15  # 只看写入最多的（"上帝状态"候选）
+```
+
+**量一下再改**：想动架构先看状态清单，别凭印象重构。
+
+```bash
+node tools/statemap.mjs           # 顶层可变状态：谁写了多少次、有没有入档
+node tools/statemap.mjs --top 15  # 只看写入最多的（"上帝状态"候选）
+```
+
 **跑门禁**（提交前一套）：
 
 ```bash
