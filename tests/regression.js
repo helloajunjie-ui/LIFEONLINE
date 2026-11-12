@@ -4285,6 +4285,7 @@
             /* 这几家店同时招人：柜台里必须有打卡入口，
              * 否则"加柜台"会把原来的上班面板挡掉 */
             COUNTER_ZONE = 'shop1'; LAST_SHIFT_DAY = 0; LAST_SHIFT_JOB = '';
+            MINUTE = 10 * 60;                 // 固定上午，别受前面用例改过的时间影响
             renderCounter();
             const canClock = !!counterList.querySelector('[data-clockin]');
             LAST_SHIFT_DAY = DAY; LAST_SHIFT_JOB = 'job.store';
@@ -4293,6 +4294,19 @@
               /上过/.test(counterList.textContent || '');
             P('SH4 a shop counter still lets you clock in, and says so after a shift',
               canClock && afterWork, 'before=' + canClock + ' afterShift=' + afterWork);
+
+            /* 打烊：招牌暗了、店员走了，柜台就不能还卖东西。
+             * 不只是"按钮禁用"——函数本身也要拒绝，否则任何入口都能绕过 */
+            MINUTE = 3 * 60;
+            COUNTER_ZONE = 'shop2'; MONEY = 500; STATS.emotion = 40;
+            const m0 = MONEY, e0 = STATS.emotion;
+            renderCounter();
+            const closedText = counterList.textContent || '';
+            const closedBtn = (counterList.querySelector('[data-good]') || {}).textContent || '';
+            const refused = takeGood('good.americano') === false && MONEY === m0 && STATS.emotion === e0;
+            P('SH5 a closed shop refuses to sell, and the panel says so',
+              /打烊/.test(closedText) && /打烊/.test(closedBtn) && refused,
+              'note=' + /打烊/.test(closedText) + ' btn=' + closedBtn + ' refused=' + refused);
 
             MONEY = bak.money; STATS.emotion = bak.emo; COUNTER_ZONE = bak.cz;
             BAG = bak.bag; PANTRY = bak.pantry; LAST_SHIFT_DAY = bak.day; LAST_SHIFT_JOB = bak.job;

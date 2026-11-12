@@ -1174,7 +1174,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T10:07:33.264Z */
+/* 由 tools/build.mjs 生成：2026-11-12T10:12:13.987Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2674,12 +2674,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.62.0",
+  "appVersion": "1.63.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "767589beb449",
-  "builtAt": "2026-11-12T10:07:33.257Z",
+  "builtAt": "2026-11-12T10:12:13.980Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -7462,7 +7462,13 @@ const CLERKS = (HomeCore.content.clerks() || []).map(c => ({
 
 /** 上不上班：hours=[开,关]，含头不含尾；写成 [0,24] 就是通宵 */
 function clerkOnDuty(c, minute){
-  const h = (minute == null ? MINUTE : minute) / 60;
+  /* 先折回 0..1440：读档/测试里 MINUTE 可能超过一天，
+   * [0,24] 的通宵店会被算成"不在上班"，柜台跟着打不开 */
+  const raw = Number(minute == null ? MINUTE : minute);
+  /* 时钟坏掉（NaN）时一律当作营业中：宁可开着，也别把柜台和打工一起锁死 */
+  if (!isFinite(raw)) return true;
+  const m0 = ((raw % 1440) + 1440) % 1440;
+  const h = m0 / 60;
   const a = Number(c.hours[0]) || 0, b = Number(c.hours[1]) || 0;
   if (b <= a) return h >= a || h < b;      // 跨零点
   return h >= a && h < b;
@@ -13807,6 +13813,7 @@ function pantryRoom(){ return Math.max(0, pantryMax() - PANTRY); }
 function buyGroceries(zoneId, packs){
   const g = groceryFor(zoneId);
   if (!g) return 0;
+  if (counterClosed(zoneId)){ showFloat('打烊了，明天再来', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return 0; }
   const n = Math.max(1, Math.min(9, (packs | 0) || 1));
   const cost = (Number(g.price) || 0) * n;
   const gain = (Number(g.pack) || 0) * n;
@@ -13897,6 +13904,19 @@ function fxText(fx){
   return out.join(' · ');
 }
 
+/** 柜台是不是打烊了：招牌暗了、店员下班了，柜台就不该还卖东西 */
+function counterClosed(zoneId){
+  if (typeof shopOpenNow !== 'function') return false;
+  return !shopOpenNow(zoneId);
+}
+function counterHoursText(zoneId){
+  const c = (typeof CLERKS !== 'undefined') ? CLERKS.find(q => q.zoneId === zoneId) : null;
+  if (!c) return '';
+  const a = Number(c.hours[0]) || 0, b = Number(c.hours[1]) || 0;
+  if (a === 0 && b === 24) return '24 小时';
+  return a + ':00 - ' + b + ':00';
+}
+
 function renderCounter(){
   if (!counterList) return;
   const z = counterZoneDef(COUNTER_ZONE);
@@ -13906,46 +13926,52 @@ function renderCounter(){
   }
   if (counterTitleEl) counterTitleEl.textContent = z.name;
   const out = [];
+  const closed = counterClosed(COUNTER_ZONE);
+  if (closed){
+    const hr = counterHoursText(COUNTER_ZONE);
+    out.push('<div class="cnote">已经打烊了' + (hr ? '（' + hr + ' 营业）' : '') +
+      '，柜台收起来了。急用可以去 24 小时的便利店。</div>');
+  }
 
   if (z.kind === 'restaurant'){
     out.push('<div class="cnote">' + (z.def.note || '') + '</div>');
     out.push('<div class="sgroup">今日菜单</div>');
     for (const d of (z.def.menu || [])){
-      const can = MONEY >= (Number(d.price) || 0);
+      const can = !closed && MONEY >= (Number(d.price) || 0);
       const food = fxText({ hunger: d.hunger, thirst: d.thirst, emotion: d.emotion });
       out.push('<div class="item"><div class="ib">' +
         '<div class="in">' + d.name + (d.hunger >= 60 ? '<span class="ctag">管饱</span>' : '') + '</div>' +
         '<div class="id">' + (d.desc || '') + '</div>' +
         '<div class="id">' + food + '</div></div>' +
         '<button class="sbtn" data-dish="' + d.id + '"' + (can ? '' : ' disabled') + '>' +
-        (can ? '¥' + d.price : '差 ¥' + (d.price - MONEY)) + '</button></div>');
+        (can ? '¥' + d.price : (closed ? '打烊' : '差 ¥' + (d.price - MONEY))) + '</button></div>');
     }
     out.push('<div class="cnote">下馆子不消耗冰箱里的食材，贵在人工和房租。吃完直接回数值。</div>');
   } else {
     out.push('<div class="cnote">' + (z.def.note || '') + '</div>');
     out.push('<div class="sgroup">货架</div>');
     for (const g of (z.def.goods || [])){
-      const can = MONEY >= (Number(g.price) || 0);
+      const can = !closed && MONEY >= (Number(g.price) || 0);
       const food = fxText({ hunger: g.hunger, thirst: g.thirst, emotion: g.emotion });
       out.push('<div class="item"><div class="ib">' +
         '<div class="in">' + g.name + '</div>' +
         '<div class="id">' + (g.desc || '') + '</div>' +
         '<div class="id">' + (food || '—') + '</div></div>' +
         '<button class="sbtn" data-good="' + g.id + '"' + (can ? '' : ' disabled') + '>' +
-        (can ? '¥' + g.price : '差 ¥' + (g.price - MONEY)) + '</button></div>');
+        (can ? '¥' + g.price : (closed ? '打烊' : '差 ¥' + (g.price - MONEY))) + '</button></div>');
     }
     // 超市也卖食材，价格条目来自 groceries（同一份数据，别在两处写两个价）
     const gr = groceryFor(COUNTER_ZONE);
     if (gr){
       out.push('<div class="sgroup">食材 · 背包 ' + BAG + '/' + bagCap() + ' · 冰箱 ' + PANTRY + '/' + pantryMax() + '</div>');
-      const can = MONEY >= (Number(gr.price) || 0) && bagRoom() >= (Number(gr.pack) || 0);
+      const can = !closed && MONEY >= (Number(gr.price) || 0) && bagRoom() >= (Number(gr.pack) || 0);
       out.push('<div class="item"><div class="ib">' +
         '<div class="in">' + gr.name + '食材包 · ' + gr.pack + ' ' + foodUnit() + '</div>' +
         '<div class="id">' + (gr.desc || '') + ' · 约 ¥' +
         ((gr.price / gr.pack).toFixed(1)) + '/' + foodUnit() + '</div></div>' +
         '<button class="sbtn" data-grocery="1"' + (can ? '' : ' disabled') + '>' +
-        (MONEY < gr.price ? '差 ¥' + (gr.price - MONEY)
-          : (bagRoom() < gr.pack ? '背不动' : '¥' + gr.price)) + '</button></div>');
+        (closed ? '打烊' : (MONEY < gr.price ? '差 ¥' + (gr.price - MONEY)
+          : (bagRoom() < gr.pack ? '背不动' : '¥' + gr.price))) + '</button></div>');
     }
   }
 
@@ -13953,7 +13979,7 @@ function renderCounter(){
    * 否则"给店铺加柜台"会把原来的打卡面板挡掉——玩家突然上不了班。 */
   {
     const job = JOB_BY_ZONE[COUNTER_ZONE];
-    if (job){
+    if (job && !closed){
       const active = SHIFT.active && SHIFT.job && SHIFT.job.id === job.id;
       const used = shiftUsedToday() && LAST_SHIFT_JOB === job.id;
       out.push('<div class="sgroup">打工</div>');
@@ -13981,6 +14007,7 @@ function renderCounter(){
 function eatDish(id){
   const z = counterZoneDef(COUNTER_ZONE);
   if (!z || z.kind !== 'restaurant') return false;
+  if (counterClosed(COUNTER_ZONE)){ showFloat('打烊了，柜台收起来了', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return false; }
   const d = (z.def.menu || []).find(x => x.id === id);
   if (!d) return false;
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
@@ -13999,6 +14026,7 @@ function eatDish(id){
 function takeGood(id){
   const z = counterZoneDef(COUNTER_ZONE);
   if (!z || z.kind !== 'mart') return false;
+  if (counterClosed(COUNTER_ZONE)){ showFloat('打烊了，柜台收起来了', Math.round(PLAYER.fx), Math.round(PLAYER.fy)); SND.err(); return false; }
   const g = (z.def.goods || []).find(x => x.id === id);
   if (!g) return false;
   const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
