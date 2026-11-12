@@ -1,4 +1,4 @@
-/* 由 tools/build.mjs 生成：2026-11-12T09:54:37.893Z */
+/* 由 tools/build.mjs 生成：2026-11-12T09:54:55.682Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -1503,7 +1503,7 @@ const BUILD = {
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "39cb468b293b",
-  "builtAt": "2026-11-12T09:54:37.881Z",
+  "builtAt": "2026-11-12T09:54:55.675Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
