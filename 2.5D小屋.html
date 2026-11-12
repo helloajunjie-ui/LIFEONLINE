@@ -7224,6 +7224,9 @@ function switchScene(to, houseIdx){
     PLAYER.fx = DOOR_STREET.gx; PLAYER.fy = DOOR_STREET.gy;
   } else if (to === 'visit'){
     scene = 'visit';
+    /* 串邻居家的门也算"串门"：原来这两个成就只认联机去玩家家里，
+     * 单机玩家永远点亮不了。房号做 key 去重，走遍小区就是五栋都进过。 */
+    try { achRecordVisit('house:' + ((STREET_HOUSES[houseIdx] || {}).id || houseIdx)); } catch(e){}
     visitRoom = buildVisitRoom(STREET_HOUSES[houseIdx], houseIdx);
     PLAYER.fx = visitRoom.exit.gx; PLAYER.fy = visitRoom.exit.gy - 1;
   } else {

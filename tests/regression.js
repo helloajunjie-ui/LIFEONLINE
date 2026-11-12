@@ -3883,6 +3883,23 @@
             MY_PETS = bak.pets; STOCK_HOLD = bak.hold;
           }
 
+          // ---------- AR：串门成就对单机玩家可达 ----------
+          {
+            const bak = { ach: ACH, scene: scene, fx: PLAYER.fx, fy: PLAYER.fy };
+            ACH = { unlocked: {}, visited: [], events: [] };
+            const before = achVisitedCount();
+            switchScene('visit', 0);
+            const after = achVisitedCount();
+            const rec = (ACH.visited || [])[0] || '';
+            switchScene('visit', 0);
+            const again = achVisitedCount();
+            switchScene('home');
+            P('AR1 visiting a neighbor house counts as a visit, once per house',
+              after === before + 1 && again === after && rec.indexOf('house:') === 0 && scene === 'home',
+              'before=' + before + ' after=' + after + ' again=' + again + ' rec=' + rec);
+            ACH = bak.ach; scene = bak.scene; PLAYER.fx = bak.fx; PLAYER.fy = bak.fy;
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

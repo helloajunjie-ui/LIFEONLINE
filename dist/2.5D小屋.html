@@ -1166,7 +1166,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T08:19:02.414Z */
+/* 由 tools/build.mjs 生成：2026-11-12T08:21:01.460Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2659,12 +2659,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.46.0",
+  "appVersion": "1.47.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "f2e4965c34e7",
-  "builtAt": "2026-11-12T08:19:02.404Z",
+  "builtAt": "2026-11-12T08:21:01.450Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -8891,6 +8891,9 @@ function switchScene(to, houseIdx){
     PLAYER.fx = DOOR_STREET.gx; PLAYER.fy = DOOR_STREET.gy;
   } else if (to === 'visit'){
     scene = 'visit';
+    /* 串邻居家的门也算"串门"：原来这两个成就只认联机去玩家家里，
+     * 单机玩家永远点亮不了。房号做 key 去重，走遍小区就是五栋都进过。 */
+    try { achRecordVisit('house:' + ((STREET_HOUSES[houseIdx] || {}).id || houseIdx)); } catch(e){}
     visitRoom = buildVisitRoom(STREET_HOUSES[houseIdx], houseIdx);
     PLAYER.fx = visitRoom.exit.gx; PLAYER.fy = visitRoom.exit.gy - 1;
   } else {
