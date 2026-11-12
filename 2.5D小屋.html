@@ -8200,6 +8200,124 @@ function npcLine(n, place){
   return npcPick(n, out);
 }
 
+/* ---------- 聊天话题：玩家问什么，NPC 按身份答 ----------
+ * 预设词版本，不调模型：秒回、离线能用、也不会说出格的话。
+ * 答案优先级：人物自己写的 topics → byJob（职业）→ byAge（年龄阶段）→ any。
+ * 文字里的 {time} {zone} {dir} {hint} 由引擎填——所以"现在几点了"是活的。 */
+function topicPack(){
+  const fn = HomeCore.content.topics;
+  const pack = (typeof fn === 'function' ? fn() : null) || {};
+  return { topics: pack.topics || [], answers: pack.answers || {}, hints: pack.hints || {} };
+}
+function topicList(){
+  return topicPack().topics.slice().sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+}
+const CN_DIGIT = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+/** 0~59 转汉字：十点四十，不要写成 10:40 */
+function cnNum(n){
+  const v = Math.max(0, Math.floor(Number(n) || 0));
+  if (v < 10) return CN_DIGIT[v];
+  if (v < 20) return '十' + (v % 10 ? CN_DIGIT[v % 10] : '');
+  return CN_DIGIT[Math.floor(v / 10)] + '十' + (v % 10 ? CN_DIGIT[v % 10] : '');
+}
+function clockText(){
+  const m0 = ((Number(MINUTE) || 0) % 1440 + 1440) % 1440;
+  const h = Math.floor(m0 / 60), mi = Math.floor(m0 % 60);
+  return cnNum(h) + '点' + (mi ? cnNum(mi) + '分' : '整');
+}
+function hintBucketName(){
+  const h = ((Number(MINUTE) || 0) % 1440 + 1440) % 1440 / 60;
+  if (h < 11) return 'morning';
+  if (h < 13) return 'noon';
+  if (h < 17) return 'afternoon';
+  if (h < 21) return 'evening';
+  return 'night';
+}
+function hintLine(){
+  const hints = topicPack().hints || {};
+  const pool = hints[hintBucketName()];
+  if (!Array.isArray(pool) || !pool.length) return '';
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+/** 八向：北/东北/东… 差得不多就说"前"，别硬指着鼻子说方位 */
+function dirWord(dx, dy){
+  const ax = Math.abs(dx), ay = Math.abs(dy);
+  if (ax < 2 && ay < 2) return '前';
+  const ns = ay < 2 ? '' : (dy < 0 ? '北' : '南');
+  const ew = ax < 2 ? '' : (dx > 0 ? '东' : '西');
+  return (ns + ew) || '前';
+}
+/** 离玩家最近的一个有名有姓的地方（路和铺装不算）。
+ *  avoidId 用来排除"说话人自己所在的那家店"——站在快递站里的人说
+ *  "往北走就到快递站"很傻。太远（12 格开外）的也不提，说了等于没说。 */
+function nearestZoneInfo(avoidId){
+  let best = null, bd = 1e9;
+  for (const z of STREET_ZONES){
+    if (!z.label || z.kind === 'road' || z.kind === 'pavement') continue;
+    if (avoidId && z.id === avoidId) continue;
+    const cx = z.x + z.w / 2, cy = z.y + z.h / 2;
+    const d = Math.hypot(cx - PLAYER.fx, cy - PLAYER.fy);
+    if (d < bd){ bd = d; best = z; }
+  }
+  if (!best || bd > 12) return null;
+  return {
+    zone: best.label,
+    dir: dirWord(best.x + best.w / 2 - PLAYER.fx, best.y + best.h / 2 - PLAYER.fy)
+  };
+}
+function fillTemplate(text, npc){
+  let out = String(text || '');
+  /* 需要方位/地名的句子，附近找不着合适的地方就整句作废（返回 null 让调用方换一句），
+   * 否则会输出"往 走两步， 就在那儿"这种残缺句子。 */
+  if (/\{zone\}|\{dir\}/.test(out)){
+    const z = nearestZoneInfo(npc && npc.zoneId);
+    if (!z) return null;
+    out = out.replace(/\{zone\}/g, z.zone).replace(/\{dir\}/g, z.dir);
+  }
+  return out
+    .replace(/\{time\}/g, clockText())
+    .replace(/\{hint\}/g, hintLine())
+    .replace(/\{name\}/g, (npc && npc.name) || '我');
+}
+/** 这个 NPC 对这个问题会怎么答；答不上来返回空串（调用方兜底）
+ *  优先级：他自己写的 → 职业 → 年龄阶段 → 通用 → 兜底句 */
+function npcAnswer(npc, topicId){
+  const pack = topicPack();
+  /* 打听小区：直接接上每日广播那条线——NPC 说的就是今天真的发生的事 */
+  if (topicId === 'news'){
+    const n = (typeof dailyNewsText === 'function') ? dailyNewsText(DAY) : '';
+    if (n) return n;
+  }
+  const entry = (pack.answers || {})[topicId] || {};
+  const app = (npc && npc.appearance) || {};
+  const own = npc && npc.lines && npc.lines.topics && npc.lines.topics[topicId];
+  const pools = [];
+  if (Array.isArray(own) && own.length) pools.push(own);
+  const byJob = entry.byJob && entry.byJob[String(app.job || '')];
+  const byAge = entry.byAge && entry.byAge[ageStageOf(app.age)];
+  if (Array.isArray(byJob) && byJob.length) pools.push(byJob);
+  if (Array.isArray(byAge) && byAge.length) pools.push(byAge);
+  if (Array.isArray(entry.any) && entry.any.length) pools.push(entry.any);
+  if (Array.isArray(entry.fallback) && entry.fallback.length) pools.push(entry.fallback);
+  for (const pool of pools){
+    /* 句子可能因为"附近没有可说的地点"作废，换一句再试；都填不出来才放弃 */
+    for (let k = 0; k < 4; k++){
+      const text = fillTemplate(pool[Math.floor(Math.random() * pool.length)], npc);
+      if (text) { if (npc) npc._lastLine = text; return text; }
+    }
+  }
+  return '';
+}
+/** 聊天菜单：每个话题一条，效果（情绪）也写在内容里 */
+function npcTopicActs(npc){
+  const list = topicList();
+  if (!list.length) return [];
+  return list.map((t, i) => ({
+    verb: 'say', label: t.label, durationSec: 0, sfx: 'talk', hook: 'npcSay',
+    topicId: t.id, effects: { emotion: t.emotion ?? 2 }, order: t.order ?? i
+  }));
+}
+
 /* ---------- 每日小区广播 ----------
  * 每天一句"今天有什么不一样"。按游戏日做稳定散列挑，同一天读档重进听到的还是
  * 同一句（和股票行情同一个道理），所以不用存盘、也不占存档。
@@ -10442,6 +10560,23 @@ function isAdjToFootprint(f){
 /* 特殊行为的注册表：普通数值型交互不需要它。
  * 新增一个带特殊流程的交互 → 在这里注册一个 hook 名，数据里写 "hook":"名字" 即可。 */
 const VERB_HOOKS = {
+  /** 聊天话题：按身份和当下作答，用头顶气泡说（比浮动文字像在对话） */
+  npcSay(ctx){
+    const npc = ctx.npc, topicId = ctx.act && ctx.act.topicId;
+    if (!npc || !topicId) return;
+    const gain = (ctx.effects && ctx.effects.emotion) || 2;
+    STATS.emotion = clampStat('emotion', STATS.emotion + gain);
+    /* 玩家主动搭话，先把路过的闲话收掉，两个气泡不叠 */
+    stopChatter();
+    const line = npcAnswer(npc, topicId) || '……';
+    startChatter([{ s: 'a', t: line }], { p: npc, name: npc.name }, null);
+    spawnParticles(Math.round(npc.fx), Math.round(npc.fy), '#ef7c8e', 5);
+    SND.talk();
+    npc.appearance.faceStyle = 1;
+    if (topicId === 'greet' || topicId === 'life'){ try { addFavor(npc.zoneId, 1); } catch(e){} }
+    markDirty();
+  },
+
   /** 睡觉：夜间直接睡到次日早上（跨天 + 装修度情绪加成） */
   sleepToMorning(ctx){
     const f = ctx.furn;
@@ -10590,6 +10725,9 @@ function targetActions(t){
     return (d && d.acts) ? d.acts : [];
   }
   if (t.kind === 'actor'){
+    /* 有话题包就用话题菜单（问什么由玩家挑），没有才退回老的三条固定动作 */
+    const topicActs = npcTopicActs(t.npc);
+    if (topicActs.length) return topicActs;
     const raw = t.npc.acts || t.npc.interactions;
     if (Array.isArray(raw) && raw.length){
       return raw.map((a, i) => {

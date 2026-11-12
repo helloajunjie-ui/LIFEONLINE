@@ -4129,6 +4129,42 @@
                 ' clerkOk=' + clerkOk + ' siteOk=' + siteOk);
             }
 
+            /* 预设问答：每个人每个话题都得答得上来，且不能漏出没替换的花括号 */
+            {
+              const list = topicList();
+              const people = CLERKS.concat(NEIGHBORS);
+              let empty = 0, braces = 0, tooLong = 0, sample = '';
+              for (const p of people){
+                for (const t of list){
+                  const a = npcAnswer(p, t.id);
+                  if (!a){ empty++; continue; }
+                  if (/\{[a-zA-Z]+\}/.test(a)) braces++;
+                  if (a.length > 26) tooLong++;
+                  if (t.id === 'job' && !sample) sample = a;
+                }
+              }
+              P('CB13 every NPC can answer every topic without leaking placeholders',
+                list.length >= 5 && people.length >= 20 && !empty && !braces && !tooLong,
+                'topics=' + list.length + ' people=' + people.length +
+                ' empty=' + empty + ' braces=' + braces + ' long=' + tooLong + ' e.g. ' + sample);
+            }
+
+            /* 问一句：情绪要涨、气泡里要真出现那句话 */
+            {
+              const bak2 = { emo: STATS.emotion, chatter: CHATTER };
+              const p = CLERKS.find(c => c.role === 'clerk');
+              STATS.emotion = 50;
+              CHATTER = null;
+              VERB_HOOKS.npcSay({ npc: p, act: { topicId: 'job' }, effects: { emotion: 2 } });
+              const said = CHATTER ? CHATTER.lines[CHATTER.i].t : '';
+              const ok = !!said && said.length > 0 && !/\{[a-zA-Z]+\}/.test(said);
+              P('CB14 asking a question puts the answer in a speech bubble',
+                ok && STATS.emotion >= 52 && CHATTER && CHATTER.a && CHATTER.a.p === p && CHATTER.solo === true,
+                'said=' + said + ' emo=' + STATS.emotion);
+              stopChatter();
+              STATS.emotion = bak2.emo; CHATTER = bak2.chatter;
+            }
+
             CHATTER = bak.chatter; _chatNext = bak.next; WX.rainOn = bak.rain;
             MONEY = bak.money; STATS.emotion = bak.emo; MINUTE = bak.min; scene = bak.sc;
             chatterPeople = bak.people;

@@ -97,12 +97,17 @@ function buildIndex(packs, meta){
   /* 职业表：人物身份三件套之一是 job，名字与默认制服都写在这里。
    * 台词认人、档案卡、校验器读同一份，避免"代码里一套中文、内容里另一套"。 */
   let jobs = [];
+  /* 聊天话题：玩家问什么、NPC 按身份怎么答。放内容里，加一句台词不用改代码 */
+  let topics = { topics: [], answers: {}, hints: {} };
   for (const [id, pack] of Object.entries(packs)){
     if (!id.startsWith('characters/')) continue;
     if (pack.npcs) npcs.push(...pack.npcs);
     if (Array.isArray(pack.clerks)) clerks.push(...pack.clerks);
     if (Array.isArray(pack.sites)) sites.push(...pack.sites);
     if (Array.isArray(pack.jobs)) jobs = jobs.concat(pack.jobs);
+    if (Array.isArray(pack.topics) && pack.answers){
+      topics = { topics: pack.topics, answers: pack.answers, hints: pack.hints || {} };
+    }
   }
 
   const maps = {};
@@ -180,6 +185,7 @@ function buildIndex(packs, meta){
     clerks,
     sites,
     jobs,
+    topics,
     maps,
     ui: uiPack.strings || {},
     verbs: verbTable,
@@ -275,6 +281,8 @@ export function clerks(){ return content.clerks; }
 export function sites(){ return content.sites; }
 /** 职业表：{ id, name, uniform? }。身份三件套 = age 阶段 / sex / job */
 export function jobs(){ return content.jobs; }
+/** 聊天话题包：{ topics, answers, hints } */
+export function topics(){ return content.topics; }
 
 /** 气候：天气权重 + 一天的光照关键帧 */
 export function climate(){ return content.climate; }

@@ -1527,6 +1527,77 @@ function validate(){
       for (const p of (pk.sites || [])) checkOne(p, 'site');
     }
 
+    /* V4.32 聊天话题：玩家问什么、NPC 按身份怎么答。
+     * 写漏了不会报错，只会出现"问了没反应"或者"往 走两步， 就在那儿"。 */
+    {
+      const tp = packs['characters/topics.json'];
+      const STAGES2 = ['child', 'youth', 'middle', 'senior'];
+      const ALLOWED_PH = new Set(['time', 'zone', 'dir', 'hint', 'name']);
+      if (!tp){
+        problems.push('[话题] 缺少 characters/topics.json，NPC 就只剩三条老动作');
+      } else {
+        const list = Array.isArray(tp.topics) ? tp.topics : [];
+        const answers = tp.answers || {};
+        if (list.length < 5) problems.push('[话题] 话题只有 ' + list.length + ' 个，玩家没什么可问的');
+        const ids = new Set();
+        for (const t of list){
+          if (!t.id){ problems.push('[话题] 有话题缺少 id'); continue; }
+          if (ids.has(t.id)) problems.push('[话题] 话题 id 重复: ' + t.id);
+          ids.add(t.id);
+          if (!t.label) problems.push('[话题] ' + t.id + ' 缺少 label（菜单上会是空白）');
+          else if (String(t.label).length > 6) problems.push('[话题] ' + t.id + ' 的 label 超过 6 字，菜单会换行: ' + t.label);
+          if (t.emotion != null && !(Number(t.emotion) >= 0 && Number(t.emotion) <= 10))
+            problems.push('[话题] ' + t.id + ' 的 emotion 应在 0~10');
+        }
+        const jobs = (pk.jobs || []).map(j => j.id);
+        for (const [tid, entry] of Object.entries(answers)){
+          if (ids.has(tid) || tid === 'fallback') continue;
+          if (typeof entry === 'object' && !Array.isArray(entry)) continue;
+        }
+        for (const id of ids){
+          const entry = answers[id];
+          if (!entry || Array.isArray(entry) || !Object.keys(entry).length){
+            problems.push('[话题] ' + id + ' 没有任何答案，问下去会很尴尬');
+            continue;
+          }
+          if (!Array.isArray(entry.any) || !entry.any.length)
+            problems.push('[话题] ' + id + ' 缺少 any（通用答案），冷门身份的人就答不上来');
+          for (const [k, pool] of Object.entries(entry)){
+            if (k === 'fallback') continue;
+            if (k === 'byJob'){
+              for (const [jid, arr] of Object.entries(pool || {})){
+                if (!jobs.includes(jid)) problems.push('[话题] ' + id + '.byJob 里的「' + jid + '」不是职业表里的 id');
+                if (!Array.isArray(arr) || !arr.length) problems.push('[话题] ' + id + '.byJob.' + jid + ' 是空的');
+              }
+              continue;
+            }
+            if (k === 'byAge'){
+              for (const [aid, arr] of Object.entries(pool || {})){
+                if (!STAGES2.includes(aid)) problems.push('[话题] ' + id + '.byAge 里的「' + aid + '」不是年龄阶段');
+                if (!Array.isArray(arr) || !arr.length) problems.push('[话题] ' + id + '.byAge.' + aid + ' 是空的');
+              }
+              continue;
+            }
+            if (!Array.isArray(pool)) { problems.push('[话题] ' + id + '.' + k + ' 必须是数组'); continue; }
+            for (const line of pool){
+              if (typeof line !== 'string' || !line){ problems.push('[话题] ' + id + '.' + k + ' 有空台词'); continue; }
+              if (line.length > 26) problems.push('[话题] ' + id + ' 有 ' + line.length + ' 字的长句，气泡装不下：' + line);
+              for (const m of line.matchAll(/\{([a-zA-Z]+)\}/g)){
+                if (!ALLOWED_PH.has(m[1]))
+                  problems.push('[话题] ' + id + ' 用了未知占位符 {' + m[1] + '}，界面上会原样显示');
+              }
+            }
+          }
+        }
+        /* 时间那句要靠 hints 接话，缺一档就会出现"十点四十了，"这种半句 */
+        const hints = tp.hints || {};
+        for (const k of ['morning', 'noon', 'afternoon', 'evening', 'night']){
+          if (!Array.isArray(hints[k]) || !hints[k].length)
+            problems.push('[话题] hints.' + k + ' 是空的，"现在几点了"会答成半句');
+        }
+      }
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');

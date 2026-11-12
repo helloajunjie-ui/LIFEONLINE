@@ -15,6 +15,7 @@
     "characters/npcs.neighbors.json",
     "characters/palettes.json",
     "characters/player.default.json",
+    "characters/topics.json",
     "environment/ambient.json",
     "environment/climate.json",
     "environment/seasons.json",
@@ -88,6 +89,11 @@
       "version": 1,
       "hash": "1b632f4c14f5",
       "updatedAt": "2026-11-05T09:56:34.049Z"
+    },
+    "characters/topics.json": {
+      "version": 3,
+      "hash": "d12120643444",
+      "updatedAt": "2026-11-12T15:21:50.644Z"
     },
     "environment/ambient.json": {
       "version": 10,
