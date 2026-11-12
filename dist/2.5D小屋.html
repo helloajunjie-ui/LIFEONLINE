@@ -1166,7 +1166,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T08:44:32.790Z */
+/* 由 tools/build.mjs 生成：2026-11-12T08:46:25.317Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2659,12 +2659,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.48.0",
+  "appVersion": "1.49.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "6822eda18ff5",
-  "builtAt": "2026-11-12T08:44:32.780Z",
+  "builtAt": "2026-11-12T08:46:25.306Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -10858,14 +10858,50 @@ const VERB_HOOKS = {
     spawnParticles(Math.round(n.fx), Math.round(n.fy), '#ef7c8e', 6);
     SND.talk();
     n.appearance.faceStyle = 1;
+  },
+
+  /** 打听工作：今天上过班就说别硬撑，没上过就报两家正在招人的店 */
+  npcAskJob(ctx){
+    const n = ctx.npc;
+    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 4));
+    const taken = (typeof shiftUsedToday === 'function') && shiftUsedToday();
+    let line;
+    if (taken){
+      line = '今天这一班你已经上过了，剩下时间干点别的。';
+    } else {
+      const pool = CAREERS.map((j, i) => i);
+      const pick = [];
+      while (pick.length < 2 && pool.length) pick.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      const names = pick.map(i => CAREERS[i].name);
+      line = names.join('、') + '那边都缺人，一天百来块。';
+    }
+    showFloat(n.name + '："' + line + '"', n.fx, n.fy, 3.6);
+    SND.talk();
+    n.appearance.faceStyle = 1;
+  },
+
+  /** 打听小区：直接把今天那条广播复述给你——信息能二次利用，才有"街坊"的感觉 */
+  npcAskNews(ctx){
+    const n = ctx.npc;
+    STATS.emotion = clampStat('emotion', STATS.emotion + (ctx.effects.emotion || 4));
+    const t = (typeof dailyNewsText === 'function') ? dailyNewsText(DAY) : '';
+    showFloat(n.name + '："' + (t || '这两天没什么新鲜事。') + '"', n.fx, n.fy, 3.6);
+    SND.talk();
+    n.appearance.faceStyle = 1;
   }
 };
 
 /* 邻居的动作表：内容层没给就用默认（聊天）。加"送礼/邀请"只需在 NPC 数据里加一条。 */
-const DEFAULT_NPC_ACTS = [{
-  verb: 'chat', label: '聊天', durationSec: 0, sfx: 'talk', hook: 'npcTalk',
-  effects: { emotion: 10 }
-}];
+const DEFAULT_NPC_ACTS = [
+  { verb: 'chat', label: '闲聊', durationSec: 0, sfx: 'talk', hook: 'npcTalk',
+    effects: { emotion: 10 }, order: 0 },
+  /* 这两条是"有信息量"的对话：新手最常卡在"哪能打工""小区有什么消息"，
+   * 让街坊直接答，比让玩家自己翻面板自然。 */
+  { verb: 'chatJob', label: '打听工作', durationSec: 0, sfx: 'talk', hook: 'npcAskJob',
+    effects: { emotion: 4 }, order: 1 },
+  { verb: 'chatNews', label: '打听小区', durationSec: 0, sfx: 'talk', hook: 'npcAskNews',
+    effects: { emotion: 4 }, order: 2 }
+];
 
 const targetOf = (obj) => obj;
 

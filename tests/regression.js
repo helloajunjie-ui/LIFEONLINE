@@ -3925,6 +3925,30 @@
           }
 
 
+          // ---------- AU：可以向街坊打听事 ----------
+          {
+            const bak = { ach: ACH, floats: floats.length };
+            ACH = { unlocked: {}, visited: [], events: [] };
+            const acts = DEFAULT_NPC_ACTS.map(a => a.label);
+            const n = NEIGHBORS[0];
+
+            floats.length = 0;
+            VERB_HOOKS.npcAskJob({ npc: n, effects: { emotion: 4 } });
+            const jobLine = floats.length ? floats[floats.length - 1].text : '';
+            const jobOk = jobLine.indexOf('缺人') >= 0 || jobLine.indexOf('上过') >= 0;
+
+            floats.length = 0;
+            VERB_HOOKS.npcAskNews({ npc: n, effects: { emotion: 4 } });
+            const newsLine = floats.length ? floats[floats.length - 1].text : '';
+            const gossipOk = newsLine.indexOf(dailyNewsText(DAY)) >= 0;
+
+            P('AU1 neighbors can be asked about work and the neighborhood',
+              acts.length === 3 && jobOk && gossipOk,
+              'acts=' + acts.join('/') + ' job=' + jobLine.slice(0, 18) + ' news=' + newsLine.slice(0, 14));
+
+            ACH = bak.ach; floats.length = bak.floats;
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;
