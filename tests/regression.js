@@ -4062,6 +4062,34 @@
           }
 
 
+          // ---------- AY：公交站 ----------
+          {
+            const okCells = BUS_STOPS.length >= 2 && BUS_STOPS.every(st =>
+              !isStreetObstacle(st.gx, st.gy) &&
+              streetZoneKindShallow(st.gx, st.gy) !== 'road');
+            P('AY1 bus stops sit on walkable ground, never on the road', okCells,
+              BUS_STOPS.map(st => st.name + '@' + st.gx + ',' + st.gy).join(' '));
+
+            const acts = busStopActs(BUS_STOPS[0]);
+            P('AY2 a stop offers every other stop as a destination',
+              acts.length === BUS_STOPS.length - 1 && acts.every(a => a.cost > 0 && a.hook === 'rideBus'),
+              acts.map(a => a.label).join(' / '));
+
+            const bak = { money: MONEY, fx: PLAYER.fx, fy: PLAYER.fy, scene: scene };
+            scene = 'street';
+            PLAYER.fx = BUS_STOPS[0].gx; PLAYER.fy = BUS_STOPS[0].gy;
+            MONEY = 500;
+            VERB_HOOKS.rideBus({ stop: BUS_STOPS[0], to: BUS_STOPS[1], act: { cost: 2 } });
+            const moved = PLAYER.fx === BUS_STOPS[1].gx && PLAYER.fy === BUS_STOPS[1].gy;
+            const paid = MONEY === 498;
+            MONEY = 0;
+            VERB_HOOKS.rideBus({ stop: BUS_STOPS[1], to: BUS_STOPS[0], act: { cost: 2 } });
+            const blocked = PLAYER.fx === BUS_STOPS[1].gx && MONEY === 0;
+            P('AY3 riding charges the fare and moves you to the stop', moved && paid && blocked,
+              'moved=' + moved + ' paid=' + paid + ' brokeBlocked=' + blocked);
+            MONEY = bak.money; PLAYER.fx = bak.fx; PLAYER.fy = bak.fy; scene = bak.scene;
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

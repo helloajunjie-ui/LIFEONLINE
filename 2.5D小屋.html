@@ -1478,6 +1478,7 @@ const LEDGER_CATS = {
   out: {
     food:    '吃喝',
     bill:    '水电房租',
+    transit: '交通',
     estate:  '房产',
     car:     '车',
     furn:    '家具',
@@ -5568,6 +5569,10 @@ function renderStreet(){
     }});
   }
   // 楼下信箱：进物件层一起排序，走到楼后会被挡住
+  for (const st of BUS_STOPS){
+    if (!tileOnScreen(st.gx, st.gy, 160)) continue;
+    drawables.push({ depth: st.gx + st.gy + 0.25, fn: () => drawBusStop(st) });
+  }
   if (tileOnScreen(MAILBOX_CELL.gx, MAILBOX_CELL.gy, 140)){
     drawables.push({ depth: MAILBOX_CELL.gx + MAILBOX_CELL.gy + 0.2, fn: () => drawMailbox() });
   }
@@ -5629,6 +5634,27 @@ function renderStreet(){
   drawShopSigns();                    // 店招最后画：夜里也要亮着，不能被暗化压掉
 }
 
+/* ---------- 公交站 ----------
+ * 地图扩到 88 格之后，从西头走到东头要二十多秒；两个站各在中央大道一头，
+ * 花 ¥2 坐过去比走路快。站牌格子必须可走、不能压道路（校验器会管）。 */
+const BUS_STOPS = ((STREET_MAP && STREET_MAP.busStops) || [])
+  .filter(st => st && isFinite(st.x) && isFinite(st.y))
+  .map(st => ({ id: st.id || ('stop.' + st.x + '.' + st.y), name: st.name || '公交站',
+                gx: Number(st.x), gy: Number(st.y) }));
+function busStopAt(gx, gy){
+  return BUS_STOPS.find(st => st.gx === gx && st.gy === gy) || null;
+}
+/** 站牌菜单：去别的站。票价写在这里，改价不用动交互代码 */
+const BUS_FARE = 2;
+function busStopActs(st){
+  return BUS_STOPS
+    .filter(o => o.id !== st.id)
+    .map((o, i) => ({
+      verb: 'ride', label: '坐公交到「' + o.name + '」 · ¥' + BUS_FARE,
+      durationSec: 0, sfx: 'door', hook: 'rideBus', to: o, cost: BUS_FARE, order: i
+    }));
+}
+
 /* 店招：走到跟前才从"点开看"认出哪家是哪家，太费劲了。
  * 关卡规范里这条很明确——关键路径必须一眼读懂，不能靠记忆或小地图。
  * 只标玩家 8 格内的，远处不标：整屏都是字反而更乱。 */
@@ -5653,6 +5679,31 @@ function roundedRectPath(x, y, w, h, r){
   ctx.lineTo(x, y + rr);
   ctx.quadraticCurveTo(x, y, x + rr, y);
   ctx.closePath();
+}
+function drawBusStop(st){
+  const c = tileCenter(st.gx, st.gy);
+  if (!tileOnScreen(st.gx, st.gy, 200)) return;
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(c.x, c.y + 1, 11, 4.6, 0, 0, 6.2832);
+  ctx.fillStyle = 'rgba(60,40,20,.16)'; ctx.fill();
+  ctx.fillStyle = '#8a8578';                       // 杆
+  ctx.fillRect(c.x - 1.4, c.y - 30, 2.8, 30);
+  ctx.fillStyle = '#d9c9a8';                       // 牌
+  roundedRectPath(c.x - 9, c.y - 44, 18, 15, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(80,64,40,.45)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#3f6fa8';                       // 蓝色小方块：公交标识
+  ctx.fillRect(c.x - 5, c.y - 41, 10, 7);
+  ctx.restore();
+  /* 站名画在牌子上方，和店招同一套字体与描边，远看是一类东西 */
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 10px ' + FONT_UI;
+  ctx.globalAlpha = 0.92;
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,250,240,.9)';
+  ctx.strokeText(st.name, c.x, c.y - 48);
+  ctx.fillStyle = 'rgba(60,72,90,.95)';
+  ctx.fillText(st.name, c.x, c.y - 48);
+  ctx.restore();
 }
 function drawShopSigns(){
   if (scene !== 'street') return;
@@ -6931,6 +6982,17 @@ function clickHandler(e){
       if (Math.abs(PLAYER.fx - gx) + Math.abs(PLAYER.fy - gy) > 2) walkTo(gx, gy + 1);
       toggleMailbox(true);
       return;
+    }
+    // 公交站牌：走到旁边点它，弹出"去哪个站"
+    {
+      const st = busStopAt(gx, gy);
+      if (st){
+        if (Math.abs(PLAYER.fx - gx) + Math.abs(PLAYER.fy - gy) > 2){ walkTo(gx, gy + 1); return; }
+        const acts = busStopActs(st);
+        if (!acts.length){ showFloat('这是终点站，没有别的站可去了', gx, gy); return; }
+        openActMenu({ kind: 'stop', stop: st, name: st.name + ' 公交站', gx: gx, gy: gy }, acts, mx, my);
+        return;
+      }
     }
     // 点自己住的那栋楼（公寓楼）→ 打开住户目录，按楼层选房间
     {
@@ -9410,6 +9472,29 @@ const VERB_HOOKS = {
     n.appearance.faceStyle = 1;
   },
 
+  /** 坐公交：扣票钱、淡出淡入、落到另一站的站牌格上 */
+  rideBus(ctx){
+    const st = ctx.stop, to = ctx.to;
+    if (!st || !to) return;
+    const fare = Math.max(0, Number(ctx.act && ctx.act.cost) || BUS_FARE);
+    if (MONEY < fare){
+      showFloat('还差 ¥' + (fare - MONEY) + ' 买票', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+      SND.err(); return;
+    }
+    debit(fare, 'transit', '公交 ' + st.name + '→' + to.name);
+    /* 先黑场再换位置：不用 setTimeout，_fade 已经是全黑，
+     * 这一帧直接把人放过去，玩家看到的是"到了"而不是"瞬移" */
+    startFade();
+    PLAYER.fx = to.gx; PLAYER.fy = to.gy;
+    PLAYER.path = []; PLAYER.target = null; PLAYER.moving = false;
+    const pc = worldToScreen(PLAYER.fx, PLAYER.fy);
+    cam.x = viewW / 2 - pc.x;
+    cam.y = viewH / 2 - pc.y - 20;
+    showFloat('到站 · ' + to.name, to.gx, to.gy - 1);
+    SND.door();
+    updateHUD(); saveGame();
+  },
+
   /** 打听工作：今天上过班就说别硬撑，没上过就报两家正在招人的店 */
   npcAskJob(ctx){
     const n = ctx.npc;
@@ -9519,6 +9604,11 @@ function checkAction(act, t){
 
 /** 真正开始执行一个动作（先走位，再计时） */
 function beginAction(t, act){
+  /* 站牌不是家具也不是人：没有走位、没有计时，点完直接结算 */
+  if (t.kind === 'stop'){
+    if (act && act.hook && VERB_HOOKS[act.hook]) VERB_HOOKS[act.hook]({ stop: t.stop, to: act.to, act: act });
+    return true;
+  }
   if (t.kind === 'pet'){
     return beginPetAction(t.p, act);
   }
