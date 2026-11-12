@@ -4165,6 +4165,56 @@
               STATS.emotion = bak2.emo; CHATTER = bak2.chatter;
             }
 
+            /* 表现层参数集中到 ui/talk.json：引擎里不再散着 216/16/1.6/0.18 这些数 */
+            {
+              const T = talkCfg();
+              const dShort = chatterLineSec('嗯');
+              const dLong = chatterLineSec('这一句故意写得很长很长很长很长很长很长很长很长很长很长');
+              P('CB15 bubble size and line timing come from content, not from magic numbers',
+                T.bubble.fontPx === 13 && T.bubble.maxWidth === 216 &&
+                T.lineSec.min === 2.4 && T.lineSec.max === 4.8 &&
+                dShort === T.lineSec.min && dLong === T.lineSec.max &&
+                typeof T.chatter.retryMinutes === 'number' && T.chatter.retryMinutes >= 1,
+                'font=' + T.bubble.fontPx + ' maxW=' + T.bubble.maxWidth +
+                ' short=' + dShort + ' long=' + dLong);
+            }
+
+            /* 两个字段各管各的：_lastLine 存下标、_lastText 存整句。
+             * 以前共用一个，互相把记忆冲掉，"不连着复读"其实一直失效。 */
+            {
+              const c0 = CLERKS[0];
+              c0._lastLine = -1; c0._lastText = '';
+              clerkLine(c0, 'hello', 0);
+              const idx = c0._lastLine;
+              const idxIsNumber = typeof idx === 'number' && idx >= 0;
+              npcPick(c0, ['甲', '乙']);
+              const kept = c0._lastLine === idx;
+              let rep = 0, prev = null;
+              for (let i = 0; i < 30; i++){
+                const v = npcPick(c0, ['甲', '乙']);
+                if (v === prev) rep++;
+                prev = v;
+              }
+              P('CB16 the index memory and the text memory no longer overwrite each other',
+                idxIsNumber && kept && rep === 0 &&
+                typeof c0._lastLine === 'number' && typeof c0._lastText === 'string',
+                'idx=' + idx + ' kept=' + kept + ' repeats=' + rep);
+            }
+
+            /* 玩家身份的选项与映射都来自 jobs[].playerRole */
+            {
+              const m = roleJobMap();
+              const opts = roleOptions();
+              buildRoleOptions();
+              const sel = document.getElementById('fRole');
+              P('CB17 player identity options are built from content',
+                Object.keys(m).length === 5 && m['自由职业'] === 'freelance' &&
+                m['上班族'] === 'officeworker' && opts.length === 5 &&
+                opts[0].playerRole === '自由职业' && sel && sel.options.length === 5,
+                'map=' + Object.keys(m).join('/') + ' opts=' + (opts.length) +
+                ' select=' + (sel ? sel.options.length : -1));
+            }
+
             CHATTER = bak.chatter; _chatNext = bak.next; WX.rainOn = bak.rain;
             MONEY = bak.money; STATS.emotion = bak.emo; MINUTE = bak.min; scene = bak.sc;
             chatterPeople = bak.people;

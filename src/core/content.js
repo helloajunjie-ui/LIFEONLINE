@@ -116,6 +116,8 @@ function buildIndex(packs, meta){
   }
 
   const uiPack = Object.entries(packs).find(([id]) => id.startsWith('ui/'))?.[1] || {};
+  /* 对话表现层参数（气泡尺寸、停留时长、方位阈值）：单独一包，改观感不用碰代码 */
+  const talkCfg = packs['ui/talk.json'] || {};
 
   const verbTable = buildVerbTable(packs);
   const categories = buildCategories(packs);
@@ -188,6 +190,7 @@ function buildIndex(packs, meta){
     topics,
     maps,
     ui: uiPack.strings || {},
+    talk: talkCfg,
     verbs: verbTable,
     categories,
     stats,
@@ -283,6 +286,8 @@ export function sites(){ return content.sites; }
 export function jobs(){ return content.jobs; }
 /** 聊天话题包：{ topics, answers, hints } */
 export function topics(){ return content.topics; }
+/** 对话表现层参数：{ bubble, lineSec, chatter, place, topics } */
+export function talk(){ return content.talk || {}; }
 
 /** 气候：天气权重 + 一天的光照关键帧 */
 export function climate(){ return content.climate; }

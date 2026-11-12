@@ -1,0 +1,45 @@
+{
+  "schema": "ui/talk/1",
+  "note": "对话表现层的可调参数：气泡尺寸、每句话停留时长、闲聊重试间隔、方位判定阈值。这些东西以前散在引擎里当魔法数字用，改一次要翻半天代码，而且聊天和话题两处各写一份。现在集中在这里，改观感不用碰代码。",
+  "bubble": {
+    "fontPx": 13,
+    "maxWidth": 216,
+    "padX": 9,
+    "padY": 6,
+    "lineHeight": 16,
+    "radius": 7,
+    "tailHalfWidth": 5,
+    "tailHeight": 6,
+    "headGap": 9,
+    "fill": "rgba(253,249,240,.97)",
+    "stroke": "rgba(122,96,60,.55)",
+    "textColor": "#3a2c18",
+    "strokeWidth": 1.4,
+    "fadeInSec": 0.2,
+    "fadeOutSec": 0.3,
+    "noHeadChars": "，。！？、；：）］｝”’」』…—"
+  },
+  "lineSec": {
+    "note": "一句台词挂多久：base + 字数 × perChar，再夹到 min~max。太短看不清，太长拖节奏。",
+    "base": 1.6,
+    "perChar": 0.18,
+    "min": 2.4,
+    "max": 4.8
+  },
+  "chatter": {
+    "note": "闲聊没找到人时的重试（游戏分钟）。空跑一次只等一会儿，别让玩家觉得街上没人说话。",
+    "retryMinutes": 6,
+    "retryWhenPanel": 4,
+    "retryOffScene": 8,
+    "pairCandidates": 3
+  },
+  "place": {
+    "note": "问路：最近的地点在多少格内才值得提；两个方向差多少格才值得说东南西北（否则就说「前面」）。",
+    "rangeTiles": 12,
+    "dirDeadZone": 2
+  },
+  "topics": {
+    "note": "话题没写 emotion 时的默认情绪值",
+    "emotionDefault": 2
+  }
+}

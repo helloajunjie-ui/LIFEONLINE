@@ -1,11 +1,11 @@
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 export const BUILD = {
-  "appVersion": "1.77.0",
+  "appVersion": "1.78.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 22,
   "contentVersion": 1,
-  "contentHash": "89fab0561bdf",
-  "builtAt": "2026-11-12T15:22:38.589Z",
+  "contentHash": "b313bcd603f1",
+  "builtAt": "2026-11-12T15:52:16.231Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -40,8 +40,8 @@ export const BUILD = {
       "hash": "f4800b19fb18"
     },
     "content/characters/npcs.neighbors.json": {
-      "version": 28,
-      "hash": "71cf816415ea"
+      "version": 29,
+      "hash": "bdf0233a7137"
     },
     "content/characters/palettes.json": {
       "version": 1,
@@ -52,8 +52,8 @@ export const BUILD = {
       "hash": "1b632f4c14f5"
     },
     "content/characters/topics.json": {
-      "version": 3,
-      "hash": "d12120643444"
+      "version": 4,
+      "hash": "ca73362389c8"
     },
     "content/environment/ambient.json": {
       "version": 10,
@@ -119,13 +119,17 @@ export const BUILD = {
       "version": 2,
       "hash": "9afa3735c2fe"
     },
+    "content/ui/talk.json": {
+      "version": 1,
+      "hash": "91962c815998"
+    },
     "content/vehicles/cars.json": {
       "version": 2,
       "hash": "e28eaf242a03"
     },
     "src/content/generated.js": {
       "version": null,
-      "hash": "89fab0561bdf"
+      "hash": "b313bcd603f1"
     },
     "src/core/clock.js": {
       "version": null,
@@ -133,7 +137,7 @@ export const BUILD = {
     },
     "src/core/content.js": {
       "version": null,
-      "hash": "e425371cef7b"
+      "hash": "b5b9ff314826"
     },
     "src/core/environment.js": {
       "version": null,

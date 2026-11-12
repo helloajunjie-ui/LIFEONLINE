@@ -6097,7 +6097,10 @@ const makePerson = (c, role) => ({
   appearance: c.appearance || {},
   lines: c.lines || {},
   acts: CLERK_ACTS,
-  fx: 0, fy: 0, spot: false, dir: 1, animT: 0, moving: false, _lastLine: -1
+  /* _lastLine 存"上一次抽中的下标"（clerkLine 用），_lastText 存"上一次说出口的整句"
+   * （npcPick / 话题用）。两者以前共用一个字段，互相把对方的记忆冲掉，
+   * 结果"不连着复读"这条保护其实一直是失效的。 */
+  fx: 0, fy: 0, spot: false, dir: 1, animT: 0, moving: false, _lastLine: -1, _lastText: ''
 });
 /* 店员守店；sites 是"这个地方本来就该有的人"（学校门口、球场、公园、沙地）。
  * 两者共用一套渲染/交互/作息，只差站位规则与上班时间。 */
@@ -8173,10 +8176,10 @@ function npcLineBucket(){
 function npcPick(n, pool){
   if (!pool || !pool.length) return null;
   let pick = pool[Math.floor(Math.random() * pool.length)];
-  if (pool.length > 1 && n && n._lastLine && n._lastLine === pick){
+  if (pool.length > 1 && n && n._lastText && n._lastText === pick){
     pick = pool[(pool.indexOf(pick) + 1) % pool.length];
   }
-  if (n) n._lastLine = pick;
+  if (n) n._lastText = pick;
   return pick;
 }
 function npcLine(n, place){
@@ -8198,6 +8201,34 @@ function npcLine(n, place){
   add(src[npcLineBucket()]);
   if (typeof WX !== 'undefined' && WX.rainOn){ add(src.rain); add(src.rain); }
   return npcPick(n, out);
+}
+
+/* ---------- 对话表现层的参数 ----------
+ * 气泡尺寸、停留时长、重试间隔、方位阈值都是"调观感"的东西，不是逻辑。
+ * 以前散在代码里当魔法数字，聊天和话题各写一份；现在统一读 content/ui/talk.json，
+ * 这里的默认值只在内容缺失时兜底（引擎离线也要能跑）。 */
+const TALK_DEFAULT = {
+  bubble: {
+    fontPx: 13, maxWidth: 216, padX: 9, padY: 6, lineHeight: 16, radius: 7,
+    tailHalfWidth: 5, tailHeight: 6, headGap: 9,
+    fill: 'rgba(253,249,240,.97)', stroke: 'rgba(122,96,60,.55)', textColor: '#3a2c18',
+    strokeWidth: 1.4, fadeInSec: 0.2, fadeOutSec: 0.3,
+    noHeadChars: '，。！？、；：）］｝”’」』…—'
+  },
+  lineSec: { base: 1.6, perChar: 0.18, min: 2.4, max: 4.8 },
+  chatter: { retryMinutes: 6, retryWhenPanel: 4, retryOffScene: 8, pairCandidates: 3 },
+  place: { rangeTiles: 12, dirDeadZone: 2 },
+  topics: { emotionDefault: 2 }
+};
+let _talkCache = null;
+function talkCfg(){
+  if (_talkCache) return _talkCache;
+  const fn = HomeCore.content.talk;
+  const raw = (typeof fn === 'function' ? fn() : null) || {};
+  const out = {};
+  for (const k in TALK_DEFAULT) out[k] = Object.assign({}, TALK_DEFAULT[k], raw[k] || {});
+  _talkCache = out;
+  return out;
 }
 
 /* ---------- 聊天话题：玩家问什么，NPC 按身份答 ----------
@@ -8225,13 +8256,16 @@ function clockText(){
   const h = Math.floor(m0 / 60), mi = Math.floor(m0 % 60);
   return cnNum(h) + '点' + (mi ? cnNum(mi) + '分' : '整');
 }
+/* 时段分档的边界也在内容里（topics.json → hints.bounds）：
+ * 五档需要四个边界，写成数组比写死四条 if 好调，也不会和 npcLineBucket 的三档搞混。 */
+const HINT_BUCKETS = ['morning', 'noon', 'afternoon', 'evening', 'night'];
 function hintBucketName(){
+  const hints = (topicPack().hints || {});
+  const b = Array.isArray(hints.bounds) && hints.bounds.length === HINT_BUCKETS.length - 1
+    ? hints.bounds : [11, 13, 17, 21];
   const h = ((Number(MINUTE) || 0) % 1440 + 1440) % 1440 / 60;
-  if (h < 11) return 'morning';
-  if (h < 13) return 'noon';
-  if (h < 17) return 'afternoon';
-  if (h < 21) return 'evening';
-  return 'night';
+  for (let i = 0; i < b.length; i++) if (h < Number(b[i])) return HINT_BUCKETS[i];
+  return HINT_BUCKETS[HINT_BUCKETS.length - 1];
 }
 function hintLine(){
   const hints = topicPack().hints || {};
@@ -8241,10 +8275,11 @@ function hintLine(){
 }
 /** 八向：北/东北/东… 差得不多就说"前"，别硬指着鼻子说方位 */
 function dirWord(dx, dy){
+  const dz = Math.max(0, Number(talkCfg().place.dirDeadZone) || 2);
   const ax = Math.abs(dx), ay = Math.abs(dy);
-  if (ax < 2 && ay < 2) return '前';
-  const ns = ay < 2 ? '' : (dy < 0 ? '北' : '南');
-  const ew = ax < 2 ? '' : (dx > 0 ? '东' : '西');
+  if (ax < dz && ay < dz) return '前';
+  const ns = ay < dz ? '' : (dy < 0 ? '北' : '南');
+  const ew = ax < dz ? '' : (dx > 0 ? '东' : '西');
   return (ns + ew) || '前';
 }
 /** 离玩家最近的一个有名有姓的地方（路和铺装不算）。
@@ -8259,7 +8294,8 @@ function nearestZoneInfo(avoidId){
     const d = Math.hypot(cx - PLAYER.fx, cy - PLAYER.fy);
     if (d < bd){ bd = d; best = z; }
   }
-  if (!best || bd > 12) return null;
+  const range = Math.max(4, Number(talkCfg().place.rangeTiles) || 12);
+  if (!best || bd > range) return null;
   return {
     zone: best.label,
     dir: dirWord(best.x + best.w / 2 - PLAYER.fx, best.y + best.h / 2 - PLAYER.fy)
@@ -8303,7 +8339,7 @@ function npcAnswer(npc, topicId){
     /* 句子可能因为"附近没有可说的地点"作废，换一句再试；都填不出来才放弃 */
     for (let k = 0; k < 4; k++){
       const text = fillTemplate(pool[Math.floor(Math.random() * pool.length)], npc);
-      if (text) { if (npc) npc._lastLine = text; return text; }
+      if (text){ if (npc) npc._lastText = text; return text; }
     }
   }
   return '';
@@ -8314,7 +8350,8 @@ function npcTopicActs(npc){
   if (!list.length) return [];
   return list.map((t, i) => ({
     verb: 'say', label: t.label, durationSec: 0, sfx: 'talk', hook: 'npcSay',
-    topicId: t.id, effects: { emotion: t.emotion ?? 2 }, order: t.order ?? i
+    topicId: t.id, effects: { emotion: t.emotion ?? (talkCfg().topics.emotionDefault ?? 2) },
+    order: t.order ?? i
   }));
 }
 
@@ -8452,7 +8489,8 @@ function chatterTags(p){
   const out = [];
   out.push(p && p.role === 'clerk' ? 'clerk' : (p && p.role === 'site' ? 'site' : 'neighbor'));
   out.push(ageStageOf(app.age));
-  out.push(app.sex === 'f' ? 'female' : 'male');
+  /* 只给 f/m 贴性别标签：x（保密）不该被当成男性，否则 "avoid:['male']" 会误伤 */
+  if (app.sex === 'f' || app.sex === 'm') out.push(app.sex === 'f' ? 'female' : 'male');
   if (app.job) out.push(String(app.job));
   return out;
 }
@@ -8503,13 +8541,15 @@ function chatterPair(){
   }
   if (!pairs.length) return null;
   pairs.sort((x, y) => x[2] - y[2]);
-  const near = pairs.slice(0, Math.min(3, pairs.length));
+  const cap = Math.max(1, Number(talkCfg().chatter.pairCandidates) || 3);
+  const near = pairs.slice(0, Math.min(cap, pairs.length));
   return near[Math.floor(Math.random() * near.length)];
 }
-/** 一句话该挂多久：字多的读得久，但有上下限，太短来不及看、太长又拖节奏 */
+/** 一句话该挂多久：字多的读得久，但有上下限（参数在 ui/talk.json → lineSec） */
 function chatterLineSec(text){
+  const L = talkCfg().lineSec;
   const n = String(text || '').length;
-  return Math.max(2.4, Math.min(4.8, 1.6 + n * 0.18));
+  return Math.max(L.min, Math.min(L.max, L.base + n * L.perChar));
 }
 function startChatter(lines, a, b){
   if (!a || !Array.isArray(lines) || !lines.length) return null;
@@ -8542,9 +8582,12 @@ function chatterTry(force){
   const cfg = chatterCfg();
   const cd = Math.max(6, Number(cfg.cooldownMinutes) || 26);
   const jit = Math.max(0, Number(cfg.cooldownJitter) || 22);
+  const retry = talkCfg().chatter;
   if (!force && MINUTE < _chatNext) return null;
-  if (scene !== 'street' || (typeof busRide !== 'undefined' && busRide)){ _chatNext = MINUTE + 8; return null; }
-  if (!force && anyPanelVisible()){ _chatNext = MINUTE + 4; return null; }
+  if (scene !== 'street' || (typeof busRide !== 'undefined' && busRide)){
+    _chatNext = MINUTE + (retry.retryOffScene || 8); return null;
+  }
+  if (!force && anyPanelVisible()){ _chatNext = MINUTE + (retry.retryWhenPanel || 4); return null; }
   const pair = chatterPair();
   if (pair){
     /* 话题要挑这对人真能说的：小孩不聊房租，厨子才聊后厨 */
@@ -8568,7 +8611,7 @@ function chatterTry(force){
       return startChatter([{ s: 'a', t: text }], who, null);
     }
   }
-  _chatNext = MINUTE + 6;
+  _chatNext = MINUTE + (retry.retryMinutes || 6);
   return null;
 }
 function tickChatter(dt){
@@ -8595,20 +8638,21 @@ function chatterSpeaker(){
 function drawSpeechBubble(text, gx, gy, alpha){
   const s = String(text || '');
   if (!s || alpha <= 0.01) return;
+  const B = talkCfg().bubble;
   const c = tileCenter(gx, gy);
   ctx.save();
   ctx.globalAlpha = Math.min(1, alpha);
-  ctx.font = 'bold 13px ' + FONT_UI;
+  ctx.font = 'bold ' + B.fontPx + 'px ' + FONT_UI;
   /* 内容里已经限了 16 字，这里折行只是兜底：手改内容写长了也不会画成一长条。
    * 折行按"均分"算——直接按最大宽度切，最后一行常剩一两个字，读着像断气。 */
-  const maxW = 216;
+  const maxW = B.maxWidth;
   const fullW = ctx.measureText(s).width;
   const rows = Math.max(1, Math.ceil(fullW / maxW));
   const target = fullW / rows;
   const lines = [];
   let cur = '';
   /* 避头点：逗号句号不能落在行首，宁可让这一行多超一两个字 */
-  const NO_HEAD = '，。！？、；：）］｝”’」』…—';
+  const NO_HEAD = B.noHeadChars || '，。！？、；：）］｝”’」』…—';
   for (const ch of s){
     if (cur && lines.length < rows - 1 && ctx.measureText(cur + ch).width > target
         && NO_HEAD.indexOf(ch) < 0){
@@ -8618,31 +8662,31 @@ function drawSpeechBubble(text, gx, gy, alpha){
   if (cur) lines.push(cur);
   let tw = 0;
   for (const l of lines) tw = Math.max(tw, ctx.measureText(l).width);
-  const padX = 9, padY = 6, lh = 16;
+  const padX = B.padX, padY = B.padY, lh = B.lineHeight;
   const bw = Math.round(tw + padX * 2), bh = lines.length * lh + padY * 2 - 2;
   const bx = Math.round(c.x - bw / 2);
-  const by = Math.round(c.y - CHAR_AY - 9 - bh);   // 贴在头顶上方，别压住脸
+  const by = Math.round(c.y - CHAR_AY - B.headGap - bh);   // 贴在头顶上方，别压住脸
   ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 7); else ctx.rect(bx, by, bw, bh);
-  ctx.fillStyle = 'rgba(253,249,240,.97)';
+  if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, B.radius); else ctx.rect(bx, by, bw, bh);
+  ctx.fillStyle = B.fill;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(122,96,60,.55)';
-  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = B.stroke;
+  ctx.lineWidth = B.strokeWidth;
   ctx.stroke();
   /* 尖角：先填掉底边那一小段（不然会留一道横线），再只描两条斜边 */
-  const tipY = by + bh + 6;
+  const hw = B.tailHalfWidth, tipY = by + bh + B.tailHeight;
   ctx.beginPath();
-  ctx.moveTo(c.x - 5, by + bh - 0.5);
+  ctx.moveTo(c.x - hw, by + bh - 0.5);
   ctx.lineTo(c.x, tipY);
-  ctx.lineTo(c.x + 5, by + bh - 0.5);
+  ctx.lineTo(c.x + hw, by + bh - 0.5);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(c.x - 5, by + bh - 0.5);
+  ctx.moveTo(c.x - hw, by + bh - 0.5);
   ctx.lineTo(c.x, tipY);
-  ctx.lineTo(c.x + 5, by + bh - 0.5);
+  ctx.lineTo(c.x + hw, by + bh - 0.5);
   ctx.stroke();
-  ctx.fillStyle = '#3a2c18';
+  ctx.fillStyle = B.textColor;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   for (let i = 0; i < lines.length; i++){
@@ -8658,7 +8702,9 @@ function drawChatter(){
   if (!who || !who.p) return;
   if (!tileOnScreen(who.p.fx, who.p.fy, 260)) return;
   /* 淡入淡出：整句都亮着的时间留够，只在头尾各 0.2 秒过渡 */
-  const a = Math.max(0, Math.min(1, CHATTER.t / 0.2, (CHATTER.dur - CHATTER.t) / 0.3));
+  const B = talkCfg().bubble;
+  const a = Math.max(0, Math.min(1, CHATTER.t / (B.fadeInSec || 0.2),
+    (CHATTER.dur - CHATTER.t) / (B.fadeOutSec || 0.3)));
   drawSpeechBubble(line.t, who.p.fx, who.p.fy, a);
 }
 
@@ -9769,6 +9815,7 @@ function openChar(){
   charBackdrop.classList.add('show');
   // 回填可编辑字段
   fName.value = PERSON.name;
+  buildRoleOptions();
   fAge.value = ageStageOf(APPEARANCE.age);
   fGender.value = PERSON.gender;
   fRole.value = PERSON.role;
@@ -9797,8 +9844,29 @@ function closeChar(){
 /* 身份三件套与档案卡的双向绑定：
  * 年龄/性别改了要立刻重画立绘（头身比、肩宽、睫毛都跟着变），
  * 职业则决定制服层。以前这三样只写在数据里，界面上看不见也改不了。 */
-const ROLE_JOB = { '自由职业': 'freelance', '上班族': 'officeworker', '学生': 'student',
-                   '创业者': 'founder', '退休': 'retiree' };
+/* 身份下拉的选项和"身份 → 职业 id"的映射都从 content 的 jobs[] 长出来
+ * （jobs[].playerRole / playerOrder）。以前这里硬编码一份中文，改一个字要改两处。 */
+function roleOptions(){
+  const jobs = (HomeCore.content.jobs ? HomeCore.content.jobs() : null) || [];
+  return jobs.filter(j => j && j.playerRole)
+    .sort((a, b) => (a.playerOrder ?? 99) - (b.playerOrder ?? 99));
+}
+function roleJobMap(){
+  const m = {};
+  for (const j of roleOptions()) m[j.playerRole] = j.id;
+  return m;
+}
+function buildRoleOptions(){
+  if (!fRole) return;
+  const opts = roleOptions();
+  if (!opts.length) return;
+  fRole.innerHTML = '';
+  for (const j of opts){
+    const o = document.createElement('option');
+    o.textContent = j.playerRole;
+    fRole.appendChild(o);
+  }
+}
 const SEX_ID = { '男': 'm', '女': 'f', '保密': 'x' };
 function syncIdentityLine(){
   if (pId) pId.textContent = personIdentity(APPEARANCE);
@@ -9806,7 +9874,7 @@ function syncIdentityLine(){
 function applyIdentityToLook(){
   APPEARANCE.age = ageStageOf(APPEARANCE.age);
   APPEARANCE.sex = SEX_ID[PERSON.gender] || APPEARANCE.sex || 'x';
-  APPEARANCE.job = ROLE_JOB[PERSON.role] || APPEARANCE.job || 'freelance';
+  APPEARANCE.job = roleJobMap()[PERSON.role] || APPEARANCE.job || 'freelance';
   syncIdentityLine();
   drawAvatar();
   drawLookPreview();

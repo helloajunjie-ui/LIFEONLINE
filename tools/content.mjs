@@ -1598,6 +1598,80 @@ function validate(){
       }
     }
 
+    /* V4.33 对话参数：气泡尺寸/停留时长/方位阈值集中到 ui/talk.json 之后，
+     * 写错一个数不会崩，只会"气泡扁成一条"或者"一句话闪一下就没"。
+     * 顺便查玩家身份映射：身份下拉的每一项都得对应一个不在岗的职业。 */
+    {
+      const tk = packs['ui/talk.json'];
+      if (!tk){
+        problems.push('[对话] 缺少 ui/talk.json，气泡尺寸与时长就没有统一出口');
+      } else {
+        const b = tk.bubble || {}, ls = tk.lineSec || {}, ch = tk.chatter || {};
+        const pl = tk.place || {}, tp2 = tk.topics || {};
+        const num = (v) => typeof v === 'number' && isFinite(v);
+        if (!num(b.fontPx) || b.fontPx < 11 || b.fontPx > 18)
+          problems.push('[对话] bubble.fontPx 应在 11~18（现在 ' + b.fontPx + '）');
+        if (!num(b.maxWidth) || b.maxWidth < 120 || b.maxWidth > 400)
+          problems.push('[对话] bubble.maxWidth 应在 120~400（现在 ' + b.maxWidth + '）');
+        if (!num(b.lineHeight) || b.lineHeight < (b.fontPx || 13))
+          problems.push('[对话] bubble.lineHeight 不能小于字号，否则两行会叠在一起');
+        if (!num(b.padX) || !num(b.padY) || b.padX < 0 || b.padY < 0)
+          problems.push('[对话] bubble.padX/padY 必须是非负数');
+        if (!num(b.tailHeight) || b.tailHeight < 2 || b.tailHeight > 14)
+          problems.push('[对话] bubble.tailHeight 应在 2~14（太小看不见，太大像泪滴）');
+        if (!num(b.fadeInSec) || b.fadeInSec <= 0 || b.fadeInSec > 1)
+          problems.push('[对话] bubble.fadeInSec 应在 0~1 秒');
+        if (!num(b.fadeOutSec) || b.fadeOutSec <= 0 || b.fadeOutSec > 1)
+          problems.push('[对话] bubble.fadeOutSec 应在 0~1 秒');
+        for (const k of ['fill', 'stroke', 'textColor'])
+          if (!b[k] || typeof b[k] !== 'string') problems.push('[对话] bubble.' + k + ' 缺颜色值');
+        if (!num(ls.min) || !num(ls.max) || ls.min >= ls.max)
+          problems.push('[对话] lineSec.min 必须小于 max');
+        if (!num(ls.base) || !num(ls.perChar) || ls.base <= 0 || ls.perChar < 0.05 || ls.perChar > 0.5)
+          problems.push('[对话] lineSec.base/perChar 不合理（base>0，perChar 0.05~0.5）');
+        for (const k of ['retryMinutes', 'retryWhenPanel', 'retryOffScene'])
+          if (!num(ch[k]) || ch[k] < 1 || ch[k] > 30)
+            problems.push('[对话] chatter.' + k + ' 应在 1~30 游戏分钟（现在 ' + ch[k] + '）');
+        if (!num(ch.pairCandidates) || ch.pairCandidates < 1 || ch.pairCandidates > 6)
+          problems.push('[对话] chatter.pairCandidates 应在 1~6');
+        if (!num(pl.rangeTiles) || pl.rangeTiles < 4 || pl.rangeTiles > 30)
+          problems.push('[对话] place.rangeTiles 应在 4~30（太小说不到，太大指着天边）');
+        if (!num(pl.dirDeadZone) || pl.dirDeadZone < 0 || pl.dirDeadZone > 5)
+          problems.push('[对话] place.dirDeadZone 应在 0~5');
+        if (!num(tp2.emotionDefault) || tp2.emotionDefault < 0 || tp2.emotionDefault > 10)
+          problems.push('[对话] topics.emotionDefault 应在 0~10');
+      }
+
+      /* 时段边界：四刀切五档，必须严格递增且落在 0~24 */
+      const tpc = packs['characters/topics.json'] || {};
+      const bounds = (tpc.hints || {}).bounds;
+      if (!Array.isArray(bounds) || bounds.length !== 4)
+        problems.push('[对话] topics.hints.bounds 必须是 4 个边界（切出 morning/noon/afternoon/evening/night）');
+      else {
+        let prev = -1;
+        for (const v of bounds){
+          if (!(Number(v) > prev && Number(v) < 24))
+            problems.push('[对话] hints.bounds 必须严格递增且在 0~24 之内：' + bounds.join(','));
+          prev = Number(v);
+        }
+      }
+
+      /* 玩家身份：只是档案卡上的称呼 + 决定立绘制服，不绑定工作地点，
+       * 所以只查"中文不重复、排序不重复"。 */
+      const seenRole = {};
+      const seenOrder = {};
+      for (const j of (pk.jobs || [])){
+        if (!j.playerRole) continue;
+        if (seenRole[j.playerRole]) problems.push('[身份] 玩家身份「' + j.playerRole + '」重复出现');
+        seenRole[j.playerRole] = j.id;
+        const o = j.playerOrder ?? 99;
+        if (seenOrder[o]) problems.push('[身份] 玩家身份排序 ' + o + ' 撞车：' + seenOrder[o] + ' / ' + j.playerRole);
+        seenOrder[o] = j.playerRole;
+      }
+      if (Object.keys(seenRole).length < 3)
+        problems.push('[身份] 玩家可选身份只有 ' + Object.keys(seenRole).length + ' 个，档案卡太单调');
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');

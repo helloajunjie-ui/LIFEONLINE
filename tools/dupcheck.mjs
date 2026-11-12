@@ -50,6 +50,43 @@ const problems = [];
    * 真正要防的是"整段被插进两次"，那一定会先让上面的分组 banner 重复。 */
 }
 
+/* ③ 同一份枚举散在三处：引擎渲染表、校验器白名单、生成器候选。
+ * 三边不一致时不会报错——只会出现"内容里写了 youth，引擎不认识，人物按中年画"。
+ * 这里把三处的年龄阶段抓出来对一遍，谁偷偷改了都跑不掉。 */
+{
+  const html = read('2.5D小屋.html');
+  const validator = read('tools/content.mjs');
+  const generator = read('tools/genidentity.mjs');
+
+  const engineAges = (() => {
+    const m = html.match(/const AGE = \{([\s\S]*?)\n  \};/);
+    if (!m) return null;
+    const keys = [];
+    const re = /^\s{4}([a-z]+):\s*\{/gm;
+    let k;
+    while ((k = re.exec(m[1]))) keys.push(k[1]);
+    return keys;
+  })();
+
+  const listOf = (src, re) => {
+    const m = src.match(re);
+    if (!m) return null;
+    return (m[1].match(/'[a-z]+'/g) || []).map(x => x.replace(/'/g, ''));
+  };
+  const validatorAges = listOf(validator, /const AGES = \[([^\]]+)\]/);
+  const generatorAges = listOf(generator, /const STAGES = \[([^\]]+)\]/);
+
+  if (!engineAges || !validatorAges || !generatorAges){
+    problems.push('[枚举] 抓不到年龄阶段表（引擎 AGE / 校验器 AGES / 生成器 STAGES），检查写法是否改了');
+  } else {
+    const canon = ['child', 'youth', 'middle', 'senior'];
+    const same = (a, b) => a.length === b.length && canon.every(v => a.includes(v) === b.includes(v));
+    if (!same(engineAges, canon)) problems.push('[枚举] 引擎 AGE 的阶段不是 ' + canon.join('/') + '：' + engineAges.join('/'));
+    if (!same(validatorAges, canon)) problems.push('[枚举] 校验器 AGES 与引擎不一致：' + validatorAges.join('/'));
+    if (!same(generatorAges, canon)) problems.push('[枚举] 生成器 STAGES 与引擎不一致：' + generatorAges.join('/'));
+  }
+}
+
 if (problems.length){
   console.error('✗ 发现 ' + problems.length + ' 处重复：');
   for (const p of problems) console.error('  ' + p);

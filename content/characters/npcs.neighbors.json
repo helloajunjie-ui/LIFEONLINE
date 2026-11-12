@@ -1067,7 +1067,7 @@
     }
   ],
   "sitesNote": "sites = 场所里的人（学校门口/球场/公园/儿童乐园）。和 clerk 的区别：他们不守店，只是\"这个地方本来就该有人\"。站位在场地内部找可走格，不做门的逻辑；台词只讲这个场所的实话，不许承诺点不到的功能。",
-  "identityNote": "人物身份是三个字段，所有 NPC 与玩家共用同一套：age 年龄阶段（child 儿童 / youth 青年 / middle 中年 / senior 老年）、sex 性别（f 女 / m 男 / x 保密）、job 职业（引用 jobs[] 的 id）。jobs[] 里的 ages / where / zones 是\"这个职业允许什么年龄、什么地点、哪家店\"：ages 挡住\"小孩跑去上班\"，where 挡住\"护士在便利店收银\"，zones 精确到门牌（快递员只可能在快递站、警察只可能在派出所）。playerOnly 的职业只有玩家能选，NPC 不会随机到。uniform 是制服的画法，可省略；有值时应当和职业默认制服一致（V4.30 会查）。 jobs[].kind 区分\"在岗职业\"（work）和\"不在岗的人\"（idle：学生/退休/自由职业）：守店的店员必须是 work，公园球场沙地上闲着的必须是 idle——这样随机安排也不会出现\"退休的人站在柜台后面收银\"。 placeAges 是场所的年龄偏好：沙地是小孩的、球场是年轻人、公园是老人。",
+  "identityNote": "人物身份是三个字段，所有 NPC 与玩家共用同一套：age 年龄阶段（child 儿童 / youth 青年 / middle 中年 / senior 老年）、sex 性别（f 女 / m 男 / x 保密）、job 职业（引用 jobs[] 的 id）。jobs[] 里的 ages / where / zones 是\"这个职业允许什么年龄、什么地点、哪家店\"：ages 挡住\"小孩跑去上班\"，where 挡住\"护士在便利店收银\"，zones 精确到门牌（快递员只可能在快递站、警察只可能在派出所）。playerOnly 的职业只有玩家能选，NPC 不会随机到。uniform 是制服的画法，可省略；有值时应当和职业默认制服一致（V4.30 会查）。 jobs[].kind 区分\"在岗职业\"（work）和\"不在岗的人\"（idle：学生/退休/自由职业）：守店的店员必须是 work，公园球场沙地上闲着的必须是 idle——这样随机安排也不会出现\"退休的人站在柜台后面收银\"。 placeAges 是场所的年龄偏好：沙地是小孩的、球场是年轻人、公园是老人。 playerRole 是玩家档案卡「身份」下拉里显示的字，playerOrder 是它的排序；玩家的身份 → 职业 id 的映射也从这张表长出来，代码里不再维护第二份中文。",
   "jobs": [
     {
       "id": "student",
@@ -1079,7 +1079,9 @@
       "where": [
         "any"
       ],
-      "kind": "idle"
+      "kind": "idle",
+      "playerRole": "学生",
+      "playerOrder": 2
     },
     {
       "id": "retiree",
@@ -1090,7 +1092,9 @@
       "where": [
         "any"
       ],
-      "kind": "idle"
+      "kind": "idle",
+      "playerRole": "退休",
+      "playerOrder": 4
     },
     {
       "id": "shopclerk",
@@ -1170,7 +1174,9 @@
         "shop_stock",
         "property"
       ],
-      "kind": "work"
+      "kind": "work",
+      "playerRole": "上班族",
+      "playerOrder": 1
     },
     {
       "id": "nurse",
@@ -1269,7 +1275,9 @@
         "any"
       ],
       "playerOnly": true,
-      "kind": "idle"
+      "kind": "idle",
+      "playerRole": "自由职业",
+      "playerOrder": 0
     },
     {
       "id": "founder",
@@ -1283,7 +1291,9 @@
         "any"
       ],
       "playerOnly": true,
-      "kind": "idle"
+      "kind": "idle",
+      "playerRole": "创业者",
+      "playerOrder": 3
     }
   ],
   "placeAges": {

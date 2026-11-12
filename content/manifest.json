@@ -32,6 +32,7 @@
     "rules/survival.json",
     "stock/stock.json",
     "ui/strings.zh-CN.json",
+    "ui/talk.json",
     "vehicles/cars.json"
   ],
   "modules": {
@@ -76,9 +77,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "characters/npcs.neighbors.json": {
-      "version": 28,
-      "hash": "71cf816415ea",
-      "updatedAt": "2026-11-12T15:07:09.028Z"
+      "version": 29,
+      "hash": "bdf0233a7137",
+      "updatedAt": "2026-11-12T15:50:32.219Z"
     },
     "characters/palettes.json": {
       "version": 1,
@@ -91,9 +92,9 @@
       "updatedAt": "2026-11-05T09:56:34.049Z"
     },
     "characters/topics.json": {
-      "version": 3,
-      "hash": "d12120643444",
-      "updatedAt": "2026-11-12T15:21:50.644Z"
+      "version": 4,
+      "hash": "ca73362389c8",
+      "updatedAt": "2026-11-12T15:50:32.222Z"
     },
     "environment/ambient.json": {
       "version": 10,
@@ -174,6 +175,11 @@
       "version": 2,
       "hash": "9afa3735c2fe",
       "updatedAt": "2026-11-05T09:58:52.984Z"
+    },
+    "ui/talk.json": {
+      "version": 1,
+      "hash": "91962c815998",
+      "updatedAt": "2026-11-12T15:50:32.226Z"
     },
     "vehicles/cars.json": {
       "version": 2,
