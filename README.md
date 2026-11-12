@@ -3,7 +3,7 @@
 一款单文件的等距视角生活模拟小游戏：**经营自己的小屋，在小区里上班、买菜、交房租、串门装修**。
 客户端是一个可以双击打开的 HTML，服务端是可选的 Go + SQLite 存档服务。
 
-> 当前版本 **1.60.0** · 存档结构 **schema 20** · 门禁：客户端回归 396 项 / 服务端自测 67 项 / 内容校验 28 包全绿（含生存数值日衰减带宽检查）（含生存数值日衰减带宽检查）
+> 当前版本 **1.61.0** · 存档结构 **schema 20** · 门禁：客户端回归 397 项 / 服务端自测 67 项 / 内容校验 28 包全绿（含生存数值日衰减带宽检查）（含生存数值日衰减带宽检查）
 
 ## 直接玩
 
@@ -49,7 +49,7 @@ dist/                     构建产物（单文件 HTML + 引擎 bundle）
 **改内容**（家具价格、工资、房价、账单周期、地图分区……）——只动 `content/` 下的 JSON，不用碰代码：
 
 ```bash
-node tools/content.mjs validate   # 校验：引用完整性、数值合法性（V1–V4.15）
+node tools/content.mjs validate   # 校验：引用完整性、数值合法性（V1–V4.19）
 node tools/content.mjs all        # extract → validate → bundle（生成服务端用的 content.json）
 node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 ```
@@ -57,7 +57,8 @@ node tools/build.mjs              # 生成 dist/core.bundle.js 与单文件 HTML
 **跑回归**：
 
 ```bash
-node tools/test.mjs               # dist 与 src 各跑一遍（305 项），用无头 Edge
+node tools/dupcheck.mjs           # 扫重复的顶层函数 / 测试分组（补丁跑两遍的保险）
+node tools/test.mjs               # dist 与 src 各跑一遍（397 项），用无头 Edge
 node tools/test.mjs dist          # 只跑构建产物
 cd server && ./home-server.exe -selftest   # 服务端接口自测（进程内 httptest）
 ```

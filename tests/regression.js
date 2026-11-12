@@ -4173,6 +4173,84 @@
             floats.length = bak.floats;
           }
 
+          // ---------- SA：存档往返（加过宠物/股票/房产/承包之后，最怕有字段只存不读） ----------
+          {
+            const orig = collectSave();
+            const syn = JSON.parse(JSON.stringify(orig));
+            const diffs = [];
+
+            syn.money = 4321; syn.minute = 837; syn.day = 37;
+            syn.stats = Object.assign({}, syn.stats, { hunger: 61, thirst: 52, emotion: 44 });
+            syn.houseLevel = 1;
+            syn.sndOn = !orig.sndOn;
+            syn.floorStyle = 0; syn.wallStyle = 0;
+            syn.ownedFloors = [0]; syn.ownedWalls = [0];
+            syn.rent = { lastDay: 31 };
+            syn.lottery = { bought: 7, won: 2 };
+            syn.pantry = 4; syn.bag = 3;
+
+            const jobId = Object.keys(JOB_BY_ID)[0];
+            syn.career = { shiftsByJob: {}, total: 13, lastShift: { day: 37, jobId: jobId } };
+            syn.career.shiftsByJob[jobId] = 5;
+
+            const achId = Object.keys(ACH_BY_ID)[0];
+            syn.achievements = { unlocked: {}, visited: ['house:x'], events: ['street', 'clerk.demo'] };
+            syn.achievements.unlocked[achId] = 123456;
+
+            syn.bank = Object.assign({}, syn.bank, { savings: 9000, lastDay: 30 });
+
+            const stId = (HomeCore.content.stocks && HomeCore.content.stocks()[0])
+              ? HomeCore.content.stocks()[0].id : null;
+            if (stId) syn.stock = { hold: [{ id: stId, shares: 200, cost: 5 }], orders: [] };
+
+            applySave(syn);
+            const got = collectSave();
+
+            const mark = (k, ok) => { if (!ok) diffs.push(k); };
+            mark('money', got.money === 4321);
+            mark('minute', got.minute === 837);
+            mark('day', got.day === 37);
+            mark('stats', got.stats.hunger === 61 && got.stats.thirst === 52 && got.stats.emotion === 44);
+            mark('houseLevel', got.houseLevel === 1);
+            mark('sndOn', got.sndOn === syn.sndOn);
+            mark('style', got.floorStyle === 0 && got.wallStyle === 0);
+            mark('owned', JSON.stringify(got.ownedFloors) === '[0]' && JSON.stringify(got.ownedWalls) === '[0]');
+            mark('rent', got.rent.lastDay === 31);
+            mark('lottery', got.lottery.bought === 7 && got.lottery.won === 2);
+            mark('pantry/bag', got.pantry === 4 && got.bag === 3);
+            mark('career.total', got.career.total === 13);
+            mark('career.byJob', got.career.shiftsByJob[jobId] === 5);
+            mark('career.lastShift', got.career.lastShift.day === 37 && got.career.lastShift.jobId === jobId);
+            mark('ach.events', (got.achievements.events || []).indexOf('clerk.demo') >= 0);
+            mark('ach.visited', (got.achievements.visited || []).indexOf('house:x') >= 0);
+            mark('ach.unlocked', got.achievements.unlocked[achId] === 123456);
+            mark('bank.savings', got.bank.savings === 9000);
+            if (stId) mark('stock.hold', got.stock.hold.length === 1 &&
+              got.stock.hold[0].id === stId && got.stock.hold[0].shares === 200 && got.stock.hold[0].cost === 5);
+            mark('pets.food', got.pets.food === syn.pets.food);
+            mark('pets.list', got.pets.list.length === syn.pets.list.length);
+
+            /* 同一份存档读两遍必须得到同样的结果（幂等）：第二遍如果掉字段，
+             * 说明第一次 applySave 把它吃掉了——这是最隐蔽的一类丢档 */
+            applySave(JSON.parse(JSON.stringify(syn)));
+            const got2 = collectSave();
+            /* savedAt 是时间戳、world 是世界时钟（随真实时间走），
+             * 这两个本来每次收集都不同，比较时剔掉 */
+            const strip = (o) => {
+              const c = JSON.parse(JSON.stringify(o));
+              delete c.savedAt; delete c.world;
+              return c;
+            };
+            const A1 = strip(got), A2 = strip(got2);
+            for (const k in A1){
+              if (JSON.stringify(A1[k]) !== JSON.stringify(A2[k])) diffs.push('再次读档变了:' + k);
+            }
+
+            P('SA1 a full save survives a round-trip', diffs.length === 0, diffs.join(','));
+
+            applySave(orig);
+          }
+
           placed = dc.placed;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

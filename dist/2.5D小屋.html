@@ -1174,7 +1174,7 @@
 
 <!--@CORE_BUNDLE-->
 <script>
-/* 由 tools/build.mjs 生成：2026-11-12T09:57:02.352Z */
+/* 由 tools/build.mjs 生成：2026-11-12T10:03:17.506Z */
 (function(){
   'use strict';
   var __defs = {}, __cache = {};
@@ -2674,12 +2674,12 @@ const CONTENT = {"manifest":{"contentVersion":1,"generatedAt":"2026-11-04T19:19:
 __define("src/version.generated.js", function(__exports, __require){
 // 由 tools/build.mjs 生成，请勿手改（源：version.json + content/*.json）
 const BUILD = {
-  "appVersion": "1.60.0",
+  "appVersion": "1.61.0",
   "minAppVersion": "1.6.0",
   "saveSchema": 20,
   "contentVersion": 1,
   "contentHash": "39cb468b293b",
-  "builtAt": "2026-11-12T09:57:02.342Z",
+  "builtAt": "2026-11-12T10:03:17.499Z",
   "modules": {
     "content/achievements/achievements.json": {
       "version": 4,
@@ -10546,16 +10546,8 @@ function refreshAddrLabel(){
 }
 
 /** 人物面板的住址文案（带房产额度）：地址变了、房产多了一套都要刷新 */
-function refreshAddrLabel(){
-  if (typeof fAddr === 'undefined' || !fAddr) return;
-  fAddr.textContent = ADDRESS + ' · 房产 ' + estateCount() + '/' + ESTATE_CAP;
-}
 
 /** 把当前住的那套标成自住（ESTATES 里其它房保持"持有"） */
-function currentEstate(){
-  if (!RESIDENCE) return null;
-  return estateOf(RESIDENCE.buildingId, RESIDENCE.floor, RESIDENCE.room);
-}
 let charOpen = false;
 
 const charBackdrop = document.getElementById('charBackdrop');
@@ -12330,82 +12322,6 @@ function applySave(d){
     };
     // 读档当天要跟当前 DAY 对齐，否则跨天开新档会把旧账混进今天
     if (LEDGER.day !== DAY){ LEDGER = { day: DAY, today: { in: {}, out: {} }, days: LEDGER.days, log: LEDGER.log }; }
-  }
-  /* 银行与持仓：脏存档不能变出钱来。
-   * 定期只认内容里存在的档位、贷款只认存在的档位，条数也设上限——
-   * 否则一份手工改过的存档能塞进一万笔定期，每天结算时把主循环拖死。 */
-  {
-    const bd = (d.bank && typeof d.bank === 'object') ? d.bank : {};
-    const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
-    const fixed = (Array.isArray(bd.fixed) ? bd.fixed : [])
-      .filter(f => f && bankTerm(f.termId) && Number(f.amount) > 0)
-      .slice(0, 20)
-      .map((f, i) => {
-        const st = Math.max(0, Math.floor(Number(f.start) || DAY));
-        let en = Math.max(0, Math.floor(Number(f.end) || DAY));
-        if (en <= st) en = st + 30;
-        const term = bankTerm(f.termId);
-        return {
-          uid: String(f.uid || ('fx' + st + '_' + i)),
-          termId: f.termId,
-          amount: num(f.amount, 1, 1e9),
-          start: st, end: en,
-          rate: Math.max(0, Number(f.rate) || Number(term.dailyRate) || 0)
-        };
-      });
-    const loans = (Array.isArray(bd.loans) ? bd.loans : [])
-      .filter(l => l && bankTier(l.id))
-      .slice(0, 6)
-      .map((l, i) => {
-        const tier = bankTier(l.id);
-        const principal = num(l.principal, 1, 1e9);
-        const total = Math.max(principal, num(l.total, 0, 1e9));
-        const paid = num(l.paid, 0, total);
-        const days = Math.max(1, Math.round(Number(tier.days) || 30));
-        return {
-          id: l.id, principal: principal, total: total, paid: paid,
-          due: Math.max(0, Math.floor(Number(l.due) || DAY)),
-          perDay: Math.max(1, num(l.perDay, 1, 1e9) || Math.ceil(total / days)),
-          missed: num(l.missed, 0, 9999),
-          start: Math.max(0, Math.floor(Number(l.start) || DAY))
-        };
-      })
-      .filter(l => l.total > l.paid);
-    BANK = {
-      savings: num(bd.savings, 0, BANK_SAVE_CAP),
-      acc: Math.max(0, Math.min(0.999, Number(bd.acc) || 0)),
-      fixed: fixed,
-      loans: loans,
-      lastDay: Math.max(0, Math.floor(Number(bd.lastDay) || 0)),
-      lateTotal: Math.max(BANK_LATE_CAP, Math.min(0, Math.round(Number(bd.lateTotal) || 0)))
-    };
-    // 同一天开始结算：不补算读档之前的利息（老档本来就没有这笔钱）
-    if (!BANK.lastDay) BANK.lastDay = DAY;
-
-    const sd = (d.stock && typeof d.stock === 'object') ? d.stock : {};
-    const seen = {};
-    STOCK_HOLD = (Array.isArray(sd.hold) ? sd.hold : [])
-      .filter(h => h && stockDef(h.id) && Number(h.shares) > 0 && !seen[h.id] && (seen[h.id] = 1))
-      .slice(0, STOCK_MAX)
-      .map(h => ({
-        id: h.id,
-        shares: Math.max(STOCK_LOT, Math.round(Number(h.shares) / STOCK_LOT) * STOCK_LOT),
-        cost: num(h.cost, 1, 1e9)
-      }));
-    /* 委托：只认目录里有的股票、合法方向、正数价与整手数量 */
-    STOCK_ORDERS = (Array.isArray(sd.orders) ? sd.orders : [])
-      .filter(o => o && stockDef(o.id) && (o.side === 'buy' || o.side === 'sell') &&
-                   Number(o.limit) > 0 && Number(o.shares) >= STOCK_LOT)
-      .slice(0, ORDER_MAX)
-      .map(o => ({
-        uid: orderUid(),
-        id: o.id,
-        side: o.side,
-        limit: Math.round(Number(o.limit) * 100) / 100,
-        shares: Math.max(STOCK_LOT, Math.round(Number(o.shares) / STOCK_LOT) * STOCK_LOT)
-      }));
-    stockSel = null;
-    _stockDay = 0; _stockPx = {};
   }
   /* 银行与持仓：脏存档不能变出钱来。
    * 定期只认内容里存在的档位、贷款只认存在的档位，条数也设上限——
