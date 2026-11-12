@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-07T17:42:32.343Z",
+  "generatedAt": "2026-11-12T07:36:04.000Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -129,9 +129,9 @@
       "updatedAt": "2026-11-05T19:42:27.307Z"
     },
     "stock/stock.json": {
-      "version": 1,
-      "hash": "42ffa7d31d60",
-      "updatedAt": "2026-11-05T20:51:01.189Z"
+      "version": 2,
+      "hash": "b628686e5439",
+      "updatedAt": "2026-11-12T07:35:50.423Z"
     },
     "ui/strings.zh-CN.json": {
       "version": 2,

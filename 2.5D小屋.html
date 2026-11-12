@@ -12244,11 +12244,23 @@ function stockIdx(id){ return STOCKS.findIndex(s => s.id === id); }
 
 /* ===================== 股市价格 ===================== */
 
-/* 单日涨跌率。drift 是日均漂移，vol 是单日波动幅度，抖动来自稳定散列。
- * 尾部事件（约 2.5% 的日子）幅度放大 2.5 倍——这是"刺激感"的全部来源。 */
+/* 单日涨跌率。drift 是日均漂移（可为负），vol 是单日波动幅度，抖动来自稳定散列。
+ * 尾部事件（约 2.5% 的日子）幅度放大 2.5 倍——这是"刺激感"的全部来源。
+ *
+ * 周期项：drift 是长期中枢，cycleAmp 是季节性摆幅，按 cycleDays 天一个正弦周期。
+ * 一个整周期内正弦部分正负相抵、和为 0，所以周期**不改变长期趋势**，只决定
+ * "什么时候该买"——这正是走势图和限价委托存在的意义。没有周期项的话，
+ * 六支股票都是单向斜坡，看图毫无用处，闭眼买入拿着就行。 */
 function stockStepOf(st, idx, day){
   const r = hashPos(day, idx + 1, 613);
-  let step = (Number(st.drift) || 0) + (r - 0.5) * 2 * (Number(st.vol) || 0);
+  let drift = Number(st.drift) || 0;
+  const cyc = Number(st.cycleDays) || 0;
+  if (cyc > 0){
+    const amp = Number(st.cycleAmp) || 0;
+    const phase = Number(st.cyclePhase) || 0;
+    drift += amp * Math.sin(2 * Math.PI * (day + phase) / cyc);
+  }
+  let step = drift + (r - 0.5) * 2 * (Number(st.vol) || 0);
   const tailP = Number(STOCK_MODEL.tailProb) || 0.025;
   if (r < tailP || r > 1 - tailP) step *= (Number(STOCK_MODEL.tailMul) || 2.5);
   return step;

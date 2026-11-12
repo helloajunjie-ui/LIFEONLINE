@@ -3670,6 +3670,78 @@
               'with=' + estateResaleValue(e, true) + ' without=' + estateResaleValue(e, false));
           }
 
+          // ---------- AN：股市平衡契约（有涨有跌、周期不改变长期、地板不穿） ----------
+          // AN1 一池股票必须既有赢家也有输家，否则"闭眼持有"就是无风险套利
+          {
+            const neg = STOCKS.filter(s => (Number(s.drift) || 0) < 0).length;
+            const pos = STOCKS.filter(s => (Number(s.drift) || 0) > 0).length;
+            P('AN1 the market has both winners and losers', neg >= 1 && pos >= 2 && neg + 1 <= STOCKS.length,
+              'neg=' + neg + ' pos=' + pos + ' total=' + STOCKS.length);
+          }
+
+          // AN2 漂移必须留在安全带里：太低会撞地板套利，太高会变成印钞机
+          {
+            const bad = STOCKS.filter(s => {
+              const d = Number(s.drift) || 0;
+              return d < -0.0015 || d > 0.004;
+            });
+            P('AN2 drifts stay inside the safe band', bad.length === 0,
+              'bad=' + bad.map(s => s.id + ':' + s.drift).join(','));
+          }
+
+          // AN3 周期项在一个整周期内必须抵消（否则周期会偷偷改变长期趋势）
+          {
+            const s = STOCKS.find(x => (Number(x.cycleDays) || 0) > 0 && (Number(x.cycleAmp) || 0) > 0);
+            let sum = 0;
+            if (s){
+              const idx = STOCKS.indexOf(s), cyc = Number(s.cycleDays);
+              const tailP = Number(STOCK_MODEL.tailProb) || 0.025;
+              const tailMul = Number(STOCK_MODEL.tailMul) || 2.5;
+              for (let d = 2; d <= 1 + cyc; d++){
+                const r = hashPos(d, idx + 1, 613);
+                let step = stockStepOf(s, idx, d);
+                if (r < tailP || r > 1 - tailP) step /= tailMul;   // 反推时把尾部放大除掉
+                sum += step - (Number(s.drift) || 0) - (r - 0.5) * 2 * (Number(s.vol) || 0);
+              }
+            }
+            const tol = s ? Number(s.cycleAmp) * Number(s.cycleDays) * 0.02 : 0;
+            P('AN3 the cycle averages out within one period', !!s && Math.abs(sum) < tol,
+              'id=' + (s ? s.id : 'none') + ' sum=' + (s ? sum.toFixed(5) : '-') + ' tol=' + tol.toFixed(4));
+          }
+
+          // AN4 长期期望不能是单边上涨：最好的一支年化 ≤ 3.4x，且必须有一支 < 1x
+          {
+            const tailP = Number(STOCK_MODEL.tailProb) || 0.025;
+            const tailMul = Number(STOCK_MODEL.tailMul) || 2.5;
+            const k = (1 - 2 * tailP) + 2 * tailP * tailMul;      // 尾部日放大的期望系数
+            const exp = STOCKS.map(s => Math.pow(1 + (Number(s.drift) || 0) * k, 365));
+            const best = Math.max.apply(null, exp), worst = Math.min.apply(null, exp);
+            P('AN4 long-run expectation is not one-way', best <= 3.4 && worst < 1,
+              'best=' + best.toFixed(2) + 'x worst=' + worst.toFixed(2) + 'x');
+          }
+
+          // AN5 地板不可击穿；三年后输家真的还趴在水下
+          {
+            const floorRatio = Number(STOCK_MODEL.floorRatio) || 0.15;
+            let ok = true;
+            const end = [];
+            for (let i = 0; i < STOCKS.length; i++){
+              const s = STOCKS[i];
+              const base = Number(s.base) || 10;
+              const floor = base * floorRatio;
+              let px = base;
+              for (let d = 2; d <= 1095; d++){
+                px = stockNextPrice(s, i, d, px);
+                if (px < floor - 1e-9){ ok = false; break; }
+              }
+              end.push({ id: s.id, g: px / base });
+            }
+            const losers = end.filter(x => x.g < 1).length;
+            P('AN5 three years: floor holds and some stocks stay underwater', ok && losers >= 2,
+              'floor=' + ok + ' underwater=' + losers + ' ' +
+              end.map(x => x.id + ':' + x.g.toFixed(2)).join(' '));
+          }
+
           placed = dc.placed; inventory = dc.inv; ESTATES = dc.estates;
           RESIDENCE = dc.res; ADDRESS = dc.addr; houseLevel = dc.lvl;
           MONEY = dc.money; wallStyle = dc.wall; floorStyle = dc.floor;

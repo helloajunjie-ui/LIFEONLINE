@@ -125,9 +125,9 @@
     "updatedAt": "2026-11-05T19:42:27.307Z"
   },
   "stock/stock.json": {
-    "version": 1,
-    "hash": "42ffa7d31d60",
-    "updatedAt": "2026-11-05T20:51:01.189Z"
+    "version": 2,
+    "hash": "b628686e5439",
+    "updatedAt": "2026-11-12T07:35:50.423Z"
   },
   "ui/strings.zh-CN.json": {
     "version": 2,
