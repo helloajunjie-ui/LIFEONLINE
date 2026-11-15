@@ -1731,6 +1731,41 @@ function validate(){
         problems.push('[需求] 没有任何 stages：需求就只是一条会变红的血条，玩家没有理由安排时间');
     }
 
+    /* V4.35 菜地：作物表与地块位置。写错不会报错，只会"种下去永远不熟"或者"地画在房子里"。 */
+    {
+      const fp = packs['farm/crops.json'];
+      if (fp){
+        const plots = Number(fp.plots);
+        if (!(plots >= 1 && plots <= 8)) problems.push('[菜地] plots 应在 1~8（现在 ' + fp.plots + '）');
+        const L = fp.layout || {};
+        for (const k of ['dx', 'dy']){
+          if (!Array.isArray(L[k]) || L[k].length < plots)
+            problems.push('[菜地] layout.' + k + ' 少于地块数，第 ' + (plots) + ' 块地会没有位置');
+        }
+        const crops = Array.isArray(fp.crops) ? fp.crops : [];
+        if (crops.length < 2) problems.push('[菜地] 作物少于 2 种，玩家没有选择');
+        const seen = new Set();
+        for (const c of crops){
+          if (!c || !c.id){ problems.push('[菜地] 有作物缺少 id'); continue; }
+          if (seen.has(c.id)) problems.push('[菜地] 作物 id 重复：' + c.id);
+          seen.add(c.id);
+          if (!c.name) problems.push('[菜地] ' + c.id + ' 缺少 name');
+          const m = Number(c.minutes);
+          if (!(m >= 120 && m <= 2880))
+            problems.push('[菜地] ' + c.id + ' 的 minutes 应在 120~2880（2 小时~2 游戏日，现在 ' + c.minutes + '）');
+          const y = Number(c.yield);
+          if (!(y >= 1 && y <= 6)) problems.push('[菜地] ' + c.id + ' 的 yield 应在 1~6（一次收太多会冲垮食材经济）');
+          const sp = Number(c.seedPrice);
+          if (!(sp >= 0 && sp <= 50)) problems.push('[菜地] ' + c.id + ' 的 seedPrice 应在 0~50');
+          /* 种子钱不能比收成还贵：那这作物永远不该种 */
+          if (sp > 0 && y > 0 && sp > y * 3)
+            problems.push('[菜地] ' + c.id + ' 的种子 ¥' + sp + ' 比收成（' + y + ' 份 ≈ ¥' + (y * 3) + '）还贵，没人会种');
+          if (c.color != null && !/^#[0-9a-fA-F]{6}$/.test(String(c.color)))
+            problems.push('[菜地] ' + c.id + ' 的 color 必须是 #rrggbb');
+        }
+      }
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');

@@ -124,6 +124,8 @@ function buildIndex(packs, meta){
   const uiPack = Object.entries(packs).find(([id]) => id.startsWith('ui/'))?.[1] || {};
   /* 对话表现层参数（气泡尺寸、停留时长、方位阈值）：单独一包，改观感不用碰代码 */
   const talkCfg = packs['ui/talk.json'] || {};
+  /* 菜地：作物与地块位置。缺包时给一份空的，引擎会退化成"没有菜地"而不是报错 */
+  const farmCfg = packs['farm/crops.json'] || { plots: 0, crops: [], layout: { dx: [], dy: [] } };
 
   const verbTable = buildVerbTable(packs);
   const categories = buildCategories(packs);
@@ -197,6 +199,7 @@ function buildIndex(packs, meta){
     maps,
     ui: uiPack.strings || {},
     talk: talkCfg,
+    farm: farmCfg,
     verbs: verbTable,
     categories,
     stats,
@@ -294,6 +297,8 @@ export function jobs(){ return content.jobs; }
 export function topics(){ return content.topics; }
 /** 对话表现层参数：{ bubble, lineSec, chatter, place, topics } */
 export function talk(){ return content.talk || {}; }
+/** 菜地：{ plots, layout:{dx,dy}, crops[] } */
+export function farm(){ return content.farm || { plots: 0, crops: [], layout: { dx: [], dy: [] } }; }
 
 /** 气候：天气权重 + 一天的光照关键帧 */
 export function climate(){ return content.climate; }

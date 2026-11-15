@@ -2,8 +2,8 @@
   "note": "顶层可变状态登记表。domain = 玩法状态（saved 必须明确）；derived = 从内容/常量推导；session = 会话内瞬态（刷新即丢）；cache = 可重建缓存（约定 _ 开头）。新增顶层状态后跑 node tools/genstatespec.mjs --enrich 登记，再跑 node tools/statemap.mjs --check 验证。",
   "counts": {
     "cache": 35,
-    "derived": 53,
-    "domain": 43,
+    "derived": 54,
+    "domain": 44,
     "session": 81
   },
   "states": {
@@ -301,6 +301,10 @@
       "saved": false,
       "note": "上次看到的装修度星级，只用于\"升星了\"提示一次；刷新重提示一次，不影响玩法"
     },
+    "CROP_BY_ID": {
+      "kind": "derived",
+      "note": "作物索引，从 content/farm/crops.json 长出来"
+    },
     "CTX_OPTS": {
       "kind": "derived"
     },
@@ -345,6 +349,11 @@
     },
     "FACE_STYLES": {
       "kind": "derived"
+    },
+    "FARM": {
+      "kind": "domain",
+      "saved": true,
+      "note": "菜地：每格 {cropId, at} 或 null。只存\"种了什么、什么时候种\"，熟没熟按时长算"
     },
     "FAVOR": {
       "kind": "domain",

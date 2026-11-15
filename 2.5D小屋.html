@@ -1464,6 +1464,103 @@ let BAG = 0;          // 随身背包里还有几份（买了还没拿回家）
 function bagCap(){ return Math.max(1, Number(FOOD_DEF && FOOD_DEF.bagCap) || 20); }
 function bagRoom(){ return Math.max(0, bagCap() - BAG); }
 function foodTotal(){ return PANTRY + BAG; }
+/* ---------- 菜地：按「绝对游戏分钟」推算，不存状态机 ----------
+ * 每格只记 {cropId, at}：at = 种下的那一刻（DAY*1440+MINUTE）。
+ * 熟没熟是算出来的，不是定时器推出来的——关掉游戏照样长，回来一看就熟了，
+ * 这条和"天气由种子+天数算"是同一个思路（推导优于存储）。 */
+const FARM_DEF = (HomeCore.content.farm && HomeCore.content.farm()) || { plots: 0, crops: [], layout: { dx: [], dy: [] } };
+const CROPS = FARM_DEF.crops || [];
+const CROP_BY_ID = {};
+for (const c of CROPS) CROP_BY_ID[c.id] = c;
+const FARM_SLOTS = Math.max(0, Math.min(8, Number(FARM_DEF.plots) || 0));
+let FARM = new Array(FARM_SLOTS).fill(null);   // 入存档：每格 {cropId, at} 或 null
+function farmNow(){ return DAY * 1440 + MINUTE; }
+/** 第 i 块地在院子里的格子：用相对房宽的偏移算，扩建后自动跟着走 */
+function farmCellOf(i){
+  const L = FARM_DEF.layout || {};
+  const dx = L.dx || [], dy = L.dy || [];
+  if (dx[i] == null || dy[i] == null) return null;
+  return { gx: Number(dx[i]), gy: HOME_H + Number(dy[i]) };
+}
+function farmIndexAt(gx, gy){
+  for (let i = 0; i < FARM_SLOTS; i++){
+    const c = farmCellOf(i);
+    if (c && c.gx === gx && c.gy === gy) return i;
+  }
+  return -1;
+}
+function farmRatio(p){
+  if (!p) return 0;
+  const c = CROP_BY_ID[p.cropId];
+  if (!c) return 1;
+  return Math.min(1, Math.max(0, (farmNow() - (Number(p.at) || 0)) / Math.max(1, Number(c.minutes) || 1)));
+}
+function farmReady(p){ return farmRatio(p) >= 1; }
+/** 0 刚种下 / 1 出芽 / 2 长开 / 3 可收 —— 只用于画图，不参与判定 */
+function farmStage(p){
+  const r = farmRatio(p);
+  if (r >= 1) return 3;
+  if (r >= 0.6) return 2;
+  return r > 0 ? 1 : 0;
+}
+function farmLeftText(p){
+  const c = CROP_BY_ID[p && p.cropId];
+  if (!c || farmReady(p)) return '可收';
+  const left = Math.ceil(Number(c.minutes) - (farmNow() - (Number(p.at) || 0)));
+  const real = Math.max(1, Math.round(left / 60));
+  return '还要约 ' + real + ' 分钟';
+}
+function plantCrop(i, cropId){
+  if (i < 0 || i >= FARM_SLOTS) return false;
+  const c = CROP_BY_ID[cropId];
+  if (!c) return false;
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  if (FARM[i]){ showFloat('这块地还种着东西', px, py); SND.err(); return false; }
+  const price = Number(c.seedPrice) || 0;
+  if (MONEY < price){ showFloat('种子 ¥' + price + '，钱不够', px, py); SND.err(); return false; }
+  if (price) debit(price, 'seed', c.name + ' 种子');
+  FARM[i] = { cropId, at: farmNow() };
+  showFloat('种下 ' + c.name + ' · ' + farmLeftText(FARM[i]), px, py);
+  SND.ok(); dirtyPlaced = true; markDirty(); updateHUD(); saveGame();
+  return true;
+}
+/** 把存档里的菜地洗成当前内容的形状：未知作物丢弃、时间戳不能在未来、格数补齐 */
+function normalizeFarm(raw){
+  const out = new Array(FARM_SLOTS).fill(null);
+  if (!Array.isArray(raw)) return out;
+  const now = (Number(DAY) || 1) * 1440 + (Number(MINUTE) || 0);
+  for (let i = 0; i < FARM_SLOTS && i < raw.length; i++){
+    const p = raw[i];
+    if (!p || typeof p !== 'object') continue;
+    const c = CROP_BY_ID[p.cropId];
+    if (!c) continue;
+    const at = Number(p.at);
+    if (!Number.isFinite(at) || at < 0) continue;
+    /* 未来时间戳 = 改过存档：按"刚种下"处理，不至于白送一茬熟菜 */
+    out[i] = { cropId: p.cropId, at: Math.min(at, now) };
+  }
+  return out;
+}
+
+function harvestCrop(i){
+  const p = FARM[i];
+  if (!p || !farmReady(p)) return 0;
+  const c = CROP_BY_ID[p.cropId] || { name: '作物', yield: 1 };
+  const gain = Math.max(1, Number(c.yield) || 1);
+  const px = Math.round(PLAYER.fx), py = Math.round(PLAYER.fy);
+  const put = Math.min(gain, bagRoom());
+  if (!put){
+    showFloat('背包满了，先回家把菜放进冰箱', px, py);
+    SND.err(); return 0;
+  }
+  BAG += put;
+  FARM[i] = null;
+  showFloat('收了 ' + put + ' ' + foodUnit() + ' · ' + c.name +
+    (put < gain ? '（背包满了，剩下 ' + (gain - put) + ' 份没装下）' : ''), px, py);
+  spawnParticles(px, py, c.color || '#7fae5b', 8);
+  SND.ok(); dirtyPlaced = true; markDirty(); updateHUD(); saveGame();
+  return put;
+}
 let MINUTE = RULE.START_MINUTE;          // 游戏内分钟（默认从 08:00 起）
 let DAY = 1;                             // 游戏天数（跨天 +1）
 /* ===================== 收支账本 =====================
@@ -4420,6 +4517,46 @@ function drawBush(gx, gy){
   ctx.fillStyle = '#4a8a3e';
   ctx.beginPath(); ctx.arc(c.x+5, c.y-TILE_H*0.12 + b*0.4, TILE_H*0.18, 0, Math.PI*2); ctx.fill();
 }
+/* 菜地：土块 + 按成长阶段画的苗。没有文字标签，熟了靠颜色和一点闪光提示 */
+function drawFarmPlot(i, gx, gy){
+  const c = tileCenter(gx, gy);
+  const hw = TILE_W * 0.34, hh = TILE_H * 0.34;
+  const _p0 = FARM[i];
+  const _st0 = _p0 ? farmStage(_p0) : -1;
+  /* 熟了整块地加深一档：小作物在远处看不清，靠"地本身变色"最省事 */
+  ctx.fillStyle = '#6b4f33';
+  ctx.beginPath();
+  ctx.moveTo(c.x, c.y - hh); ctx.lineTo(c.x + hw, c.y);
+  ctx.lineTo(c.x, c.y + hh); ctx.lineTo(c.x - hw, c.y);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,28,18,.45)'; ctx.lineWidth = 1; ctx.stroke();
+  const p = FARM[i];
+  if (!p) return;
+  const crop = CROP_BY_ID[p.cropId] || { color: '#7fae5b' };
+  const cx = Math.round(c.x), cy = Math.round(c.y);
+  /* 苗用矩形画，不用曲线：远看时曲线会缩成一条，矩形至少看得出来在长 */
+  const blades = _st0 >= 2 ? 3 : 2;
+  const hgt = 5 + _st0 * 4;                 // 9 / 13 / 17
+  const sway = Math.round(Math.sin(T * 1.6 + i));
+  ctx.fillStyle = '#4a7a36';
+  for (let k = 0; k < blades; k++){
+    const ox = Math.round((k - (blades - 1) / 2) * 6) + (k % 2 ? sway : -sway);
+    ctx.fillRect(cx + ox - 1, cy - hgt, 2, hgt);
+  }
+  if (_st0 >= 3){
+    /* 熟了：结三颗果 + 地块描一圈金边。远处的小果子看不清，金边最省事 */
+    ctx.fillStyle = crop.color || '#d9534f';
+    for (let k = 0; k < 3; k++) ctx.fillRect(cx + (k - 1) * 5 - 2, cy - hgt - 5, 4, 4);
+    const a0 = 0.55 + 0.3 * Math.sin(T * 3 + i);
+    ctx.strokeStyle = 'rgba(255,214,90,' + a0.toFixed(2) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(c.x, c.y - hh); ctx.lineTo(c.x + hw, c.y);
+    ctx.lineTo(c.x, c.y + hh); ctx.lineTo(c.x - hw, c.y);
+    ctx.closePath(); ctx.stroke();
+  }
+}
+
 // 通用行走角色绘制（邻居 NPC 用，参数化移动状态）
 function drawWalker(gx, gy, app, moving, animT, dir){
   const c = tileCenter(gx, gy);
@@ -5109,6 +5246,13 @@ function renderWorld(){
         else drawBush(fx,fy);
       }});
     }
+  }
+  // 菜地（院子右侧，深度和其它地面物件一起排）
+  for (let i = 0; i < FARM_SLOTS; i++){
+    const cell = farmCellOf(i);
+    if (!cell) continue;
+    const fx = cell.gx, fy = cell.gy;
+    drawables.push({ depth: fx + fy - 0.4, fn: () => drawFarmPlot(i, fx, fy) });
   }
   // 家具（以其占地中心格的深度参与排序）
   const RUG_LIFT = 2.6;      // 站在地毯上的实体抬高一层深度，避免被地毯盖住
@@ -7754,7 +7898,12 @@ function clickHandler(e){
     return;
   }
 
-  if (scene==='home' && isWall(gx, gy)) return;   // 墙不可走（家具在下方单独处理，家具格本身不可走但可交互）
+  /* 墙不可走（家具在下方单独处理，家具格本身不可走但可交互） */
+  if (scene==='home' && isWall(gx, gy)) return;
+
+  /* 菜地在自家院子里，点一下直接出菜单，不用先走过去 */
+  const farmIdx = farmIndexAt(gx, gy);
+  if (farmIdx >= 0){ openFarmMenu(farmIdx, e.clientX, e.clientY); return; }
 
   // 点自己 → 打开人物面板
   const pc = Math.round(PLAYER.fx), pcy = Math.round(PLAYER.fy);
@@ -10709,6 +10858,15 @@ function isAdjToFootprint(f){
 /* 特殊行为的注册表：普通数值型交互不需要它。
  * 新增一个带特殊流程的交互 → 在这里注册一个 hook 名，数据里写 "hook":"名字" 即可。 */
 const VERB_HOOKS = {
+  /** 菜地：种 / 收 / 看。都在动作层，菜单只负责发意图 */
+  farmPlant(ctx){ return plantCrop(ctx.plot, ctx.act && ctx.act.cropId); },
+  farmHarvest(ctx){ return harvestCrop(ctx.plot); },
+  farmLook(ctx){
+    const p = FARM[ctx.plot];
+    const c = p && CROP_BY_ID[p.cropId];
+    showFloat((c ? c.name : '这块地') + ' · ' + farmLeftText(p), Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+  },
+
   /** 聊天话题：按身份和当下作答，用头顶气泡说（比浮动文字像在对话） */
   npcSay(ctx){
     const npc = ctx.npc, topicId = ctx.act && ctx.act.topicId;
@@ -10949,6 +11107,11 @@ function beginAction(t, act){
   if (t.kind === 'pet'){
     return beginPetAction(t.p, act);
   }
+  /* 菜地：在自家院子，没有走位也没有计时，点完直接结算 */
+  if (t.kind === 'farm'){
+    if (act && act.hook && VERB_HOOKS[act.hook]) VERB_HOOKS[act.hook]({ plot: t.plot, act: act });
+    return true;
+  }
   if (t.kind === 'furniture'){
     const spot = bestAdjacentFree(t.furn);
     if (!spot){ showFloat('周围被挡住了', t.gx, t.gy); return false; }
@@ -10965,6 +11128,35 @@ function beginAction(t, act){
     return true;
   }
   return false;
+}
+
+/** 菜地点开的菜单：空地给四种作物；熟的只给"收"；没熟就只看看 */
+function openFarmMenu(i, sx, sy){
+  const t = { kind: 'farm', plot: i, name: '' };
+  const cell = farmCellOf(i);
+  if (cell){ t.gx = cell.gx; t.gy = cell.gy; }
+  const p = FARM[i];
+  if (!p){
+    const acts = CROPS.map(c => ({
+      verb: 'plant',
+      label: c.name + ' · 种子 ¥' + (Number(c.seedPrice) || 0) +
+             ' · ' + Math.max(1, Math.round((Number(c.minutes) || 0) / 60)) + ' 分钟',
+      durationSec: 0, hook: 'farmPlant', cropId: c.id
+    }));
+    if (!acts.length) return;
+    t.name = '菜地 · 种点什么';
+    openActMenu(t, acts, sx, sy);
+    return;
+  }
+  const c = CROP_BY_ID[p.cropId] || { name: '作物', yield: 1 };
+  if (farmReady(p)){
+    t.name = '菜地 · ' + c.name + ' 熟了';
+    openActMenu(t, [{ verb: 'harvest', label: '收下 ' + (Number(c.yield) || 1) + ' 份',
+      durationSec: 0, hook: 'farmHarvest' }], sx, sy);
+  } else {
+    t.name = '菜地 · ' + c.name + '（' + farmLeftText(p) + '）';
+    openActMenu(t, [{ verb: 'look', label: '再看看（不采）', durationSec: 0, hook: 'farmLook' }], sx, sy);
+  }
 }
 
 /** 交互总入口：物品与人共用 */
@@ -11520,6 +11712,9 @@ function collectSave(){
     lottery: { bought: LOTTERY_STATS.bought, won: LOTTERY_STATS.won },
     pantry: PANTRY,
     bag: BAG,
+    /* 菜地只存"种了什么、什么时候种的"：熟没熟是算出来的，
+     * 存状态机的话，改作物时长就得给每个玩家迁移一次 */
+    farm: FARM.map(p => (p ? { cropId: p.cropId, at: p.at } : null)),
     biz: { list: BIZ_LIST, lastDay: BIZ_LAST_DAY },
     /* 账本：只存最近 30 天汇总 + 60 条流水，够看趋势又不撑存档 */
     ledger: { day: LEDGER.day, today: LEDGER.today, days: LEDGER.days, log: LEDGER.log },
@@ -11701,6 +11896,11 @@ function migrateSave(d){
       // v22：熟客好感。老玩家从"陌生"开始，不补发
       d.favor = (d.favor && typeof d.favor === 'object') ? d.favor : {};
     }
+    if (schema === 22){
+      // v23：菜地。老玩家地里什么都没有——不能凭空补一茬熟的，
+      // 那等于按存档版本发钱。地块数量由内容决定，这里只保证是个数组。
+      d.farm = Array.isArray(d.farm) ? d.farm : [];
+    }
     schema++;
   }
   d.schema = schema;
@@ -11783,6 +11983,9 @@ function applySave(d){
   PANTRY = Math.max(0, Math.min(pantryMaxSafe(), Math.floor(Number(d.pantry) || 0)));
   BAG = Math.max(0, Math.min(Math.max(1, Number(FOOD_DEF && FOOD_DEF.bagCap) || 20),
     Math.floor(Number(d.bag) || 0)));
+  /* 菜地：只认内容里存在的作物、只接受合理的时间戳（不能是未来），
+   * 格数按当前内容补齐——老存档地块少、改内容后地块多，都不该炸。 */
+  FARM = normalizeFarm(d.farm);
   // 承包：只认内容里存在的店铺；到期日必须大于开始日，脏存档不能白送收益
   {
     const bd = (d.biz && typeof d.biz === 'object') ? d.biz : {};

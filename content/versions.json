@@ -74,6 +74,11 @@
     "hash": "0611393d2e77",
     "updatedAt": "2026-11-05T13:42:24.753Z"
   },
+  "farm/crops.json": {
+    "version": 4,
+    "hash": "d45900634ac8",
+    "updatedAt": "2026-11-15T14:32:17.452Z"
+  },
   "house/levels.json": {
     "version": 3,
     "hash": "416b75486996",

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-15T12:50:34.754Z",
+  "generatedAt": "2026-11-15T14:38:01.995Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -77,6 +77,11 @@
       "version": 2,
       "hash": "0611393d2e77",
       "updatedAt": "2026-11-05T13:42:24.753Z"
+    },
+    "farm/crops.json": {
+      "version": 4,
+      "hash": "d45900634ac8",
+      "updatedAt": "2026-11-15T14:32:17.452Z"
     },
     "house/levels.json": {
       "version": 3,

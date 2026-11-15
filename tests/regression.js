@@ -5064,6 +5064,54 @@
         STATS.hunger = b.hunger; _statStages = {};
       }
 
+      // ---------- FM：菜地（成长按绝对游戏分钟推算） ----------
+      {
+        const b = { day: DAY, minute: MINUTE, money: MONEY, bag: BAG,
+                    farm: FARM.map(p => (p ? { cropId: p.cropId, at: p.at } : null)) };
+        DAY = 100; MINUTE = 0; MONEY = 100; BAG = 0;
+        FARM = new Array(FARM_SLOTS).fill(null);
+        const crop = CROPS.find(c => c.minutes <= 1000) || CROPS[0];
+        const planted = plantCrop(0, crop.id);
+        const fresh = farmReady(FARM[0]);
+        MINUTE = crop.minutes - 1;
+        const almost = farmReady(FARM[0]);
+        MINUTE = crop.minutes;
+        const ripe = farmReady(FARM[0]);
+        P('FM1 a crop ripens by elapsed game minutes, not by a timer',
+          planted === true && fresh === false && almost === false && ripe === true &&
+          MONEY === 100 - (crop.seedPrice || 0),
+          'crop=' + crop.id + ' ready=' + fresh + '/' + almost + '/' + ripe + ' money=' + MONEY);
+
+        const got = harvestCrop(0);
+        P('FM2 harvesting puts food in the bag and empties the plot',
+          got === Math.min(crop.yield, bagCap()) && BAG === got && FARM[0] === null,
+          'got=' + got + ' bag=' + BAG);
+        DAY = b.day; MINUTE = b.minute; MONEY = b.money; BAG = b.bag; FARM = b.farm;
+      }
+
+      {
+        /* 存档只存"种了什么、什么时候种"；脏存档不能凭空长出一茬熟菜 */
+        FARM[0] = { cropId: CROPS[0].id, at: farmNow() };
+        const sv = collectSave();
+        const shapeOk = Array.isArray(sv.farm) && sv.farm.length === FARM_SLOTS &&
+                        sv.farm[0] && sv.farm[0].cropId === CROPS[0].id &&
+                        typeof sv.farm[0].at === 'number';
+        const bad = normalizeFarm([{ cropId: '不存在的作物', at: 1 },
+                                   { cropId: CROPS[0].id, at: 99999999 }]);
+        P('FM3 the save keeps only what was planted, and bad rows are dropped',
+          shapeOk && bad[0] === null && bad[1] && bad[1].at <= farmNow(),
+          'shape=' + shapeOk + ' unknown=' + (bad[0] === null) +
+          ' future=' + (bad[1] ? bad[1].at : 'null') + ' now=' + farmNow());
+        FARM[0] = null;
+      }
+
+      {
+        const m = migrateSave({ schema: 22 });
+        P('FM4 old saves migrate to schema 23 with an empty farm',
+          m.schema === 23 && Array.isArray(m.farm) && m.farm.length === 0,
+          'schema=' + m.schema + ' farm=' + JSON.stringify(m.farm));
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;
