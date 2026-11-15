@@ -67,8 +67,8 @@ node tools/uilayers.mjs           # 分层体检：哪些函数既改玩法状�
 node tools/uilayers.mjs --check   # 有新的混合函数就失败（白名单在 tools/ui-allow.json）
 ```
 
-当前登记 212 个：**domain 43**（玩法状态，其中 38 个入档、5 个刻意不存并写明原因）/
-**derived 53**（从内容或常量推导）/ **session 82**（瞬态）/ **cache 34**（可重建）。
+当前登记 211 个：**domain 43**（玩法状态，其中 38 个入档、5 个刻意不存并写明原因）/
+**derived 53**（从内容或常量推导）/ **session 81**（瞬态）/ **cache 34**（可重建）。
 新增一个顶层 `let` 忘了登记，`--check` 会直接报出来。
 
 **跑门禁**（提交前一套）：

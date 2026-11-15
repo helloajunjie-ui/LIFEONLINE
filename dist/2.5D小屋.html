@@ -2917,9 +2917,15 @@ if (!window.HomeCore){
 <script>
 "use strict";
 /* =========================================================
- *  我的 2.5D 小屋 · 阶段1
- *  等距房间 + 部件化角色 + 点击走动
- *  四维数值（饥饿/口渴/情绪/金钱）+ 游戏时钟 + 工作
+ *  我的 2.5D 小屋 · 引擎主文件（源文件，构建后进 dist）
+ *
+ *  分层（改代码前先看这三行，越界会被 tools/guard.mjs 拦）：
+ *    数据 —— content/*.json 是唯一真相，存档只存"玩家做了什么"
+ *    逻辑 —— 动作/结算/找路：只改状态，不碰 DOM
+ *    视图 —— updateHUD / render* / 各面板：只读状态，写 DOM 与画布
+ *
+ *  这个文件里顺序有意义：基础配置 → 内容绑定 → 世界生成 → 模拟 → 绘制 → UI → 输入。
+ *  新代码请放进对应段，别在绘制函数里改玩法状态。
  * ========================================================= */
 
 /* ---------- 基础配置 ---------- */
@@ -8639,7 +8645,6 @@ let _billTickDay = 0;
 function clamp(v){ return Math.max(0, Math.min(100, v)); }
 
 /* ---------- 工作状态机（先干完，后发钱） ---------- */
-const work = { active: false, remaining: 0 };
 /* ============================ 职业：在地图上上班 ============================
  * 岗位直接绑定地图分区（content/careers/jobs.json 的 zone 字段）：
  * 走到便利店 / 咖啡店 / 医院 / 学校 / 球场…… 附近就能打卡，做完单子到点下班。
@@ -9017,22 +9022,6 @@ function updateAchievements(dt){
   checkAchievements();
 }
 
-function updateWork(dt){
-  if (!work.active) return;
-  work.remaining -= dt;
-  if (work.remaining <= 0){
-    work.active = false;
-    work.remaining = 0;
-    // 干完了才发钱 + 扣体力
-    credit(WORK_PAY, 'wage', '零工');
-    showFloat('发工资 +¥' + WORK_PAY, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
-    spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f4d35e', 12);
-    SND.pay();
-    bumpStat('hunger', -WORK_COST.hunger);
-    bumpStat('thirst', -WORK_COST.thirst);
-  }
-}
-
 /* ---------- 相机跟随 + 主循环 ---------- */
 let lastFrameMs = performance.now();
 /* ---------- 按需渲染状态 ---------- */
@@ -9088,7 +9077,6 @@ function loop(now){
   // 宠物：需求衰减 + 游走/跟随（仅 home 生效）
   updatePets(dt);
   // 更新工作进度（旧的自助打工）
-  updateWork(dt);
   // 职业班次：任务计时 + 到点自动下班
   updateShift(dt);
   // 生活目标（成就）：1.2 秒轮询一次
@@ -9175,7 +9163,7 @@ function loop(now){
   const sceneAnimated = (scene === 'visit')
     || (scene === 'street' && NEIGHBORS.some(nb => nb.moving || nb.target));
   const animating = !!(PLAYER.moving || sceneAnimated || camMovedNow
-    || floats.length || particles.length || work.active || interacting || weatherActive()
+    || floats.length || particles.length || interacting || weatherActive()
     || pendingTalk || pendingVisit || _fade > 0 || !!busRide || !!CHATTER);
   const needDraw = animating || wasAnimating || renderRev !== lastDrawRev
     || (now - lastDrawAt) > IDLE_REDRAW_MS;

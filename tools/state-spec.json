@@ -4,7 +4,7 @@
     "cache": 34,
     "derived": 53,
     "domain": 43,
-    "session": 82
+    "session": 81
   },
   "states": {
     "_billTickDay": {
@@ -747,9 +747,6 @@
     },
     "WEEK_CN": {
       "kind": "derived"
-    },
-    "work": {
-      "kind": "session"
     },
     "workOpen": {
       "kind": "session"
