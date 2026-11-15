@@ -1,7 +1,7 @@
 {
   "note": "顶层可变状态登记表。domain = 玩法状态（saved 必须明确）；derived = 从内容/常量推导；session = 会话内瞬态（刷新即丢）；cache = 可重建缓存（约定 _ 开头）。新增顶层状态后跑 node tools/genstatespec.mjs --enrich 登记，再跑 node tools/statemap.mjs --check 验证。",
   "counts": {
-    "cache": 34,
+    "cache": 35,
     "derived": 53,
     "domain": 43,
     "session": 81
@@ -78,6 +78,10 @@
     },
     "_sndKicked": {
       "kind": "cache"
+    },
+    "_statStages": {
+      "kind": "cache",
+      "note": "上一次看到的各资源阶段 id，只用于\"变差了提示一次\"；刷新重置，不影响玩法"
     },
     "_stockDay": {
       "kind": "cache"

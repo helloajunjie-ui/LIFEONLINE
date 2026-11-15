@@ -1679,6 +1679,58 @@ function validate(){
         problems.push('[身份] 玩家可选身份只有 ' + Object.keys(seenRole).length + ' 个，档案卡太单调');
     }
 
+    /* V4.34 需求阶段：把"数值"翻译成"处境"的那张表。
+     * 写错不会报错，只会出现"饿到 0 还是什么事都没有"或者"阶段永远命中不了"。 */
+    {
+      const rp = packs['rules/survival.json'];
+      const stats = (rp && rp.stats) || {};
+      const KEYS = ['emotionDrainMul', 'payMul', 'walkSpeedMul'];
+      let stageTotal = 0;
+      for (const [id, def] of Object.entries(stats)){
+        const st = def.stages;
+        if (st == null) continue;
+        const nm = def.label || id;
+        if (!Array.isArray(st) || st.length < 2){
+          problems.push('[需求] ' + nm + ' 的 stages 至少要两档（只有一档等于没有梯度）');
+          continue;
+        }
+        const seen = new Set();
+        let prev = Infinity;
+        for (const x of st){
+          if (!x || !x.id){ problems.push('[需求] ' + nm + ' 有阶段缺少 id'); continue; }
+          if (seen.has(x.id)) problems.push('[需求] ' + nm + ' 的阶段 id 重复：' + x.id);
+          seen.add(x.id);
+          const b = Number(x.below);
+          if (!(b < prev)) problems.push('[需求] ' + nm + ' 的阶段必须由高到低排列（' + x.id + ' 的 below=' + x.below + '）');
+          prev = b;
+          if (!x.label) problems.push('[需求] ' + nm + '.' + x.id + ' 缺少 label（血条上看不到处境）');
+          if (x.hint != null && String(x.hint).length > 34)
+            problems.push('[需求] ' + nm + '.' + x.id + ' 的 hint 超过 34 字，浮字会拖太长');
+          const ef = x.effects || {};
+          if (!Object.keys(ef).length)
+            problems.push('[需求] ' + nm + '.' + x.id + ' 没有任何 effects —— 空阶段等于白占一档');
+          for (const [k, v] of Object.entries(ef)){
+            if (!KEYS.includes(k)){
+              problems.push('[需求] ' + nm + '.' + x.id + ' 用了未知 effect「' + k + '」（只认 ' + KEYS.join('/') + '）');
+              continue;
+            }
+            if (typeof v !== 'number' || !(v > 0 && v <= 3))
+              problems.push('[需求] ' + nm + '.' + x.id + '.' + k + ' 必须是 0~3 的数字');
+            if (k === 'emotionDrainMul' && v < 1)
+              problems.push('[需求] ' + nm + '.' + x.id + ' 让情绪掉得更慢——阶段是惩罚，不是奖励');
+            if ((k === 'payMul' || k === 'walkSpeedMul') && (v > 1 || v < 0.3))
+              problems.push('[需求] ' + nm + '.' + x.id + '.' + k + ' 应在 0.3~1.0（阶段只会让人变差）');
+          }
+        }
+        const last = st[st.length - 1];
+        if (Number(last.below) !== 0)
+          problems.push('[需求] ' + nm + ' 的最后一档必须是 below:0（否则"恰好归零"落不进任何阶段）');
+        stageTotal += st.length;
+      }
+      if (!stageTotal)
+        problems.push('[需求] 没有任何 stages：需求就只是一条会变红的血条，玩家没有理由安排时间');
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');

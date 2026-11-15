@@ -5015,6 +5015,55 @@
         renderWork();
       }
 
+      // ---------- ST：需求阶段（数值 → 处境） ----------
+      {
+        const b = { hunger: STATS.hunger, thirst: STATS.thirst };
+        STATS.hunger = 100; STATS.thirst = 100;
+        const calm = { stage: statStageOf('hunger'), pay: statEffect('payMul'), walk: statEffect('walkSpeedMul') };
+        STATS.hunger = 12;
+        const hungry = { stage: (statStageOf('hunger') || {}).id, pay: statEffect('payMul'), walk: statEffect('walkSpeedMul') };
+        STATS.hunger = 0;
+        const empty = { stage: (statStageOf('hunger') || {}).id, walk: statEffect('walkSpeedMul') };
+        P('ST1 a stat turns into a situation at the right thresholds',
+          calm.stage === null && calm.pay === 1 && calm.walk === 1 &&
+          hungry.stage === 'hungry' && Math.abs(hungry.pay - 0.85) < 1e-9 &&
+          empty.stage === 'empty' && empty.walk < hungry.walk,
+          JSON.stringify({ calm, hungry, empty }));
+        STATS.hunger = b.hunger; STATS.thirst = b.thirst;
+      }
+
+      {
+        /* 饿着上班：同一单拿到的钱要少 15%，不是只把血条变红 */
+        const b = { money: MONEY, hunger: STATS.hunger, thirst: STATS.thirst,
+                    active: SHIFT.active, job: SHIFT.job, done: SHIFT.done, timer: SHIFT.timer };
+        SHIFT.active = true; SHIFT.job = CAREERS[0]; SHIFT.done = 0; SHIFT.timer = 0; SHIFT.taskLabel = '测试';
+        STATS.hunger = 100; STATS.thirst = 100;
+        const m0 = MONEY; finishTask(); const full = MONEY - m0;
+        SHIFT.active = true; SHIFT.job = CAREERS[0]; SHIFT.done = 0; SHIFT.timer = 0;
+        STATS.hunger = 12;
+        const m1 = MONEY; finishTask(); const low = MONEY - m1;
+        P('ST2 being hungry cuts the shift pay, not just the bar colour',
+          full > 0 && low > 0 && low === Math.round(careerPay(CAREERS[0]) * 0.85) && low < full,
+          'full=' + full + ' low=' + low);
+        MONEY = b.money; STATS.hunger = b.hunger; STATS.thirst = b.thirst;
+        SHIFT.active = b.active; SHIFT.job = b.job; SHIFT.done = b.done; SHIFT.timer = b.timer;
+      }
+
+      {
+        /* 进入更差的阶段只提示一次：每帧刷图不能变成"刷屏" */
+        const b = { hunger: STATS.hunger, n: floats.length };
+        STATS.hunger = 100; _statStages = {}; tickStatStages();
+        const quiet = floats.length;
+        STATS.hunger = 12; tickStatStages();
+        const once = floats.length;
+        tickStatStages();
+        const twice = floats.length;
+        P('ST3 entering a worse stage is announced once, not every frame',
+          quiet === b.n && once === b.n + 1 && twice === b.n + 1,
+          'quiet=' + quiet + ' once=' + once + ' twice=' + twice);
+        STATS.hunger = b.hunger; _statStages = {};
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;

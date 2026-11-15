@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-12T17:39:12.988Z",
+  "generatedAt": "2026-11-15T12:50:34.754Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -129,9 +129,9 @@
       "updatedAt": "2026-11-12T11:22:08.491Z"
     },
     "rules/survival.json": {
-      "version": 6,
-      "hash": "75e1f3ea0d42",
-      "updatedAt": "2026-11-12T08:55:33.995Z"
+      "version": 7,
+      "hash": "cd16b1d748e1",
+      "updatedAt": "2026-11-15T12:47:45.406Z"
     },
     "stock/stock.json": {
       "version": 2,

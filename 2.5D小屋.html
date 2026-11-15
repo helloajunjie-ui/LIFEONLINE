@@ -6902,7 +6902,8 @@ function updateSim(dt){
   bumpStat('hunger', -(DECAY.hunger * simMin));
   bumpStat('thirst', -(DECAY.thirst * simMin));
   // 情绪随时间缓慢自然下降（靠家具互动/社交恢复）
-  bumpStat('emotion', -(EMOTION_DECAY * simMin));
+  /* 饿了渴了都会让情绪掉得更快：这是"需求咬人"的第一层（收入打折和工作门槛在别处） */
+  bumpStat('emotion', -(EMOTION_DECAY * statEffect('emotionDrainMul') * simMin));
   // 天气对情绪的影响：阴雨压心情、雪天反而让人开心一点
   const wEmo = (curWeather().emotionPerHour || 0) * simMin / 60;
   if (wEmo) bumpStat('emotion', wEmo);
@@ -7095,7 +7096,9 @@ function finishTask(){
   if (!j) return;
   SHIFT.timer = 0;
   SHIFT.done++;
-  const pay = credit(careerPay(j), 'wage', j.name + ' · ' + SHIFT.taskLabel);
+  /* 饿着渴着还能干，但干得亏：倍率来自需求的当前阶段（数据在 survival.json） */
+  const pay = credit(Math.round(careerPay(j) * statEffect('payMul')), 'wage',
+                     j.name + ' · ' + SHIFT.taskLabel);
   for (const k in (j.costPerTask || {})) STATS[k] = clampStat(k, (STATS[k] || 0) + j.costPerTask[k]);
   showFloat(SHIFT.taskLabel + ' +¥' + pay, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
   spawnParticles(Math.round(PLAYER.fx), Math.round(PLAYER.fy), '#f4d35e', 8);
@@ -7466,8 +7469,9 @@ function loop(now){
   } else {
     RENDER_STATS.skips++;
   }
-  /* 先结算、再渲染：升星提示属于玩法事件，挂在视图里会让视图不可重复执行 */
+  /* 先结算、再渲染：升星提示与需求阶段都属于玩法事件，挂在视图里会让视图不可重复执行 */
   tickCozyTier();
+  tickStatStages();
   /* 先结算、再渲染：升星提示属于玩法事件，挂在视图里会让视图不可重复执行 */
   tickCozyTier();
   updateHUD();
@@ -9097,6 +9101,10 @@ function updateHUD(){
      * 但"心脏跳动"这种节奏变化能。只在跨过阈值那一刻切类，不逐帧写 DOM。 */
     const wanted = v < crit;
     if (s._crit !== wanted){ s._crit = wanted; setClass(s.el, 'is-crit', wanted); }
+    /* 处境要写在血条上：只说"饿了"没用，得说"饿了会怎样"。title 只在变化时写 */
+    const _stg = statStageOf(k);
+    setTitle(s.el, (s.def.label || k) + ' ' + Math.round(v) + '/' + max +
+      (_stg ? ' · ' + _stg.label + (_stg.hint ? '（' + _stg.hint + '）' : '') : ' · 状态良好'));
   }
 
   setText(statsEl.money.val, '¥' + MONEY);
@@ -11174,6 +11182,52 @@ function clampStat(id, v){
  * 以前散着二十多处 `STATS.x = clampStat('x', STATS.x + Δ)`，还有 4 处用了只认 0~100 的 clamp()
  * （资源上限其实是 120 的那几条会被提前截断）。收成一个函数之后：
  * 要加日志、要加"吃太饱有惩罚"这种规则，只在这里改一次。 */
+/* ---------- 需求阶段：把"数值"翻译成"处境" ----------
+ * 光有 0~100 的血条，玩家只会看到一条变红的线，不会因此改变计划。
+ * stages 是内容里的一张表（rules/survival.json）：某条资源掉到某个值以下，
+ * 就进入一个"处境"，处境只做三件事——情绪掉得更快、班次收入打折、走路变慢。
+ * 阶段不入档：按当前数值现算，刷新页面不会让玩家"回到饱的档位"。 */
+function statStageOf(id){
+  const def = STATS_DEF.byId[id];
+  const stages = (def && def.stages) || [];
+  const v = Number(STATS[id]) || 0;
+  /* 从最紧的一档往回找：表是按 below 降序写的（35 / 15 / 0），
+   * 正着找会在 12 的时候先命中 35 那一档，等于"饿了却不饿"——第一次就是这么错的。 */
+  for (let i = stages.length - 1; i >= 0; i--){
+    if (v <= Number(stages[i].below)) return stages[i];
+  }
+  return null;
+}
+/** 所有资源阶段的倍率相乘。同一时刻饿+渴都到顶，就是 0.85×0.9 —— 叠乘但不失控（校验器卡区间） */
+function statEffect(key){
+  let mul = 1;
+  for (const def of STATS_DEF.list){
+    const st = statStageOf(def.id);
+    const v = st && st.effects && st.effects[key];
+    if (v != null) mul *= Number(v);
+  }
+  return mul;
+}
+/** 阶段变化时提示一次（只提示"变差"，恢复了不打扰）。放 sim 侧：视图不产生副作用。
+ *  记的是阈值而不是 id：id 是空串表示健康，空串没法比"谁更差"，
+ *  拿 below 比大小才知道是变差还是好转。 */
+let _statStages = {};
+function tickStatStages(){
+  for (const def of STATS_DEF.list){
+    const st = statStageOf(def.id);
+    const now = st ? Number(st.below) : Infinity;
+    /* 第一次见到这条资源（读档/开局）只记下基准，不提示——否则一进游戏就刷三条浮字 */
+    if (_statStages[def.id] === undefined){ _statStages[def.id] = now; continue; }
+    const prev = _statStages[def.id];
+    if (prev === now) continue;
+    _statStages[def.id] = now;
+    if (now < prev && st && st.hint){
+      showFloat(st.hint, Math.round(PLAYER.fx), Math.round(PLAYER.fy) - 1);
+      markDirty();
+    }
+  }
+}
+
 function bumpStat(id, delta){
   if (!STATS_DEF.byId[id]) return STATS[id];
   STATS[id] = clampStat(id, (Number(STATS[id]) || 0) + (Number(delta) || 0));
@@ -12848,7 +12902,7 @@ function walkSpeed(){
     const m = carModel(MY_CAR.model);
     return WALK_SPEED * Math.max(1, Number(m && m.speed) || 1);
   }
-  return WALK_SPEED;
+  return WALK_SPEED * statEffect('walkSpeedMul');
 }
 
 if (carshopEl){

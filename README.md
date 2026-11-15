@@ -3,7 +3,7 @@
 一款单文件的等距视角生活模拟小游戏：**经营自己的小屋，在小区里上班、买菜、交房租、串门装修**。
 客户端是一个可以双击打开的 HTML，服务端是可选的 Go + SQLite 存档服务。
 
-> 当前版本 **1.80.0** · 存档结构 **schema 22** · 门禁：客户端回归 **453 项** / 服务端自测 **67 项** /
+> 当前版本 **1.81.0** · 存档结构 **schema 22** · 门禁：客户端回归 **456 项** / 服务端自测 **67 项** /
 > 内容校验 **29 包**全绿（V1–V4.33）· 人物 **25 人**（13 种职业）· 街区 **88×48**
 
 ## 直接玩
@@ -80,7 +80,7 @@ node tools/doccheck.mjs           # 文档数字对账：README 写的包数/家
 node tools/dupcheck.mjs           # 重复的顶层函数 / 测试分组；三处年龄枚举是否一致
 node tools/charcheck.mjs          # 撞衫：年龄/性别/制服/配饰/发型五项全同的两个人
 node tools/genidentity.mjs --check # 身份体检：小孩上班、护士在便利店收银这类不合理
-node tools/test.mjs               # dist 与 src 各跑一遍（453 项），用无头 Edge
+node tools/test.mjs               # dist 与 src 各跑一遍（456 项），用无头 Edge
 node tools/test.mjs dist          # 只跑构建产物
 cd server && ./home-server.exe -selftest   # 服务端接口自测（进程内 httptest）
 ```
@@ -122,7 +122,7 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off go build -o home-server.exe .
 - 面板不会因为"重绘"产生副作用：按钮只写 `data-act="task"`，动作由 `actWork()` 分派；
   监听只在 `bindWorkList()` 里挂一次，不再每次渲染 `querySelectorAll + addEventListener`。
 
-拆分的次序（每一步都能被 453 项回归兜住）：**先收口写入口 → 再让视图幂等 → 再拆文件**。
+拆分的次序（每一步都能被 456 项回归兜住）：**先收口写入口 → 再让视图幂等 → 再拆文件**。
 反过来（先拆文件）只是把 200 个全局变量换个地方放。
 
 ## 设计要点
@@ -130,6 +130,7 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off go build -o home-server.exe .
 | 主题 | 做法 |
 |---|---|
 | **数据驱动** | 引擎不写死任何数值。加一件家具、一个岗位、一种账单，只加 JSON，校验器会在写错时拦下来 |
+| **需求即处境** | 资源掉到阈值以下不是"血条变红"，而是进入一个阶段：情绪掉得更快、班次收入打折、走路变慢。表在 `rules/survival.json → stats[].stages`，阶段不入档、按当前值现算 |
 | **纯函数推导** | 房态（待售/待租/空置）、车流位置、红绿灯相位都由稳定散列或时间函数现算，服务端不必为 72 间空房各存一行 |
 | **存档全自动** | 10 秒定时 + 关键动作即时存 + 关页面前补存；本地优先，防抖推云端，断网进队列 |
 | **服务端不当真** | `data_json` 原样保留（新字段不丢），但 `cozy_score` 由服务端按内容重算，越界数值夹紧并标记 |
