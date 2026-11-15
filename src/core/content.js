@@ -99,12 +99,16 @@ function buildIndex(packs, meta){
   let jobs = [];
   /* 聊天话题：玩家问什么、NPC 按身份怎么答。放内容里，加一句台词不用改代码 */
   let topics = { topics: [], answers: {}, hints: {} };
+  let traits = [];
+  let traitsMaxPick = 2;
   for (const [id, pack] of Object.entries(packs)){
     if (!id.startsWith('characters/')) continue;
     if (pack.npcs) npcs.push(...pack.npcs);
     if (Array.isArray(pack.clerks)) clerks.push(...pack.clerks);
     if (Array.isArray(pack.sites)) sites.push(...pack.sites);
     if (Array.isArray(pack.jobs)) jobs = jobs.concat(pack.jobs);
+    /* 特质：和职业一样，加一条只改内容。缺包时给空表，引擎退化成"没有特质" */
+    if (Array.isArray(pack.traits)){ traits = pack.traits; traitsMaxPick = Number(pack.maxPick) || 2; }
     if (Array.isArray(pack.topics) && pack.answers){
       topics = { topics: pack.topics, answers: pack.answers, hints: pack.hints || {} };
     }
@@ -196,6 +200,8 @@ function buildIndex(packs, meta){
     sites,
     jobs,
     topics,
+    traits,
+    traitsMaxPick,
     maps,
     ui: uiPack.strings || {},
     talk: talkCfg,
@@ -297,6 +303,8 @@ export function jobs(){ return content.jobs; }
 export function topics(){ return content.topics; }
 /** 对话表现层参数：{ bubble, lineSec, chatter, place, topics } */
 export function talk(){ return content.talk || {}; }
+/** 特质：{ traits[], maxPick } */
+export function traits(){ return { traits: content.traits || [], maxPick: content.traitsMaxPick || 2 }; }
 /** 菜地：{ plots, layout:{dx,dy}, crops[] } */
 export function farm(){ return content.farm || { plots: 0, crops: [], layout: { dx: [], dy: [] } }; }
 

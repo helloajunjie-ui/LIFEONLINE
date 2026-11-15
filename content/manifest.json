@@ -16,6 +16,7 @@
     "characters/palettes.json",
     "characters/player.default.json",
     "characters/topics.json",
+    "characters/traits.json",
     "environment/ambient.json",
     "environment/climate.json",
     "environment/seasons.json",
@@ -95,6 +96,11 @@
       "version": 5,
       "hash": "edd58db3643e",
       "updatedAt": "2026-11-12T16:02:33.884Z"
+    },
+    "characters/traits.json": {
+      "version": 1,
+      "hash": "ef23317820d6",
+      "updatedAt": "2026-11-15T15:26:21.015Z"
     },
     "environment/ambient.json": {
       "version": 10,

@@ -800,6 +800,7 @@
     <span class="chip" id="envChip" title="季节 · 天气 · 室外温度">春 晴 20°</span>
     <span class="chip" id="cozyChip" title="装修度：家具的舒适值总和，影响睡觉与心情">装修度 0</span>
     <span class="chip" id="pantryChip" title="冰箱里还有几份食材：做饭吃饭都要用，菜市场/超市能补">食材 0</span>
+    <button class="chip" id="farmChip" style="display:none" title="菜地里有熟的，点一下回家收">菜地</button>
     <button class="chip" id="billChip" style="display:none" title="楼下信箱有待缴账单，点开查看">账单</button>
     <button class="chip" id="jobChip" style="display:none" title="走到便利店/医院/学校等地点可以上班">上班</button>
     <button class="chip" id="workBtn">工作 +¥</button>
@@ -1078,6 +1079,7 @@
       <div class="pfield"><span class="k">身份</span><span class="v"><select id="fRole"><option>自由职业</option><option>上班族</option><option>学生</option><option>创业者</option><option>退休</option></select></span></div>
       <div class="pfield"><span class="k">住址</span><span class="v" id="fAddr">—</span></div>
       <div class="pfield"><span class="k">婚姻</span><span class="v"><select id="fMarital"><option>单身</option><option>恋爱中</option><option>已婚</option></select></span></div>
+      <div class="pfield"><span class="k">特质</span><span class="v"><select id="fTrait1"></select><select id="fTrait2" style="margin-left:6px"></select></span></div>
       <div class="pfield"><span class="k">资产</span><span class="v" id="fAsset">¥0</span></div>
       <div class="pstats">
         <div class="t">当前状态</div>
@@ -1464,6 +1466,54 @@ let BAG = 0;          // 随身背包里还有几份（买了还没拿回家）
 function bagCap(){ return Math.max(1, Number(FOOD_DEF && FOOD_DEF.bagCap) || 20); }
 function bagRoom(){ return Math.max(0, bagCap() - BAG); }
 function foodTotal(){ return PANTRY + BAG; }
+/* ---------- 特质：只改两件事（衰减速率、情绪收益） ----------
+ * 每个特质都带取舍：纯加成的特质等于白送数值，玩家没有选择。
+ * 玩家的特质存在 PERSON.traits（最多两个），NPC 暂时不分配——没有行为差异之前，
+ * 给 NPC 挂特质只是装饰。等"偏好影响台词/行为"那一层做出来再开。 */
+const TRAITS_DEF = (HomeCore.content.traits && HomeCore.content.traits()) || { traits: [], maxPick: 2 };
+const TRAITS = TRAITS_DEF.traits || [];
+const TRAIT_BY_ID = {};
+for (const t of TRAITS) TRAIT_BY_ID[t.id] = t;
+const TRAIT_MAX_PICK = Math.max(1, Math.min(3, Number(TRAITS_DEF.maxPick) || 2));
+function myTraits(){
+  const list = Array.isArray(PERSON.traits) ? PERSON.traits : [];
+  const out = [];
+  for (const id of list){
+    if (TRAIT_BY_ID[id] && !out.includes(id)) out.push(id);
+  }
+  return out.slice(0, TRAIT_MAX_PICK);
+}
+/** 某条需求的衰减倍率：特质叠乘，没选特质就是 1 */
+function traitDecayMul(statId){
+  let m = 1;
+  for (const id of myTraits()){
+    const d = TRAIT_BY_ID[id].effects && TRAIT_BY_ID[id].effects.decay;
+    if (d && typeof d[statId] === 'number') m *= d[statId];
+  }
+  return m;
+}
+/** 正向情绪收益倍率（聊天、装修度、吃饭都算） */
+function traitMoodMul(){
+  let m = 1;
+  for (const id of myTraits()){
+    const g = TRAIT_BY_ID[id].effects && TRAIT_BY_ID[id].effects.moodGain;
+    if (typeof g === 'number') m *= g;
+  }
+  return m;
+}
+/** 班次收入倍率（目前只有「能吃苦」用） */
+function traitPayMul(){
+  let m = 1;
+  for (const id of myTraits()){
+    const p = TRAIT_BY_ID[id].effects && TRAIT_BY_ID[id].effects.payMul;
+    if (typeof p === 'number') m *= p;
+  }
+  return m;
+}
+function traitNames(){
+  return myTraits().map(id => TRAIT_BY_ID[id].name).join(' · ');
+}
+
 /* ---------- 菜地：按「绝对游戏分钟」推算，不存状态机 ----------
  * 每格只记 {cropId, at}：at = 种下的那一刻（DAY*1440+MINUTE）。
  * 熟没熟是算出来的，不是定时器推出来的——关掉游戏照样长，回来一看就熟了，
@@ -7043,11 +7093,11 @@ function updateSim(dt){
   // 宠物需求衰减与玩家共用同一模拟分钟基准
   SIM_MIN_LAST = simMin;
   // 饥饿/口渴按模拟分钟衰减（与显示时钟解耦，保证"一天吃几顿"的节奏稳定）
-  bumpStat('hunger', -(DECAY.hunger * simMin));
-  bumpStat('thirst', -(DECAY.thirst * simMin));
+  bumpStat('hunger', -(DECAY.hunger * traitDecayMul('hunger') * simMin));
+  bumpStat('thirst', -(DECAY.thirst * traitDecayMul('thirst') * simMin));
   // 情绪随时间缓慢自然下降（靠家具互动/社交恢复）
   /* 饿了渴了都会让情绪掉得更快：这是"需求咬人"的第一层（收入打折和工作门槛在别处） */
-  bumpStat('emotion', -(EMOTION_DECAY * statEffect('emotionDrainMul') * simMin));
+  bumpStat('emotion', -(EMOTION_DECAY * statEffect('emotionDrainMul') * traitDecayMul('emotion') * simMin));
   // 天气对情绪的影响：阴雨压心情、雪天反而让人开心一点
   const wEmo = (curWeather().emotionPerHour || 0) * simMin / 60;
   if (wEmo) bumpStat('emotion', wEmo);
@@ -7241,7 +7291,7 @@ function finishTask(){
   SHIFT.timer = 0;
   SHIFT.done++;
   /* 饿着渴着还能干，但干得亏：倍率来自需求的当前阶段（数据在 survival.json） */
-  const pay = credit(Math.round(careerPay(j) * statEffect('payMul')), 'wage',
+  const pay = credit(Math.round(careerPay(j) * statEffect('payMul') * traitPayMul()), 'wage',
                      j.name + ' · ' + SHIFT.taskLabel);
   for (const k in (j.costPerTask || {})) STATS[k] = clampStat(k, (STATS[k] || 0) + j.costPerTask[k]);
   showFloat(SHIFT.taskLabel + ' +¥' + pay, Math.round(PLAYER.fx), Math.round(PLAYER.fy));
@@ -8970,6 +9020,7 @@ const envChip = document.getElementById('envChip');
 const cozyChip = document.getElementById('cozyChip');
 const pantryChip = document.getElementById('pantryChip');
 const billChip = document.getElementById('billChip');
+const farmChip = document.getElementById('farmChip');
 const bizBtn = document.getElementById('bizBtn');
 let cozyTierSeen = null;      // 上次看到的装修度星级（用于升级提示）
 const speedBtn = document.getElementById('speedBtn');
@@ -9223,6 +9274,14 @@ function updateHUD(){
     setTitle(pantryChip, '冰箱 ' + PANTRY + '/' + pantryMax() + ' · 背包 ' + BAG + '/' + bagCap() +
       ' ' + foodUnit() + '：做饭吃饭都消耗；买的东西先进背包，回家自动进冰箱');
   }
+  /* 菜地角标：有熟的才出现。熟了却没提示，等于玩家种完就忘了 */
+  if (farmChip){
+    let ripe = 0;
+    for (let i = 0; i < FARM_SLOTS; i++) if (FARM[i] && farmReady(FARM[i])) ripe++;
+    setDisplay(farmChip, ripe ? '' : 'none');
+    if (ripe) setText(farmChip, '菜地 ' + ripe + ' 可收');
+  }
+  /* 菜地角标：有熟的才出现。熟了却没提示，等于玩家种完就忘了 */
   if (billChip){
     const un = unpaidCount();
     setStyle(billChip, 'display', un ? '' : 'none');
@@ -9633,7 +9692,8 @@ const PERSON = {
   name: '我的屋主',
   gender: '女',
   role: '自由职业',
-  marital: '单身'
+  marital: '单身',
+  traits: []          // 特质 id，最多 TRAIT_MAX_PICK 个（内容在 characters/traits.json）
 };
 const ADDRESS_FALLBACK = '幸福小区';
 const RESIDENCE_DEF = (HomeCore.content.residence && HomeCore.content.residence()) || {};
@@ -9965,6 +10025,8 @@ const pId = document.getElementById('pId');
 const pUid = document.getElementById('pUid');
 const fName = document.getElementById('fName');
 const fAge = document.getElementById('fAge');
+const fTrait1 = document.getElementById('fTrait1');
+const fTrait2 = document.getElementById('fTrait2');
 const fGender = document.getElementById('fGender');
 const fRole = document.getElementById('fRole');
 const fAddr = document.getElementById('fAddr');
@@ -10041,6 +10103,7 @@ function openChar(){
   // 回填可编辑字段
   fName.value = PERSON.name;
   buildRoleOptions();
+  syncTraitSelects();
   fAge.value = ageStageOf(APPEARANCE.age);
   fGender.value = PERSON.gender;
   fRole.value = PERSON.role;
@@ -10099,8 +10162,45 @@ function buildRoleOptions(){
 }
 const SEX_ID = { '男': 'm', '女': 'f', '保密': 'x' };
 function syncIdentityLine(){
-  if (pId) pId.textContent = personIdentity(APPEARANCE);
+  if (!pId) return;
+  const t = traitNames();
+  pId.textContent = personIdentity(APPEARANCE) + (t ? ' · ' + t : '');
 }
+/* 特质下拉：内容里加一条特质，这里自动多一项。两个下拉互斥（选重了就把另一个清空） */
+function buildTraitOptions(){
+  for (const sel of [fTrait1, fTrait2]){
+    if (!sel) continue;
+    const keep = sel.value;
+    sel.innerHTML = '';
+    const none = document.createElement('option');
+    none.value = ''; none.textContent = '（无）';
+    sel.appendChild(none);
+    for (const t of TRAITS){
+      const o = document.createElement('option');
+      o.value = t.id; o.textContent = t.name; o.title = t.desc || '';
+      sel.appendChild(o);
+    }
+    sel.value = keep;
+  }
+}
+function syncTraitSelects(){
+  buildTraitOptions();
+  const list = myTraits();
+  if (fTrait1) fTrait1.value = list[0] || '';
+  if (fTrait2) fTrait2.value = list[1] || '';
+}
+function applyTraitsFromSelects(){
+  const a = fTrait1 ? fTrait1.value : '';
+  const b = fTrait2 ? fTrait2.value : '';
+  const list = [];
+  for (const v of [a, b]) if (v && TRAIT_BY_ID[v] && !list.includes(v)) list.push(v);
+  PERSON.traits = list.slice(0, TRAIT_MAX_PICK);
+  syncTraitSelects();
+  syncIdentityLine();
+  saveGame();
+}
+if (fTrait1) fTrait1.addEventListener('change', applyTraitsFromSelects);
+if (fTrait2) fTrait2.addEventListener('change', applyTraitsFromSelects);
 function applyIdentityToLook(){
   APPEARANCE.age = ageStageOf(APPEARANCE.age);
   APPEARANCE.sex = SEX_ID[PERSON.gender] || APPEARANCE.sex || 'x';
@@ -10430,6 +10530,16 @@ if (pantryChip) pantryChip.addEventListener('click', () => {
   showFloat('冰箱 ' + PANTRY + '/' + pantryMax() + ' ' + foodUnit() + ' · 菜市场便宜、超市方便',
     Math.round(PLAYER.fx), Math.round(PLAYER.fy));
 });
+/* 菜地角标：点一下回家；已经在家就把镜头挪到菜地那排 */
+if (farmChip) farmChip.addEventListener('click', () => {
+  if (scene !== 'home'){ switchScene('home'); return; }
+  const c = farmCellOf(0);
+  if (c) walkTo(c.gx, c.gy + 2);
+  showFloat('熟了的地块会描一圈金边，点它就能收', Math.round(PLAYER.fx), Math.round(PLAYER.fy));
+});
+
+/* 菜地角标：点一下回家；已经在家就把镜头挪到菜地那排 */
+
 /* 账单角标：点一下直接去楼下开信箱，省掉"先回小区再找信箱"两步 */
 if (billChip) billChip.addEventListener('click', () => {
   if (scene !== 'street') switchScene('street');
@@ -11422,7 +11532,10 @@ function tickStatStages(){
 
 function bumpStat(id, delta){
   if (!STATS_DEF.byId[id]) return STATS[id];
-  STATS[id] = clampStat(id, (Number(STATS[id]) || 0) + (Number(delta) || 0));
+  let d = Number(delta) || 0;
+  /* 正向情绪统一在入口乘特质倍率：这样"聊天 / 装修度 / 吃饭"都算，不用逐个改 */
+  if (id === 'emotion' && d > 0) d *= traitMoodMul();
+  STATS[id] = clampStat(id, (Number(STATS[id]) || 0) + d);
   return STATS[id];
 }
 /* 效果应用：遍历 effects 的键，不再写死 hunger/thirst/emotion 三个分支。

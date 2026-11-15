@@ -2,7 +2,7 @@
   "note": "顶层可变状态登记表。domain = 玩法状态（saved 必须明确）；derived = 从内容/常量推导；session = 会话内瞬态（刷新即丢）；cache = 可重建缓存（约定 _ 开头）。新增顶层状态后跑 node tools/genstatespec.mjs --enrich 登记，再跑 node tools/statemap.mjs --check 验证。",
   "counts": {
     "cache": 35,
-    "derived": 54,
+    "derived": 55,
     "domain": 44,
     "session": 81
   },
@@ -738,6 +738,10 @@
     },
     "TRAFFIC_TYPE_BY_ID": {
       "kind": "derived"
+    },
+    "TRAIT_BY_ID": {
+      "kind": "derived",
+      "note": "特质索引，从 content/characters/traits.json 长出来"
     },
     "UI_STATS": {
       "kind": "session",

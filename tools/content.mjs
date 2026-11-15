@@ -1766,6 +1766,52 @@ function validate(){
       }
     }
 
+    /* V4.36 特质：只准改三类东西，且每个特质必须有取舍。
+     * 写错的后果是"这个特质永远不起作用"或者"它是纯加成，所有人都会选它"。 */
+    {
+      const tp = packs['characters/traits.json'];
+      if (tp){
+        const list = Array.isArray(tp.traits) ? tp.traits : [];
+        const stats = Object.keys(((packs['rules/survival.json'] || {}).stats) || {});
+        if (list.length < 3) problems.push('[特质] 至少要有 3 个特质，不然玩家没得选');
+        const pick = Number(tp.maxPick);
+        if (!(pick >= 1 && pick <= 3)) problems.push('[特质] maxPick 应在 1~3（现在 ' + tp.maxPick + '）');
+        else if (pick > list.length) problems.push('[特质] maxPick 大于特质总数');
+        const seen = new Set();
+        for (const t of list){
+          if (!t || !t.id){ problems.push('[特质] 有特质缺少 id'); continue; }
+          if (seen.has(t.id)) problems.push('[特质] 特质 id 重复：' + t.id);
+          seen.add(t.id);
+          if (!t.name) problems.push('[特质] ' + t.id + ' 缺少 name');
+          if (!t.desc) problems.push('[特质] ' + t.id + ' 缺少 desc（玩家看不到它的作用）');
+          const ef = t.effects || {};
+          const keys = Object.keys(ef);
+          if (!keys.length){ problems.push('[特质] ' + t.id + ' 没有任何 effects'); continue; }
+          let good = 0, bad = 0;
+          for (const k of keys){
+            if (k === 'decay'){
+              for (const [sid, v] of Object.entries(ef.decay || {})){
+                if (!stats.includes(sid)) problems.push('[特质] ' + t.id + '.decay 里的「' + sid + '」不是资源 id');
+                if (!(Number(v) >= 0.5 && Number(v) <= 1.6))
+                  problems.push('[特质] ' + t.id + '.decay.' + sid + ' 应在 0.5~1.6');
+                if (Number(v) < 1) good++; else if (Number(v) > 1) bad++;
+              }
+              continue;
+            }
+            if (k !== 'moodGain' && k !== 'payMul'){
+              problems.push('[特质] ' + t.id + ' 用了未知 effect「' + k + '」（只认 decay / moodGain / payMul）');
+              continue;
+            }
+            const v = Number(ef[k]);
+            if (!(v >= 0.5 && v <= 1.6)) problems.push('[特质] ' + t.id + '.' + k + ' 应在 0.5~1.6');
+            if (v > 1) good++; else if (v < 1) bad++;
+          }
+          /* 纯加成会被所有人选、纯惩罚没人选——两种都等于没有选择 */
+          if (!good || !bad) problems.push('[特质] ' + t.id + ' 没有取舍（要么全是好处，要么全是坏处）');
+        }
+      }
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');

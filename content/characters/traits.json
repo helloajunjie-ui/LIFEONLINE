@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "id": "characters/traits",
+  "maxPick": 2,
+  "note": "特质：只做两件事——改某条需求的衰减速率、改情绪收益。每个特质都带取舍，不是纯加成；纯加成的特质等于白送数值，玩家没有选择。effects 只开放三类键：decay（按资源 id 给衰减倍率）、moodGain（正向情绪收益倍率）、payMul（班次收入倍率）。倍率一律在 0.5~1.6 之间，校验器会拦。",
+  "traits": [
+    {
+      "id": "sociable",
+      "name": "社牛",
+      "desc": "跟人聊两句就开心，一个人待着反而闷",
+      "effects": {
+        "moodGain": 1.4,
+        "decay": { "emotion": 1.1 }
+      }
+    },
+    {
+      "id": "easygoing",
+      "name": "随和",
+      "desc": "什么事都不太往心里去，也不容易特别高兴",
+      "effects": {
+        "decay": { "emotion": 0.8 },
+        "moodGain": 0.9
+      }
+    },
+    {
+      "id": "hearty",
+      "name": "好养活",
+      "desc": "饿得慢，但也不太挑嘴",
+      "effects": {
+        "decay": { "hunger": 0.8 },
+        "moodGain": 0.95
+      }
+    },
+    {
+      "id": "picky",
+      "name": "嘴刁",
+      "desc": "吃顿好的能高兴半天，饿起来也快",
+      "effects": {
+        "decay": { "hunger": 1.15 },
+        "moodGain": 1.25
+      }
+    },
+    {
+      "id": "workhorse",
+      "name": "能吃苦",
+      "desc": "干活多拿一点，但渴得快",
+      "effects": {
+        "payMul": 1.1,
+        "decay": { "thirst": 1.15 }
+      }
+    }
+  ]
+}

@@ -5112,6 +5112,52 @@
           'schema=' + m.schema + ' farm=' + JSON.stringify(m.farm));
       }
 
+      // ---------- TR：特质（只改衰减与情绪收益，且都有取舍） ----------
+      {
+        const bak = PERSON.traits;
+        PERSON.traits = ['hearty'];
+        const hearty = { decay: traitDecayMul('hunger'), mood: traitMoodMul(), pay: traitPayMul() };
+        PERSON.traits = ['picky', 'workhorse'];
+        const pair = { hunger: traitDecayMul('hunger'), thirst: traitDecayMul('thirst'), pay: traitPayMul() };
+        PERSON.traits = bak;
+        P('TR1 traits scale decay, mood and pay, and two traits stack',
+          Math.abs(hearty.decay - 0.8) < 1e-9 && Math.abs(hearty.mood - 0.95) < 1e-9 && hearty.pay === 1 &&
+          Math.abs(pair.hunger - 1.15) < 1e-9 && Math.abs(pair.thirst - 1.15) < 1e-9 &&
+          Math.abs(pair.pay - 1.1) < 1e-9,
+          JSON.stringify({ hearty, pair }));
+      }
+
+      {
+        /* 正面情绪统一在 bumpStat 入口乘倍率：聊天、装修度、吃饭都算 */
+        const bak = { traits: PERSON.traits, emo: STATS.emotion };
+        PERSON.traits = [];
+        STATS.emotion = 50; bumpStat('emotion', 10);
+        const plain = STATS.emotion;
+        PERSON.traits = ['sociable'];
+        STATS.emotion = 50; bumpStat('emotion', 10);
+        const social = STATS.emotion;
+        P('TR2 a mood trait changes how much a chat lifts your mood',
+          plain === 60 && social === 64, 'plain=' + plain + ' social=' + social);
+        PERSON.traits = bak.traits; STATS.emotion = bak.emo;
+      }
+
+      {
+        /* 脏存档里重复/超量的特质要洗干净，否则倍率会叠两次 */
+        const bak = PERSON.traits;
+        PERSON.traits = ['sociable', 'sociable', 'picky', 'nope'];
+        const list = myTraits();
+        PERSON.traits = ['sociable'];
+        syncTraitSelects();
+        const selN = fTrait1 ? fTrait1.options.length : -1;
+        const shown = fTrait1 ? fTrait1.value : '';
+        PERSON.traits = bak;
+        syncTraitSelects();
+        P('TR3 duplicate or unknown traits are cleaned, and the picker comes from content',
+          list.length === 2 && list[0] === 'sociable' && list[1] === 'picky' &&
+          selN === TRAITS.length + 1 && shown === 'sociable',
+          'list=' + list.join('/') + ' options=' + selN + ' shown=' + shown);
+      }
+
       // 还原
       MONEY = bk.money; STATS.hunger = bk.hunger; BAG = bk.bag; PANTRY = bk.pantry;
       LAST_SHIFT_DAY = bk.shift;
