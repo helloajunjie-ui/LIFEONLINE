@@ -130,6 +130,8 @@ function buildIndex(packs, meta){
   const talkCfg = packs['ui/talk.json'] || {};
   /* 菜地：作物与地块位置。缺包时给一份空的，引擎会退化成"没有菜地"而不是报错 */
   const farmCfg = packs['farm/crops.json'] || { plots: 0, crops: [], layout: { dx: [], dy: [] } };
+  /* 小区事件：缺包就当没有事件，广播退回原来那句 */
+  const eventsCfg = packs['environment/events.json'] || { events: [] };
 
   const verbTable = buildVerbTable(packs);
   const categories = buildCategories(packs);
@@ -206,6 +208,7 @@ function buildIndex(packs, meta){
     ui: uiPack.strings || {},
     talk: talkCfg,
     farm: farmCfg,
+    events: eventsCfg,
     verbs: verbTable,
     categories,
     stats,
@@ -305,6 +308,8 @@ export function topics(){ return content.topics; }
 export function talk(){ return content.talk || {}; }
 /** 特质：{ traits[], maxPick } */
 export function traits(){ return { traits: content.traits || [], maxPick: content.traitsMaxPick || 2 }; }
+/** 小区事件：{ events[], minDay } */
+export function townEvents(){ return content.events || { events: [] }; }
 /** 菜地：{ plots, layout:{dx,dy}, crops[] } */
 export function farm(){ return content.farm || { plots: 0, crops: [], layout: { dx: [], dy: [] } }; }
 

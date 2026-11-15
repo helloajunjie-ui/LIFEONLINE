@@ -19,6 +19,7 @@
     "characters/traits.json",
     "environment/ambient.json",
     "environment/climate.json",
+    "environment/events.json",
     "environment/seasons.json",
     "farm/crops.json",
     "house/levels.json",
@@ -111,6 +112,11 @@
       "version": 4,
       "hash": "ef5ded811ec6",
       "updatedAt": "2026-11-05T13:42:24.750Z"
+    },
+    "environment/events.json": {
+      "version": 2,
+      "hash": "dbc443e88431",
+      "updatedAt": "2026-11-15T15:43:03.255Z"
     },
     "environment/seasons.json": {
       "version": 2,

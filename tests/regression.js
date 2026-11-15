@@ -5107,9 +5107,10 @@
 
       {
         const m = migrateSave({ schema: 22 });
-        P('FM4 old saves migrate to schema 23 with an empty farm',
-          m.schema === 23 && Array.isArray(m.farm) && m.farm.length === 0,
-          'schema=' + m.schema + ' farm=' + JSON.stringify(m.farm));
+        P('FM4 old saves migrate forward with an empty farm and no town event',
+          m.schema === CLIENT_VERSION.saveSchema && Array.isArray(m.farm) && m.farm.length === 0 &&
+          m.town && typeof m.town === 'object',
+          'schema=' + m.schema + ' farm=' + JSON.stringify(m.farm) + ' town=' + JSON.stringify(m.town));
       }
 
       // ---------- TR：特质（只改衰减与情绪收益，且都有取舍） ----------
@@ -5156,6 +5157,47 @@
           list.length === 2 && list[0] === 'sociable' && list[1] === 'picky' &&
           selN === TRAITS.length + 1 && shown === 'sociable',
           'list=' + list.join('/') + ' options=' + selN + ' shown=' + shown);
+      }
+
+      // ---------- EV：小区事件（一天一件，全服一致，只结算一次） ----------
+      {
+        const a = townEventOf(7), b = townEventOf(7), c = townEventOf(8);
+        const seen = {};
+        for (let d = 5; d < 25; d++){ const e = townEventOf(d); if (e) seen[e.id] = (seen[e.id] || 0) + 1; }
+        P('EV1 the same day always draws the same event, and the pool actually varies',
+          !!a && a.id === b.id && !!c && Object.keys(seen).length >= 3,
+          'day7=' + (a && a.id) + ' day8=' + (c && c.id) + ' kinds=' + Object.keys(seen).length);
+      }
+
+      {
+        /* 同一天刷新页面不能把效果结算两次：钱只能变一次，账本也只能记一笔 */
+        const bak = { day: DAY, town: { day: TOWN.day, id: TOWN.id }, money: MONEY,
+                      emo: STATS.emotion, bag: BAG, log: LEDGER.log.length };
+        /* 第 22 天抽到的是「退水费」（带 cash），这样才真的走到账本那一步 */
+        DAY = 22; TOWN = { day: 0, id: '' }; MINUTE = 600;
+        const ev = townEventOf(DAY);
+        const before = MONEY;
+        const first = tickTownEvent();
+        const afterFirst = MONEY;
+        const second = tickTownEvent();
+        const afterSecond = MONEY;
+        const cashEvent = ev && ev.effects && typeof ev.effects.cash === 'number';
+        const logged = LEDGER.log.filter(r => r.c === 'event').length;
+        P('EV2 a day event settles exactly once, even if the page reloads',
+          first === true && second === false && afterFirst === afterSecond &&
+          (!cashEvent || afterFirst === before + ev.effects.cash) &&
+          (!cashEvent || logged > 0),
+          'ev=' + (ev && ev.id) + ' first=' + first + ' second=' + second +
+          ' money=' + before + '->' + afterFirst + '->' + afterSecond + ' ledger=' + logged);
+        DAY = bak.day; TOWN = bak.town; MONEY = bak.money; STATS.emotion = bak.emo; BAG = bak.bag;
+      }
+
+      {
+        /* 广播、问 NPC「打听小区」说的是同一句 */
+        const ev = townEventOf(DAY);
+        const news = dailyNewsText(DAY);
+        P('EV3 the broadcast speaks the day event when there is one',
+          !ev || news === ev.text, 'ev=' + (ev && ev.id) + ' news=' + news.slice(0, 20));
       }
 
       // 还原

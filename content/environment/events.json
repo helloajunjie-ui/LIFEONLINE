@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "id": "environment/events",
+  "note": "小区事件：一天一件，由天数散列确定性抽取——全服同一天是同一件事，所以街坊聊的、广播里说的、问 NPC 打听的都是同一条。效果只准走两个入口：cash 走 credit/debit（记进账本，分类 event），stats 走 bumpStat。事件不用天气做条件：天气在一天之内会变，用它筛事件会让\"今天到底哪件事\"变得不确定。",
+  "minDay": 1,
+  "events": [
+    {
+      "id": "water-cut",
+      "name": "停水",
+      "weight": 3,
+      "minDay": 1,
+      "text": "小区通知：今天下午检修管道，会停水两小时",
+      "say": "接水了吗？下午要停两小时。",
+      "effects": {
+        "stats": {
+          "emotion": -3
+        }
+      }
+    },
+    {
+      "id": "market-sale",
+      "name": "菜市场清仓",
+      "weight": 3,
+      "minDay": 1,
+      "text": "菜市场收摊前清仓，青菜一堆一堆地卖",
+      "say": "菜市场在清仓，去晚了就没了。",
+      "effects": {
+        "food": 2
+      }
+    },
+    {
+      "id": "lost-cat",
+      "name": "找猫",
+      "weight": 2,
+      "minDay": 2,
+      "text": "三号楼有只橘猫走丢了，主人在楼下贴了寻猫启事",
+      "say": "看见那只橘猫没有？三号楼在找。",
+      "effects": {
+        "stats": {
+          "emotion": 4
+        }
+      }
+    },
+    {
+      "id": "street-repair",
+      "name": "修路",
+      "weight": 2,
+      "minDay": 2,
+      "text": "门口那条路今天铺沥青，绕一下走",
+      "say": "门口修路，灰大得很，关窗。",
+      "effects": {
+        "stats": {
+          "emotion": -2
+        }
+      }
+    },
+    {
+      "id": "lottery-jackpot",
+      "name": "彩票站出大奖",
+      "weight": 1,
+      "minDay": 3,
+      "text": "彩票站出了个大奖，门口围了一圈人",
+      "say": "听说了吗？彩票站出大奖了。",
+      "effects": {
+        "stats": {
+          "emotion": 5
+        }
+      }
+    },
+    {
+      "id": "free-tasting",
+      "name": "咖啡店试喝",
+      "weight": 2,
+      "minDay": 2,
+      "text": "咖啡店今天下午有新品试喝，排队不长",
+      "say": "咖啡店在试喝，你去了没？",
+      "effects": {
+        "stats": {
+          "emotion": 6
+        }
+      }
+    },
+    {
+      "id": "rent-notice",
+      "name": "房租提醒",
+      "weight": 2,
+      "minDay": 3,
+      "text": "物业在每栋楼贴了缴费提醒，月底前交清",
+      "say": "物业贴条了，月底前得交。",
+      "effects": {
+        "stats": {
+          "emotion": -4
+        }
+      }
+    },
+    {
+      "id": "bus-delay",
+      "name": "公交晚点",
+      "weight": 2,
+      "minDay": 2,
+      "text": "早高峰公交晚点，站牌下排了半条队",
+      "say": "今天的车怎么这么久？",
+      "effects": {
+        "stats": {
+          "emotion": -2
+        }
+      }
+    },
+    {
+      "id": "neighbor-gift",
+      "name": "邻居送菜",
+      "weight": 1,
+      "minDay": 4,
+      "text": "楼上的大姐自家种的菜吃不完，挨家送了一把",
+      "say": "刚有人送菜来，你那份我放门口了。",
+      "effects": {
+        "food": 3
+      }
+    },
+    {
+      "id": "refund",
+      "name": "退水费",
+      "weight": 1,
+      "minDay": 5,
+      "text": "物业把多收的水费退回来了，直接打进账户",
+      "say": "水费退了，你收到没？",
+      "effects": {
+        "cash": 30
+      }
+    }
+  ]
+}

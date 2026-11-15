@@ -3,7 +3,7 @@
   "counts": {
     "cache": 35,
     "derived": 55,
-    "domain": 44,
+    "domain": 45,
     "session": 81
   },
   "states": {
@@ -729,6 +729,11 @@
     },
     "TOP_COLORS": {
       "kind": "derived"
+    },
+    "TOWN": {
+      "kind": "domain",
+      "saved": true,
+      "note": "今天生效的小区事件 {day,id}：只用来防重复结算，效果已写进账本"
     },
     "TRAFFIC_CARS": {
       "kind": "session"

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-15T15:32:10.318Z",
+  "generatedAt": "2026-11-15T15:43:21.530Z",
   "note": "构建产物：由 tools/content.mjs bundle 生成，请勿手改",
   "modules": {
     "achievements/achievements.json": {
@@ -77,6 +77,11 @@
       "version": 4,
       "hash": "ef5ded811ec6",
       "updatedAt": "2026-11-05T13:42:24.750Z"
+    },
+    "environment/events.json": {
+      "version": 2,
+      "hash": "dbc443e88431",
+      "updatedAt": "2026-11-15T15:43:03.255Z"
     },
     "environment/seasons.json": {
       "version": 2,

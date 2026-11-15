@@ -1812,6 +1812,50 @@ function validate(){
       }
     }
 
+    /* V4.37 小区事件：一天一件，效果必须走两个入口。
+     * 写错的后果是"这件事件永远抽不到"或者"它悄悄给玩家塞钱"。 */
+    {
+      const ep = packs['environment/events.json'];
+      if (ep){
+        const list = Array.isArray(ep.events) ? ep.events : [];
+        if (list.length < 6) problems.push('[事件] 事件少于 6 件，玩几天就重复了');
+        const stats = Object.keys(((packs['rules/survival.json'] || {}).stats) || {});
+        const seen = new Set();
+        for (const e of list){
+          if (!e || !e.id){ problems.push('[事件] 有事件缺少 id'); continue; }
+          if (seen.has(e.id)) problems.push('[事件] 事件 id 重复：' + e.id);
+          seen.add(e.id);
+          if (!e.name) problems.push('[事件] ' + e.id + ' 缺少 name');
+          if (!e.text){ problems.push('[事件] ' + e.id + ' 缺少 text（广播里要念的）'); }
+          else if (String(e.text).length > 32)
+            problems.push('[事件] ' + e.id + ' 的 text 超过 32 字，广播一行念不完');
+          const w = Number(e.weight);
+          if (!(w >= 1 && w <= 9)) problems.push('[事件] ' + e.id + ' 的 weight 应在 1~9（现在 ' + e.weight + '）');
+          const md = Number(e.minDay || 1);
+          if (!(md >= 1 && md <= 30)) problems.push('[事件] ' + e.id + ' 的 minDay 应在 1~30');
+          const fx = e.effects || {};
+          const keys = Object.keys(fx);
+          if (!keys.length) problems.push('[事件] ' + e.id + ' 没有任何 effects —— 纯文案的事件等于没做');
+          for (const k of keys){
+            if (k === 'cash'){
+              const v = Number(fx.cash);
+              if (!(Math.abs(v) <= 300)) problems.push('[事件] ' + e.id + '.cash 绝对值超过 300，会打乱经济');
+            } else if (k === 'food'){
+              const v = Number(fx.food);
+              if (!(v >= 1 && v <= 5)) problems.push('[事件] ' + e.id + '.food 应在 1~5');
+            } else if (k === 'stats'){
+              for (const [sid, v] of Object.entries(fx.stats || {})){
+                if (!stats.includes(sid)) problems.push('[事件] ' + e.id + '.stats 里的「' + sid + '」不是资源 id');
+                if (!(Math.abs(Number(v)) <= 20)) problems.push('[事件] ' + e.id + '.stats.' + sid + ' 幅度超过 20');
+              }
+            } else {
+              problems.push('[事件] ' + e.id + ' 用了未知 effect「' + k + '」（只认 cash / stats / food）');
+            }
+          }
+        }
+      }
+    }
+
     /* 一个人都没有配饰，说明这层等于没做——街区里所有剪影会一模一样 */
     const withAcc = [...(pk.npcs || []), ...(pk.clerks || [])]
       .filter(x => x.appearance && x.appearance.acc && x.appearance.acc !== 'none');

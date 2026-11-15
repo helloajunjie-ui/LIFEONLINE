@@ -1629,6 +1629,8 @@ const LEDGER_CATS = {
     lottery: '中奖',
     ach:     '奖励',
     refund:  '退款',
+    event:   '小区事件',
+    event:   '小区事件',
     bank:    '银行取出',
     stock:   '卖出股票',
     loan:    '贷款到账',
@@ -1644,6 +1646,8 @@ const LEDGER_CATS = {
     decor:   '装修',
     clinic:  '看病',
     lottery: '彩票',
+    event:   '小区事件',
+    event:   '小区事件',
     biz:     '承包金',
     pet:     '宠物',
     bank:    '存入银行',
@@ -7107,6 +7111,7 @@ function updateSim(dt){
    * 现在统一交给 tickBills，两个模式都不会漏。 */
   if (DAY !== _billTickDay){
     _billTickDay = DAY;
+    tickTownEvent();                     // 先结算当天小区事件，再发账单
     if (typeof tickBills === 'function') tickBills();
     if (typeof settleBusiness === 'function') settleBusiness();
     if (typeof settleStockOrders === 'function') settleStockOrders();
@@ -8582,7 +8587,61 @@ function dailyNewsPool(){
   }
   return out;
 }
+/* ---------- 小区事件：一天一件，全服同一件 ----------
+ * 只按天数散列抽取，和天气/时钟无关——天气一天之内会变，拿它筛事件会让
+ * "今天到底是哪件事"变得不确定，广播、街坊闲聊、问 NPC 就对不上了。
+ * 效果只准走两个入口：cash → credit/debit（记进账本），stats → bumpStat。
+ * 存档记 {day, id}：同一天刷新页面不会把效果结算两次。 */
+const TOWN_DEF = (HomeCore.content.townEvents && HomeCore.content.townEvents()) || { events: [] };
+const TOWN_EVENTS = TOWN_DEF.events || [];
+const TOWN_MIN_DAY = Math.max(1, Number(TOWN_DEF.minDay) || 1);
+let TOWN = { day: 0, id: '' };      // 入存档：今天生效的是哪件
+
+/** 某天的小区事件；按天数权重抽，minDay 之前不抽 */
+function townEventOf(day){
+  const d = Math.max(1, Math.floor(day || DAY || 1));
+  if (d < TOWN_MIN_DAY) return null;
+  const pool = [];
+  for (const e of TOWN_EVENTS){
+    if (!e || !e.id) continue;
+    if (Number(e.minDay || 1) > d) continue;
+    const w = Math.max(1, Math.min(9, Math.floor(Number(e.weight) || 1)));
+    for (let k = 0; k < w; k++) pool.push(e);
+  }
+  if (!pool.length) return null;
+  const idx = Math.min(pool.length - 1, Math.floor(hashPos(d, 13, 771) * pool.length));
+  return pool[idx] || null;
+}
+function townEventToday(){ return townEventOf(DAY); }
+
+function applyTownEvent(ev){
+  const fx = (ev && ev.effects) || {};
+  if (typeof fx.cash === 'number' && fx.cash){
+    if (fx.cash > 0) credit(fx.cash, 'event', ev.name);
+    else debit(-fx.cash, 'event', ev.name);
+  }
+  for (const k in (fx.stats || {})) bumpStat(k, fx.stats[k]);
+  if (Number(fx.food) > 0){
+    const put = Math.min(Number(fx.food), bagRoom());
+    if (put > 0) BAG += put;
+  }
+  return true;
+}
+
+/** 跨天时结算一次；读档后也调一次（TOWN 里记着今天结过没有） */
+function tickTownEvent(){
+  const ev = townEventToday();
+  if (!ev) return false;
+  if (TOWN.day === DAY && TOWN.id === ev.id) return false;
+  TOWN = { day: DAY, id: ev.id };
+  applyTownEvent(ev);
+  return true;
+}
+
 function dailyNewsText(day){
+  /* 有小区事件就说事件：广播、问 NPC「打听小区」、街坊闲聊必须是同一条 */
+  const ev = townEventOf(day);
+  if (ev && ev.text) return ev.text;
   const pool = dailyNewsPool();
   if (!pool.length) return '';
   const seed = Math.max(1, Math.floor(day || DAY || 1));
@@ -11828,6 +11887,8 @@ function collectSave(){
     /* 菜地只存"种了什么、什么时候种的"：熟没熟是算出来的，
      * 存状态机的话，改作物时长就得给每个玩家迁移一次 */
     farm: FARM.map(p => (p ? { cropId: p.cropId, at: p.at } : null)),
+    /* 今天生效的小区事件：只记 id 与天数，效果本身早已结算并写进账本 */
+    town: { day: TOWN.day, id: TOWN.id },
     biz: { list: BIZ_LIST, lastDay: BIZ_LAST_DAY },
     /* 账本：只存最近 30 天汇总 + 60 条流水，够看趋势又不撑存档 */
     ledger: { day: LEDGER.day, today: LEDGER.today, days: LEDGER.days, log: LEDGER.log },
@@ -12014,6 +12075,11 @@ function migrateSave(d){
       // 那等于按存档版本发钱。地块数量由内容决定，这里只保证是个数组。
       d.farm = Array.isArray(d.farm) ? d.farm : [];
     }
+    if (schema === 23){
+      // v24：小区事件。老存档没有记录 → 今天的事件会补结算一次，这是有意的：
+      // 事件本来就是"今天发生的事"，不该因为存档旧就缺席。
+      d.town = (d.town && typeof d.town === 'object') ? d.town : { day: 0, id: '' };
+    }
     schema++;
   }
   d.schema = schema;
@@ -12099,6 +12165,12 @@ function applySave(d){
   /* 菜地：只认内容里存在的作物、只接受合理的时间戳（不能是未来），
    * 格数按当前内容补齐——老存档地块少、改内容后地块多，都不该炸。 */
   FARM = normalizeFarm(d.farm);
+  /* 小区事件：只认内容里存在的 id（内容删了某件事，存档里的旧 id 就当没有） */
+  {
+    const t = (d.town && typeof d.town === 'object') ? d.town : {};
+    const id = typeof t.id === 'string' && TOWN_EVENTS.some(e => e && e.id === t.id) ? t.id : '';
+    TOWN = { day: Math.max(0, Math.floor(Number(t.day) || 0)), id };
+  }
   // 承包：只认内容里存在的店铺；到期日必须大于开始日，脏存档不能白送收益
   {
     const bd = (d.biz && typeof d.biz === 'object') ? d.biz : {};

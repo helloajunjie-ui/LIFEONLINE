@@ -3,8 +3,8 @@
 一款单文件的等距视角生活模拟小游戏：**经营自己的小屋，在小区里上班、买菜、交房租、串门装修**。
 客户端是一个可以双击打开的 HTML，服务端是可选的 Go + SQLite 存档服务。
 
-> 当前版本 **1.83.0** · 存档结构 **schema 23** · 门禁：客户端回归 **463 项** / 服务端自测 **67 项** /
-> 内容校验 **31 包**全绿（V1–V4.33）· 人物 **25 人**（13 种职业）· 街区 **88×48**
+> 当前版本 **1.84.0** · 存档结构 **schema 24** · 门禁：客户端回归 **466 项** / 服务端自测 **67 项** /
+> 内容校验 **32 包**全绿（V1–V4.33）· 人物 **25 人**（13 种职业）· 街区 **88×48**
 
 ## 直接玩
 
@@ -24,7 +24,7 @@ cd server && ./home-server.exe        # 127.0.0.1:8787，数据库 server/data/h
 ```
 2.5D小屋.html            客户端源码（开发时改这个，引用 ./dist/core.bundle.js）
 src/                     引擎模块：content 加载器、寻路、规则、时钟、联网
-content/                 内容层（唯一真相）：31 个 JSON 包
+content/                 内容层（唯一真相）：32 个 JSON 包
   catalog/                家具目录（43 件）
   house/                  房型（8 种）、地板墙面风格、住址与房态
   maps/                   家 / 街区地图（88×48，分区、围栏、信箱、传送门、公交站）
@@ -80,7 +80,7 @@ node tools/doccheck.mjs           # 文档数字对账：README 写的包数/家
 node tools/dupcheck.mjs           # 重复的顶层函数 / 测试分组；三处年龄枚举是否一致
 node tools/charcheck.mjs          # 撞衫：年龄/性别/制服/配饰/发型五项全同的两个人
 node tools/genidentity.mjs --check # 身份体检：小孩上班、护士在便利店收银这类不合理
-node tools/test.mjs               # dist 与 src 各跑一遍（463 项），用无头 Edge
+node tools/test.mjs               # dist 与 src 各跑一遍（466 项），用无头 Edge
 node tools/test.mjs dist          # 只跑构建产物
 cd server && ./home-server.exe -selftest   # 服务端接口自测（进程内 httptest）
 ```
@@ -122,7 +122,7 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off go build -o home-server.exe .
 - 面板不会因为"重绘"产生副作用：按钮只写 `data-act="task"`，动作由 `actWork()` 分派；
   监听只在 `bindWorkList()` 里挂一次，不再每次渲染 `querySelectorAll + addEventListener`。
 
-拆分的次序（每一步都能被 463 项回归兜住）：**先收口写入口 → 再让视图幂等 → 再拆文件**。
+拆分的次序（每一步都能被 466 项回归兜住）：**先收口写入口 → 再让视图幂等 → 再拆文件**。
 反过来（先拆文件）只是把 200 个全局变量换个地方放。
 
 ## 设计要点
@@ -131,6 +131,7 @@ GOFLAGS=-mod=mod GOPROXY=off GOSUMDB=off go build -o home-server.exe .
 |---|---|
 | **数据驱动** | 引擎不写死任何数值。加一件家具、一个岗位、一种账单，只加 JSON，校验器会在写错时拦下来 |
 | **推导优于存储** | 菜地只存"种了什么、什么时候种"（`{cropId, at}`），熟没熟按经过的游戏分钟算——关掉游戏也在长，改作物时长也不用给每个玩家迁移存档 |
+| **一天一件的事** | `environment/events.json`：按天数散列抽，全服同一天同一件；广播、问 NPC「打听小区」、街坊闲聊说的是同一条。效果只走 `credit/debit` 与 `bumpStat`，存档记 `{day,id}` 防重复结算 |
 | **特质有取舍** | `characters/traits.json`：只准改三样东西（需求衰减、情绪收益、班次收入），且每个特质必须有好处也有坏处——纯加成会被所有人选，等于没有选择 |
 | **需求即处境** | 资源掉到阈值以下不是"血条变红"，而是进入一个阶段：情绪掉得更快、班次收入打折、走路变慢。表在 `rules/survival.json → stats[].stages`，阶段不入档、按当前值现算 |
 | **纯函数推导** | 房态（待售/待租/空置）、车流位置、红绿灯相位都由稳定散列或时间函数现算，服务端不必为 72 间空房各存一行 |
